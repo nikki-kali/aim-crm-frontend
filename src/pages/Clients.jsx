@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import api from '../lib/api'
 import { Plus, Search, Phone, Mail, X } from 'lucide-react'
 
@@ -166,8 +167,15 @@ export default function Clients() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(client => (
-            <div key={client.id} className="card p-5 hover:shadow-md transition-shadow">
+          {filtered.map((client, i) => (
+            <motion.div
+              key={client.id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, duration: 0.3, ease: 'easeOut' }}
+              whileHover={{ y: -4, boxShadow: '0 12px 28px -6px rgba(6,186,190,0.15)' }}
+              className="card p-5 cursor-default"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#06babe]/10 flex items-center justify-center text-[#06babe] font-bold text-sm flex-shrink-0">
@@ -208,7 +216,7 @@ export default function Clients() {
               {client.notes && (
                 <p className="text-xs text-gray-400 mt-3 border-t border-gray-50 pt-3 truncate">{client.notes}</p>
               )}
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
