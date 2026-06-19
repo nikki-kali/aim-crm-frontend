@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
+import { useToast } from '../components/Toast'
+import { Send, X, Mail } from 'lucide-react'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
@@ -417,12 +420,98 @@ function PerformersTab({ leads, clients }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+function SendReportModal({ onClose }) {
+  const [email, setEmail] = useState('')
+  const [sending, setSending] = useState(false)
+  const toast = useToast()
+
+  const handleSend = async () => {
+    if (!email.includes('@')) return toast('Enter a valid email address', 'error')
+    setSending(true)
+    try {
+      await api.post('/api/reports/send', { email })
+      toast(`Report sent to ${email}`, 'success')
+      onClose()
+    } catch (err) {
+      toast(err.message || 'Failed to send report', 'error')
+    }
+    setSending(false)
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      >
+        <motion.div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
+        <motion.div
+          className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+          initial={{ opacity: 0, y: 32, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+        >
+          {/* Gradient header */}
+          <div className="bg-gradient-to-r from-[#06babe] to-[#207290] px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Mail size={18} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-white">Send Summary Report</h2>
+                  <p className="text-xs text-white/70 mt-0.5">Full CRM snapshot delivered to any inbox</p>
+                </div>
+              </div>
+              <button onClick={onClose} className="text-white/60 hover:text-white p-1"><X size={18} /></button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+              The report includes KPIs, YTD performance, revenue by brand, top 5 clients, cold leads, and overdue cases.
+            </p>
+            <label className="label">Recipient Email</label>
+            <input
+              className="input mb-1"
+              type="email"
+              placeholder="team@aimdentallab.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSend()}
+              autoFocus
+            />
+            <p className="text-xs text-gray-400 mt-1.5">You can send to any email — team members, management, or yourself.</p>
+          </div>
+
+          <div className="flex gap-3 px-6 pb-6">
+            <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+            <button
+              onClick={handleSend}
+              disabled={sending || !email}
+              className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {sending ? (
+                <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending...</>
+              ) : (
+                <><Send size={14} /> Send Report</>
+              )}
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 export default function Reports() {
   const [tab, setTab] = useState('overview')
   const [brand, setBrand] = useState('All')
   const [leads, setLeads] = useState([])
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showSendModal, setShowSendModal] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -447,18 +536,29 @@ export default function Reports() {
           <h1 className="text-xl font-bold text-gray-900">Reports</h1>
           <p className="text-sm text-gray-500 mt-0.5">Analytics and performance insights</p>
         </div>
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg flex-shrink-0">
-          {['All', 'Aim Dental', 'Kings Highway'].map(b => (
-            <button
-              key={b}
-              onClick={() => setBrand(b)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                brand === b ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {b === 'All' ? 'Both' : b === 'Aim Dental' ? 'Aim' : 'KH'}
-            </button>
-          ))}
+        <div className="flex items-center gap-3 flex-wrap">
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowSendModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm"
+            style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}
+          >
+            <Send size={14} /> Send Report
+          </motion.button>
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-lg flex-shrink-0">
+            {['All', 'Aim Dental', 'Kings Highway'].map(b => (
+              <button
+                key={b}
+                onClick={() => setBrand(b)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  brand === b ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {b === 'All' ? 'Both' : b === 'Aim Dental' ? 'Aim' : 'KH'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -486,6 +586,8 @@ export default function Reports() {
           {tab === 'performers' && <PerformersTab leads={fl} clients={fc} />}
         </>
       )}
+
+      {showSendModal && <SendReportModal onClose={() => setShowSendModal(false)} />}
     </div>
   )
 }
