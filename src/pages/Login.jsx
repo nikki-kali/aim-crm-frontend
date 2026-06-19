@@ -28,11 +28,8 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#06babe] mb-4 shadow-lg">
-            <span className="text-2xl">🦷</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Aim Dental CRM</h1>
-          <p className="text-sm text-gray-500 mt-1">Aim Dental Lab & Kings Highway</p>
+          <img src="/logo.png" alt="Aim Dental Laboratory" className="h-14 w-auto mx-auto mb-4" />
+          <p className="text-sm text-gray-500">CRM Portal</p>
         </div>
 
         {/* Form */}

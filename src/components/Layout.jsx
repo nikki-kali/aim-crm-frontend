@@ -39,17 +39,9 @@ export default function Layout({ children }) {
   const Sidebar = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="px-4 py-5 border-b border-gray-100">
+      <div className="px-4 py-4 border-b border-gray-100">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-[#06babe] flex items-center justify-center flex-shrink-0">
-              <span className="text-lg">🦷</span>
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">Aim Dental CRM</p>
-              <p className="text-xs text-gray-400 truncate">AimDL & Kings Highway</p>
-            </div>
-          </div>
+          <img src="/logo.png" alt="Aim Dental Laboratory" className="h-8 w-auto" />
           <AlertsBell />
         </div>
       </div>
