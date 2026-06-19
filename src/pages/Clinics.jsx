@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useToast } from '../components/Toast'
-import { Plus, Search, X, Phone, Mail, Globe, Building2, ChevronRight } from 'lucide-react'
+import { Plus, Search, X, Phone, Mail, Globe, Building2, ChevronRight, Bell } from 'lucide-react'
+
+const STAGES = [
+  'Case Received', 'Awaiting Scan', 'Case Accepted', 'In Production',
+  'Quality Control', 'Ready for Dispatch', 'Dispatched', 'Completed',
+]
 
 const BRAND_OPTIONS = ['Aim Dental', 'Kings Highway']
 const LEAD_SOURCES = ['Referral', 'Google', 'Walk-in', 'Office Visit', 'LinkedIn', 'Other']
@@ -103,9 +108,60 @@ function ClinicModal({ clinic, onClose, onSave }) {
   )
 }
 
+function NotificationPrefs({ clinicId }) {
+  const [prefs, setPrefs] = useState({})
+  const [saving, setSaving] = useState(null)
+  const toast = useToast()
+
+  useEffect(() => {
+    api.get(`/api/clinics/${clinicId}/notification-prefs`).then(rows => {
+      const map = {}
+      rows.forEach(r => { map[r.stage] = r.enabled })
+      setPrefs(map)
+    }).catch(() => {})
+  }, [clinicId])
+
+  const toggle = async (stage) => {
+    const newVal = !(prefs[stage] !== false)
+    setPrefs(p => ({ ...p, [stage]: newVal }))
+    setSaving(stage)
+    try {
+      await api.put(`/api/clinics/${clinicId}/notification-prefs`, { stage, enabled: newVal })
+      toast(`${stage} notifications ${newVal ? 'enabled' : 'disabled'}`, 'success')
+    } catch (err) {
+      toast(err.message, 'error')
+      setPrefs(p => ({ ...p, [stage]: !newVal }))
+    }
+    setSaving(null)
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-gray-500 mb-3">Toggle which stage updates this clinic receives via email.</p>
+      {STAGES.map(stage => {
+        const enabled = prefs[stage] !== false
+        return (
+          <div key={stage} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
+            <span className="text-xs font-medium text-gray-700">{stage}</span>
+            <button
+              role="switch" aria-checked={enabled}
+              disabled={saving === stage}
+              onClick={() => toggle(stage)}
+              className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 disabled:opacity-50 ${enabled ? 'bg-[#06babe]' : 'bg-gray-200'}`}
+            >
+              <span className={`inline-block h-4 w-4 mt-0.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${enabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function ClinicDetail({ id, onClose }) {
   const [clinic, setClinic] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
 
   useEffect(() => {
     api.get(`/api/clinics/${id}`).then(d => { setClinic(d); setLoading(false) }).catch(() => setLoading(false))
@@ -152,67 +208,64 @@ function ClinicDetail({ id, onClose }) {
           </div>
         </div>
 
-        <div className="p-6 space-y-5">
-          {/* Contact */}
-          <div className="flex gap-4 flex-wrap text-sm">
-            {clinic.phone && <a href={`tel:${clinic.phone}`} className="flex items-center gap-1.5 text-gray-600 hover:text-[#06babe]"><Phone size={14} />{clinic.phone}</a>}
-            {clinic.email && <a href={`mailto:${clinic.email}`} className="flex items-center gap-1.5 text-gray-600 hover:text-[#06babe]"><Mail size={14} />{clinic.email}</a>}
-            {clinic.website && <a href={clinic.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-gray-600 hover:text-[#06babe]"><Globe size={14} />{clinic.website}</a>}
-          </div>
+        {/* Tabs */}
+        <div className="flex border-b border-gray-100">
+          {[{ id: 'overview', label: 'Overview' }, { id: 'notifications', label: 'Notifications', icon: Bell }].map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${activeTab === t.id ? 'text-[#06babe] border-b-2 border-[#06babe]' : 'text-gray-500 hover:text-gray-700'}`}>
+              {t.icon && <Bell size={12} />}{t.label}
+            </button>
+          ))}
+        </div>
 
-          {/* Active cases */}
-          {clinic.cases?.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Cases</h3>
-              <div className="space-y-1.5">
-                {clinic.cases.slice(0, 5).map(c => (
-                  <div key={c.id} className="flex items-center justify-between text-xs py-1.5 px-3 bg-gray-50 rounded-lg">
-                    <span className="font-mono font-semibold text-gray-700">{c.case_number}</span>
-                    <span className="text-gray-500">{c.case_type}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${c.status === 'Completed' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'}`}>{c.status}</span>
-                  </div>
-                ))}
+        <div className="p-5 overflow-y-auto max-h-[50vh] space-y-4">
+          {activeTab === 'overview' && (
+            <>
+              <div className="flex gap-4 flex-wrap text-sm">
+                {clinic.phone && <a href={`tel:${clinic.phone}`} className="flex items-center gap-1.5 text-gray-600 hover:text-[#06babe]"><Phone size={14} />{clinic.phone}</a>}
+                {clinic.email && <a href={`mailto:${clinic.email}`} className="flex items-center gap-1.5 text-gray-600 hover:text-[#06babe]"><Mail size={14} />{clinic.email}</a>}
+                {clinic.website && <a href={clinic.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-gray-600 hover:text-[#06babe]"><Globe size={14} />{clinic.website}</a>}
               </div>
-            </div>
-          )}
 
-          {/* Recent leads */}
-          {clinic.leads?.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Leads</h3>
-              <div className="space-y-1.5">
-                {clinic.leads.slice(0, 5).map(l => (
-                  <div key={l.id} className="flex items-center justify-between text-xs py-1.5 px-3 bg-gray-50 rounded-lg">
-                    <span className="font-medium text-gray-800">{l.doctor_name}</span>
-                    <span className={`px-2 py-0.5 rounded-full font-medium ${l.status === 'Won' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{l.status}</span>
+              {clinic.cases?.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Cases</h3>
+                  <div className="space-y-1.5">
+                    {clinic.cases.slice(0, 5).map(c => (
+                      <div key={c.id} className="flex items-center justify-between text-xs py-1.5 px-3 bg-gray-50 rounded-lg">
+                        <span className="font-mono font-semibold text-gray-700">{c.case_number}</span>
+                        <span className="text-gray-500">{c.case_type}</span>
+                        <span className={`px-2 py-0.5 rounded-full font-medium ${c.status === 'Completed' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'}`}>{c.status}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
+              )}
 
-          {/* Recent activity */}
-          {clinic.activities?.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Recent Activity</h3>
-              <div className="space-y-1.5">
-                {clinic.activities.slice(0, 5).map(a => (
-                  <div key={a.id} className="flex items-start gap-2 text-xs text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#06babe] mt-1.5 flex-shrink-0" />
-                    <span className="flex-1">{a.description}</span>
-                    <span className="text-gray-400 flex-shrink-0">{new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              {clinic.leads?.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Leads</h3>
+                  <div className="space-y-1.5">
+                    {clinic.leads.slice(0, 5).map(l => (
+                      <div key={l.id} className="flex items-center justify-between text-xs py-1.5 px-3 bg-gray-50 rounded-lg">
+                        <span className="font-medium text-gray-800">{l.doctor_name}</span>
+                        <span className={`px-2 py-0.5 rounded-full font-medium ${l.status === 'Won' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{l.status}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              )}
+
+              {clinic.notes && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Notes</h3>
+                  <p className="text-sm text-gray-600 bg-gray-50 rounded-xl p-3">{clinic.notes}</p>
+                </div>
+              )}
+            </>
           )}
 
-          {clinic.notes && (
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">Notes</h3>
-              <p className="text-sm text-gray-600 bg-gray-50 rounded-xl p-3">{clinic.notes}</p>
-            </div>
-          )}
+          {activeTab === 'notifications' && <NotificationPrefs clinicId={clinic.id} />}
         </div>
       </motion.div>
     </div>

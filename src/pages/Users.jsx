@@ -131,6 +131,7 @@ export default function UsersPage() {
             <button onClick={() => setModal('new')} className="btn-primary">Add first user</button>
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -187,6 +188,7 @@ export default function UsersPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

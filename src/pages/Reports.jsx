@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useToast } from '../components/Toast'
-import { Send, X, Mail } from 'lucide-react'
+import { Send, X, Mail, FileDown } from 'lucide-react'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
@@ -14,6 +14,7 @@ const TABS = [
   { id: 'performers', label: 'Top Performers' },
   { id: 'operations', label: 'Operations' },
   { id: 'imports',    label: 'Import History' },
+  { id: 'schedule',   label: 'Schedule' },
 ]
 
 function TH({ cols }) {
@@ -577,6 +578,106 @@ function ImportHistoryTab() {
   )
 }
 
+// ─── Tab: Schedule ───────────────────────────────────────────────────────────
+
+function ScheduleTab() {
+  const [schedules, setSchedules] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [form, setForm] = useState({ name: '', frequency: 'weekly', recipients: '' })
+  const [saving, setSaving] = useState(false)
+  const toast = useToast()
+
+  const fetchSchedules = () => {
+    api.get('/api/report-schedules').then(d => { setSchedules(d || []); setLoading(false) }).catch(() => setLoading(false))
+  }
+
+  useEffect(() => { fetchSchedules() }, [])
+
+  const handleAdd = async () => {
+    const recipients = form.recipients.split(',').map(e => e.trim()).filter(e => e.includes('@'))
+    if (!form.name.trim()) return toast('Name is required', 'error')
+    if (recipients.length === 0) return toast('Enter at least one valid email', 'error')
+    setSaving(true)
+    try {
+      await api.post('/api/report-schedules', { name: form.name, frequency: form.frequency, recipients })
+      toast('Schedule created', 'success')
+      setForm({ name: '', frequency: 'weekly', recipients: '' })
+      fetchSchedules()
+    } catch (err) { toast(err.message, 'error') }
+    setSaving(false)
+  }
+
+  const toggleSchedule = async (s) => {
+    await api.put(`/api/report-schedules/${s.id}`, { ...s, enabled: !s.enabled }).catch(console.error)
+    fetchSchedules()
+  }
+
+  const deleteSchedule = async (id) => {
+    if (!confirm('Delete this schedule?')) return
+    await api.delete(`/api/report-schedules/${id}`).catch(console.error)
+    fetchSchedules()
+  }
+
+  const fmtDate = ts => ts ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Never'
+
+  return (
+    <div className="space-y-5">
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">New Scheduled Report</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Schedule Name</label>
+            <input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Weekly Team Report" />
+          </div>
+          <div>
+            <label className="label">Frequency</label>
+            <select className="input" value={form.frequency} onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}>
+              <option value="daily">Daily (8:00 AM)</option>
+              <option value="weekly">Weekly (Monday 9:00 AM)</option>
+              <option value="monthly">Monthly (1st at 8:00 AM)</option>
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label className="label">Recipients <span className="text-gray-400 font-normal">(comma-separated emails)</span></label>
+            <input className="input" value={form.recipients} onChange={e => setForm(f => ({ ...f, recipients: e.target.value }))} placeholder="admin@aimdentallab.com, manager@clinic.com" />
+          </div>
+        </div>
+        <button onClick={handleAdd} disabled={saving} className="btn-primary mt-3 disabled:opacity-50">
+          {saving ? 'Saving...' : 'Create Schedule'}
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-8 text-gray-400 text-sm">Loading schedules...</div>
+      ) : schedules.length === 0 ? (
+        <div className="text-center py-8 text-gray-400 text-sm">No schedules yet — create one above.</div>
+      ) : (
+        <div className="space-y-3">
+          {schedules.map(s => (
+            <div key={s.id} className="card p-4 flex items-center justify-between gap-4 flex-wrap">
+              <div className="min-w-0">
+                <p className="font-medium text-gray-900 text-sm">{s.name}</p>
+                <p className="text-xs text-gray-500 mt-0.5 capitalize">{s.frequency} · {s.recipients?.join(', ')}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Last sent: {fmtDate(s.last_sent_at)}</p>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <button
+                  role="switch" aria-checked={s.enabled}
+                  onClick={() => toggleSchedule(s)}
+                  className={`relative inline-flex h-5 w-9 rounded-full transition-colors duration-200 ${s.enabled ? 'bg-[#06babe]' : 'bg-gray-200'}`}
+                >
+                  <span className={`inline-block h-4 w-4 mt-0.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${s.enabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+                </button>
+                <button onClick={() => deleteSchedule(s.id)} className="text-xs text-red-400 hover:text-red-600">Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 function SendReportModal({ onClose }) {
@@ -671,6 +772,8 @@ export default function Reports() {
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [showSendModal, setShowSendModal] = useState(false)
+  const [exportingPDF, setExportingPDF] = useState(false)
+  const toast = useToast()
 
   useEffect(() => {
     async function load() {
@@ -696,6 +799,35 @@ export default function Reports() {
           <p className="text-sm text-gray-500 mt-0.5">Analytics and performance insights</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <motion.button
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            onClick={async () => {
+              setExportingPDF(true)
+              try {
+                const { downloadReportPDF } = await import('../components/ReportPDF')
+                const [overview, dashboard] = await Promise.all([
+                  api.get('/api/reports/overview'),
+                  api.get('/api/dashboard'),
+                ])
+                await downloadReportPDF({
+                  kpis: dashboard.kpis,
+                  ytd: { ytd_leads: overview.ytd_leads, ytd_won: overview.ytd_won, ytd_lost: overview.ytd_lost },
+                  brandRevenue: overview.brand_revenue,
+                  topClients: overview.top_clients,
+                  coldCount: dashboard.cold_leads?.length ?? 0,
+                  overdueCount: 0,
+                })
+                toast('PDF downloaded', 'success')
+              } catch (err) {
+                toast('PDF export failed: ' + err.message, 'error')
+              }
+              setExportingPDF(false)
+            }}
+            disabled={exportingPDF}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm disabled:opacity-50"
+          >
+            <FileDown size={14} /> {exportingPDF ? 'Generating...' : 'Export PDF'}
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
@@ -735,7 +867,7 @@ export default function Reports() {
         ))}
       </div>
 
-      {loading && !['operations','imports'].includes(tab) ? (
+      {loading && !['operations','imports','schedule'].includes(tab) ? (
         <div className="text-center py-20 text-gray-400 text-sm">Loading reports...</div>
       ) : (
         <>
@@ -745,6 +877,7 @@ export default function Reports() {
           {tab === 'performers' && <PerformersTab leads={fl} clients={fc} />}
           {tab === 'operations' && <OperationsTab />}
           {tab === 'imports'    && <ImportHistoryTab />}
+          {tab === 'schedule'   && <ScheduleTab />}
         </>
       )}
 
