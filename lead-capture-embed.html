@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Aim Dental Lab</title>
+
+  <!--
+    ═══════════════════════════════════════════════════════════════
+    WEBSITE EMBED — Aim Dental Lab Lead Capture Form
+    ═══════════════════════════════════════════════════════════════
+
+    OPTION A — Full standalone page
+      Open this file directly in a browser or host it as-is.
+
+    OPTION B — Embed on existing website
+      Copy the block between EMBED START and EMBED END (below),
+      plus the <style> block and the <script> block, into any page.
+
+    BEFORE GOING LIVE, replace:
+      YOUR_PROJECT_REF  →  your Supabase project reference
+      YOUR_API_KEY      →  the value you set for LEAD_CAPTURE_API_KEY
+
+    ⚠ The API key is visible in page source. It protects against
+      random spam but not a determined attacker who reads the HTML.
+      For stricter security, proxy the request through your own
+      server-side endpoint.
+    ═══════════════════════════════════════════════════════════════
+  -->
+
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Page (remove when embedding) ── */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f9f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* ── Form card ── */
+    #aim-lead-form-wrapper {
+      width: 100%;
+      max-width: 480px;
+    }
+    .aim-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 36px 32px 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 8px 32px rgba(6,186,190,.08);
+    }
+    .aim-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .aim-logo-icon {
+      width: 40px; height: 40px;
+      background: #06babe;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .aim-logo-text { font-size: 15px; font-weight: 700; color: #111; }
+    .aim-logo-sub  { font-size: 12px; color: #888; margin-top: 1px; }
+    .aim-heading { font-size: 22px; font-weight: 700; color: #111; margin-bottom: 6px; }
+    .aim-sub     { font-size: 14px; color: #666; margin-bottom: 24px; line-height: 1.5; }
+
+    /* ── Fields ── */
+    .aim-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .aim-col  { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .aim-col.full { grid-column: 1 / -1; }
+    .aim-label { font-size: 12px; font-weight: 600; color: #444; letter-spacing: .3px; }
+    .aim-input, .aim-select, .aim-textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #111;
+      background: #fafafa;
+      transition: border-color .15s, box-shadow .15s;
+      font-family: inherit;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .aim-input:focus, .aim-select:focus, .aim-textarea:focus {
+      outline: none;
+      border-color: #06babe;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(6,186,190,.12);
+    }
+    .aim-input::placeholder, .aim-textarea::placeholder { color: #bbb; }
+    .aim-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+    .aim-textarea { resize: vertical; min-height: 84px; line-height: 1.5; }
+
+    /* ── Submit ── */
+    .aim-submit {
+      width: 100%;
+      padding: 12px;
+      background: #06babe;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      margin-top: 6px;
+      font-family: inherit;
+    }
+    .aim-submit:hover:not(:disabled) { background: #05a9ac; }
+    .aim-submit:active:not(:disabled) { transform: scale(.99); }
+    .aim-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* ── Feedback messages ── */
+    .aim-message {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+    }
+    .aim-message.success {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
+    .aim-message.error {
+      background: #fff1f2;
+      color: #9f1239;
+      border: 1px solid #fecdd3;
+      display: block;
+    }
+
+    /* ── Privacy note ── */
+    .aim-privacy {
+      text-align: center;
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 420px) {
+      .aim-card { padding: 24px 20px 20px; }
+      .aim-row  { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════ EMBED START ═══════════════════════════════════════════════ -->
+<div id="aim-lead-form-wrapper">
+  <div class="aim-card">
+    <div class="aim-logo">
+      <div class="aim-logo-icon">🦷</div>
+      <div>
+        <div class="aim-logo-text">Aim Dental Laboratory</div>
+        <div class="aim-logo-sub">Lab consultations &amp; case inquiries</div>
+      </div>
+    </div>
+
+    <h2 class="aim-heading">Get a Free Lab Consultation</h2>
+    <p class="aim-sub">Fill out the form and our team will be in touch within one business day.</p>
+
+    <form id="aim-lead-form" novalidate>
+      <div class="aim-row">
+        <div class="aim-col">
+          <label class="aim-label" for="aim-doctor-name">Doctor Name *</label>
+          <input id="aim-doctor-name" class="aim-input" type="text" name="doctor_name" placeholder="Dr. Jane Smith" autocomplete="name" />
+        </div>
+        <div class="aim-col">
+          <label class="aim-label" for="aim-clinic">Clinic / Practice</label>
+          <input id="aim-clinic" class="aim-input" type="text" name="clinic_name" placeholder="Smith Dental Group" />
+        </div>
+        <div class="aim-col">
+          <label class="aim-label" for="aim-phone">Phone *</label>
+          <input id="aim-phone" class="aim-input" type="tel" name="phone" placeholder="(718) 555-0100" autocomplete="tel" />
+        </div>
+        <div class="aim-col">
+          <label class="aim-label" for="aim-email">Email</label>
+          <input id="aim-email" class="aim-input" type="email" name="email" placeholder="dr@clinic.com" autocomplete="email" />
+        </div>
+        <div class="aim-col full">
+          <label class="aim-label" for="aim-case">Case Interest</label>
+          <select id="aim-case" class="aim-select" name="case_interest">
+            <option value="">Select a case type…</option>
+            <option>Crown &amp; Bridge</option>
+            <option>Implant</option>
+            <option>Dentures</option>
+            <option>Ortho</option>
+            <option>Partial</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="aim-col full">
+          <label class="aim-label" for="aim-notes">Message / Notes</label>
+          <textarea id="aim-notes" class="aim-textarea" name="notes" placeholder="Tell us about your lab needs, volume, any specific requirements…"></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="aim-submit" id="aim-submit-btn">
+        Send Inquiry
+      </button>
+
+      <div id="aim-message" class="aim-message"></div>
+    </form>
+
+    <p class="aim-privacy">By submitting this form you agree to be contacted by Aim Dental Laboratory.<br>We never share your information with third parties.</p>
+  </div>
+</div>
+<!-- ═══════ EMBED END ═════════════════════════════════════════════════ -->
+
+<script>
+(function () {
+  // ── Configuration — replace before going live ───────────────────────────
+  var EDGE_FUNCTION_URL = 'https://YOUR_DOMAIN.com/api/leads/capture';
+  var API_KEY           = 'YOUR_LEAD_CAPTURE_API_KEY';
+  var SOURCE            = 'website'; // website | linkedin | facebook | instagram | referral
+  // ────────────────────────────────────────────────────────────────────────
+
+  var form      = document.getElementById('aim-lead-form');
+  var btn       = document.getElementById('aim-submit-btn');
+  var msgEl     = document.getElementById('aim-message');
+
+  function showMsg(text, type) {
+    msgEl.textContent = text;
+    msgEl.className   = 'aim-message ' + type;
+  }
+  function hideMsg() { msgEl.className = 'aim-message'; }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    hideMsg();
+
+    var doctorName  = form.doctor_name.value.trim();
+    var phone       = form.phone.value.trim();
+    var email       = form.email.value.trim();
+
+    if (!doctorName) { showMsg('Please enter the doctor\'s name.', 'error'); return; }
+    if (!phone && !email) { showMsg('Please enter at least a phone number or email address.', 'error'); return; }
+
+    btn.disabled    = true;
+    btn.textContent = 'Sending…';
+
+    var payload = {
+      doctor_name:   doctorName,
+      clinic_name:   form.clinic_name.value.trim(),
+      phone:         phone,
+      email:         email,
+      case_interest: form.case_interest.value || null,
+      notes:         form.notes.value.trim() || null,
+      source:        SOURCE,
+    };
+
+    fetch(EDGE_FUNCTION_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+      body:    JSON.stringify(payload),
+    })
+    .then(function (res) { return res.json().then(function (d) { return { ok: res.ok, data: d }; }); })
+    .then(function (res) {
+      if (res.ok && res.data.success) {
+        form.reset();
+        showMsg('✓ Thank you! We\'ll be in touch within one business day.', 'success');
+        btn.textContent = 'Sent!';
+      } else {
+        showMsg('Something went wrong: ' + (res.data.error || 'Please try again.'), 'error');
+        btn.disabled    = false;
+        btn.textContent = 'Send Inquiry';
+      }
+    })
+    .catch(function () {
+      showMsg('Network error — please check your connection and try again.', 'error');
+      btn.disabled    = false;
+      btn.textContent = 'Send Inquiry';
+    });
+  });
+})();
+</script>
+</body>
+</html>
