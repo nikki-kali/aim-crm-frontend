@@ -8,10 +8,12 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
 
 const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'trends', label: 'Trends' },
-  { id: 'sources', label: 'Sources' },
+  { id: 'overview',   label: 'Overview' },
+  { id: 'trends',     label: 'Trends' },
+  { id: 'sources',    label: 'Sources' },
   { id: 'performers', label: 'Top Performers' },
+  { id: 'operations', label: 'Operations' },
+  { id: 'imports',    label: 'Import History' },
 ]
 
 function TH({ cols }) {
@@ -418,6 +420,163 @@ function PerformersTab({ leads, clients }) {
   )
 }
 
+// ─── Tab: Operations ─────────────────────────────────────────────────────────
+
+function OperationsTab() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/api/reports/operations').then(d => { setData(d); setLoading(false) }).catch(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="text-center py-12 text-gray-400 text-sm">Loading operations data...</div>
+  if (!data) return <div className="text-center py-12 text-gray-400 text-sm">No data available</div>
+
+  const { volume, technicians, case_types, by_stage } = data
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Cases', val: volume.total_cases },
+          { label: 'Completed', val: volume.completed },
+          { label: 'Active', val: volume.active },
+          { label: 'Overdue', val: volume.overdue },
+        ].map(k => (
+          <div key={k.label} className="card p-4">
+            <p className="label">{k.label}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{k.val}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-5">
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">Technician Performance</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-gray-50/60 border-b border-gray-100">
+                {['Technician','Cases','Completed','Value'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr></thead>
+              <tbody className="divide-y divide-gray-50">
+                {technicians.map(t => (
+                  <tr key={t.technician} className="hover:bg-gray-50/60">
+                    <td className="px-4 py-3 font-medium text-gray-900">{t.technician}</td>
+                    <td className="px-4 py-3 text-gray-600">{t.total}</td>
+                    <td className="px-4 py-3 text-green-600 font-medium">{t.completed}</td>
+                    <td className="px-4 py-3 font-medium text-gray-700">${Number(t.value).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">Case Types</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-gray-50/60 border-b border-gray-100">
+                {['Type','Total','Completed','Avg Value'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr></thead>
+              <tbody className="divide-y divide-gray-50">
+                {case_types.map(c => (
+                  <tr key={c.case_type} className="hover:bg-gray-50/60">
+                    <td className="px-4 py-3 font-medium text-gray-900">{c.case_type}</td>
+                    <td className="px-4 py-3 text-gray-600">{c.total}</td>
+                    <td className="px-4 py-3 text-green-600">{c.completed}</td>
+                    <td className="px-4 py-3 text-gray-700">${Math.round(c.avg_value).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-900">Pipeline by Stage</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-gray-50/60 border-b border-gray-100">
+              {['Stage','Cases','Value'].map(h => (
+                <th key={h} className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
+              ))}
+            </tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {by_stage.map(s => (
+                <tr key={s.status} className="hover:bg-gray-50/60">
+                  <td className="px-5 py-3 font-medium text-gray-900">{s.status}</td>
+                  <td className="px-5 py-3 text-gray-600">{s.count}</td>
+                  <td className="px-5 py-3 font-medium text-gray-700">{s.value > 0 ? `$${Number(s.value).toLocaleString()}` : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Tab: Import History ─────────────────────────────────────────────────────
+
+function ImportHistoryTab() {
+  const [rows, setRows] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/api/reports/import-history').then(d => { setRows(d || []); setLoading(false) }).catch(() => setLoading(false))
+  }, [])
+
+  const fmt = ts => ts ? new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'
+
+  if (loading) return <div className="text-center py-12 text-gray-400 text-sm">Loading import history...</div>
+
+  return (
+    <div className="card overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100">
+        <h3 className="text-sm font-semibold text-gray-900">CSV Import History</h3>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-center py-10 text-sm text-gray-400">No imports yet</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-gray-50/60 border-b border-gray-100">
+              {['File', 'Added', 'Skipped', 'Imported By', 'Date'].map(h => (
+                <th key={h} className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
+              ))}
+            </tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {rows.map(r => (
+                <tr key={r.id} className="hover:bg-gray-50/60">
+                  <td className="px-5 py-3 font-mono text-xs text-gray-700">{r.filename}</td>
+                  <td className="px-5 py-3 text-green-600 font-semibold">{r.added}</td>
+                  <td className="px-5 py-3 text-gray-400">{r.skipped}</td>
+                  <td className="px-5 py-3 text-gray-600">{r.imported_by_name || '—'}</td>
+                  <td className="px-5 py-3 text-gray-400 text-xs">{fmt(r.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 function SendReportModal({ onClose }) {
@@ -576,14 +735,16 @@ export default function Reports() {
         ))}
       </div>
 
-      {loading ? (
+      {loading && !['operations','imports'].includes(tab) ? (
         <div className="text-center py-20 text-gray-400 text-sm">Loading reports...</div>
       ) : (
         <>
-          {tab === 'overview' && <OverviewTab leads={fl} clients={fc} />}
-          {tab === 'trends' && <TrendsTab leads={fl} />}
-          {tab === 'sources' && <SourcesTab leads={fl} />}
+          {tab === 'overview'   && <OverviewTab leads={fl} clients={fc} />}
+          {tab === 'trends'     && <TrendsTab leads={fl} />}
+          {tab === 'sources'    && <SourcesTab leads={fl} />}
           {tab === 'performers' && <PerformersTab leads={fl} clients={fc} />}
+          {tab === 'operations' && <OperationsTab />}
+          {tab === 'imports'    && <ImportHistoryTab />}
         </>
       )}
 

@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
-import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check } from 'lucide-react'
+import { useToast } from '../components/Toast'
+import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check, Archive, ArchiveRestore, UserCheck } from 'lucide-react'
 
 const STATUS_OPTIONS = ['Lead', 'Contacted', 'Proposal', 'Won', 'Lost', 'Pending']
 const BRAND_OPTIONS = ['Aim Dental', 'Kings Highway']
@@ -399,17 +401,20 @@ export default function Leads() {
   const [search,       setSearch]      = useState('')
   const [filterBrand,  setFilterBrand] = useState('All')
   const [filterStatus, setFilterStatus]= useState('All')
+  const [showArchived, setShowArchived]= useState(false)
   const [modal,        setModal]       = useState(null)
   const [importModal,  setImportModal] = useState(false)
+  const [converting,   setConverting]  = useState(null)
+  const toast = useToast()
 
   const fetchLeads = async () => {
     setLoading(true)
-    const data = await api.get('/api/leads').catch(() => [])
+    const data = await api.get(`/api/leads?archived=${showArchived}`).catch(() => [])
     setLeads(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchLeads() }, [])
+  useEffect(() => { fetchLeads() }, [showArchived])
 
   const filtered = leads.filter(l => {
     const q = search.toLowerCase()
@@ -425,12 +430,35 @@ export default function Leads() {
   const handleDelete = async (id) => {
     if (!confirm('Delete this lead?')) return
     await api.delete(`/api/leads/${id}`).catch(console.error)
+    toast('Lead deleted', 'success')
     fetchLeads()
   }
 
   const handleContactNow = async (lead) => {
     await api.post(`/api/leads/${lead.id}/contacted`).catch(console.error)
+    toast('Marked as contacted', 'success')
     fetchLeads()
+  }
+
+  const handleArchive = async (lead) => {
+    const action = lead.is_archived ? 'unarchive' : 'archive'
+    await api.post(`/api/leads/${lead.id}/${action}`).catch(console.error)
+    toast(lead.is_archived ? 'Lead restored' : 'Lead archived', 'success')
+    fetchLeads()
+  }
+
+  const handleConvert = async (lead) => {
+    if (lead.converted_to_client_id) return toast('Already converted to client', 'info')
+    if (!confirm(`Convert "${lead.doctor_name}" to a client? This will create a new client record.`)) return
+    setConverting(lead.id)
+    try {
+      await api.post(`/api/leads/${lead.id}/convert`)
+      toast(`${lead.doctor_name} converted to client!`, 'success')
+      fetchLeads()
+    } catch (err) {
+      toast(err.message, 'error')
+    }
+    setConverting(null)
   }
 
   return (
@@ -438,9 +466,15 @@ export default function Leads() {
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Leads</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{leads.length} total leads</p>
+          <p className="text-sm text-gray-500 mt-0.5">{leads.length} {showArchived ? 'archived' : 'active'} leads</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowArchived(v => !v)}
+            className={`btn-secondary flex items-center gap-2 text-xs ${showArchived ? 'ring-1 ring-[#06babe]' : ''}`}
+          >
+            <Archive size={13} /> {showArchived ? 'View Active' : 'View Archived'}
+          </button>
           <button onClick={() => setImportModal(true)} className="btn-secondary flex items-center gap-2">
             <Upload size={14} /> Import CSV
           </button>
@@ -540,11 +574,29 @@ export default function Leads() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 justify-end">
-                          <button onClick={() => handleContactNow(lead)} className="text-xs text-[#06babe] hover:underline">
-                            Contacted
-                          </button>
+                        <div className="flex items-center gap-2 justify-end flex-wrap">
+                          {!showArchived && (
+                            <button onClick={() => handleContactNow(lead)} className="text-xs text-[#06babe] hover:underline">
+                              Contacted
+                            </button>
+                          )}
+                          {lead.status === 'Won' && !lead.converted_to_client_id && !showArchived && (
+                            <button
+                              onClick={() => handleConvert(lead)}
+                              disabled={converting === lead.id}
+                              className="text-xs flex items-center gap-1 text-green-600 hover:text-green-700 font-medium disabled:opacity-50"
+                            >
+                              <UserCheck size={11} />
+                              {converting === lead.id ? '…' : 'Convert'}
+                            </button>
+                          )}
+                          {lead.converted_to_client_id && (
+                            <span className="text-xs text-gray-400 flex items-center gap-0.5"><UserCheck size={10} /> Client</span>
+                          )}
                           <button onClick={() => setModal(lead)} className="text-xs text-gray-500 hover:text-gray-900">Edit</button>
+                          <button onClick={() => handleArchive(lead)} className="text-xs text-gray-400 hover:text-amber-600" title={showArchived ? 'Restore' : 'Archive'}>
+                            {showArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
+                          </button>
                           <button onClick={() => handleDelete(lead.id)} className="text-xs text-red-400 hover:text-red-600">Del</button>
                         </div>
                       </td>

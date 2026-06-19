@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import api from '../lib/api'
-import { Users, UserCheck, DollarSign, TrendingDown, AlertTriangle, RefreshCw, Globe, Linkedin, Facebook, Instagram, Twitter, CheckCircle, Archive } from 'lucide-react'
+import { Users, UserCheck, DollarSign, TrendingDown, AlertTriangle, RefreshCw, Globe, Linkedin, Facebook, Instagram, Twitter, CheckCircle, Archive, ClipboardList } from 'lucide-react'
 
 const SOURCE_ICON = {
   'LinkedIn':   { Icon: Linkedin,  cls: 'text-blue-600 bg-blue-50' },
@@ -72,6 +72,7 @@ export default function Dashboard() {
   const [recentLeads, setRecentLeads] = useState([])
   const [brandRevenue, setBrandRevenue] = useState([])
   const [intakeLeads, setIntakeLeads] = useState([])
+  const [casePipeline, setCasePipeline] = useState([])
   const [loading, setLoading] = useState(true)
   const [intakeActing, setIntakeActing] = useState({})
 
@@ -83,6 +84,7 @@ export default function Dashboard() {
       setColdLeads(data.cold_leads || [])
       setRecentLeads(data.recent_leads || [])
       setIntakeLeads(data.intake_leads || [])
+      setCasePipeline(data.case_pipeline || [])
       const grouped = (data.brand_revenue || []).reduce((acc, c) => {
         acc[c.brand] = (acc[c.brand] || 0) + Number(c.total_revenue)
         return acc
@@ -220,6 +222,29 @@ export default function Dashboard() {
                 </motion.div>
               )
             })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Case Pipeline Summary */}
+      {casePipeline.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38, duration: 0.4 }}
+          className="card p-5"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <ClipboardList size={15} className="text-[#06babe]" />
+            <h2 className="text-sm font-semibold text-gray-900">Active Case Pipeline</h2>
+            <span className="ml-auto text-xs text-gray-400">{casePipeline.reduce((s, c) => s + Number(c.count), 0)} open cases</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {casePipeline.map(({ status, count }) => (
+              <div key={status} className="bg-gray-50 rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-gray-900">{count}</p>
+                <p className="text-xs text-gray-500 mt-0.5 leading-tight">{status}</p>
+              </div>
+            ))}
           </div>
         </motion.div>
       )}

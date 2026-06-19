@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
   LayoutDashboard, Users, UserCheck, LogOut, Menu, X, ClipboardList,
-  BarChart3, TrendingUp, Zap, UserCog, Shield,
+  BarChart3, TrendingUp, Zap, UserCog, Shield, Building2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -13,6 +13,7 @@ const STAFF_NAV = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/leads',     icon: Users,           label: 'Leads' },
   { to: '/clients',   icon: UserCheck,       label: 'Clients' },
+  { to: '/clinics',   icon: Building2,       label: 'Clinics' },
   { to: '/cases',     icon: ClipboardList,   label: 'Cases' },
   { to: '/pipeline',  icon: BarChart3,       label: 'Pipeline' },
 ]

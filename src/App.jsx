@@ -8,6 +8,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Leads from './pages/Leads'
 import Clients from './pages/Clients'
+import Clinics from './pages/Clinics'
 import Cases from './pages/Cases'
 import Pipeline from './pages/Pipeline'
 import Reports from './pages/Reports'
@@ -43,10 +44,11 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+        <Route path="/login"       element={<PageTransition><Login /></PageTransition>} />
         <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/leads"       element={<ProtectedRoute><Leads /></ProtectedRoute>} />
         <Route path="/clients"     element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+        <Route path="/clinics"     element={<ProtectedRoute><Clinics /></ProtectedRoute>} />
         <Route path="/cases"       element={<ProtectedRoute><Cases /></ProtectedRoute>} />
         <Route path="/pipeline"    element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
         <Route path="/reports"     element={<AdminRoute><Reports /></AdminRoute>} />
