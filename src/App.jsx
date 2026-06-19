@@ -1,6 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './hooks/useAuth'
+import { ToastProvider } from './components/Toast'
 import Layout from './components/Layout'
+import PageTransition from './components/PageTransition'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Leads from './pages/Leads'
@@ -24,7 +27,7 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
-  return <Layout>{children}</Layout>
+  return <Layout><PageTransition>{children}</PageTransition></Layout>
 }
 
 function AdminRoute({ children }) {
@@ -32,26 +35,37 @@ function AdminRoute({ children }) {
   if (loading) return <Spinner />
   if (!user) return <Navigate to="/login" replace />
   if (user.role !== 'admin') return <Navigate to="/dashboard" replace />
-  return <Layout>{children}</Layout>
+  return <Layout><PageTransition>{children}</PageTransition></Layout>
+}
+
+function AnimatedRoutes() {
+  const location = useLocation()
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+        <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/leads"       element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+        <Route path="/clients"     element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+        <Route path="/cases"       element={<ProtectedRoute><Cases /></ProtectedRoute>} />
+        <Route path="/pipeline"    element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
+        <Route path="/reports"     element={<AdminRoute><Reports /></AdminRoute>} />
+        <Route path="/automations" element={<AdminRoute><Automations /></AdminRoute>} />
+        <Route path="/users"       element={<AdminRoute><Users /></AdminRoute>} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </AnimatePresence>
+  )
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/leads"       element={<ProtectedRoute><Leads /></ProtectedRoute>} />
-          <Route path="/clients"     element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-          <Route path="/cases"       element={<ProtectedRoute><Cases /></ProtectedRoute>} />
-          <Route path="/pipeline"    element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
-          <Route path="/reports"     element={<AdminRoute><Reports /></AdminRoute>} />
-          <Route path="/automations" element={<AdminRoute><Automations /></AdminRoute>} />
-          <Route path="/users"       element={<AdminRoute><Users /></AdminRoute>} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <AnimatedRoutes />
+        </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   )
 }
