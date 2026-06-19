@@ -26,9 +26,13 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#06babe]/10 via-white to-[#207290]/10 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
+        {/* Logos */}
         <div className="text-center mb-8">
-          <img src="/logo.png" alt="Aim Dental Laboratory" className="h-14 w-auto mx-auto mb-4" />
+          <div className="flex items-center justify-center gap-6 mb-4">
+            <img src="/logo.png" alt="Aim Dental Laboratory" className="h-10 w-auto" />
+            <div className="w-px h-8 bg-gray-200" />
+            <img src="/kh-logo.png" alt="Kings Highway Dental Laboratory" className="h-10 w-auto" />
+          </div>
           <p className="text-sm text-gray-500">CRM Portal</p>
         </div>
 
