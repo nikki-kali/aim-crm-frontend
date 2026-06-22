@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import {
   Users, UserCheck, DollarSign, TrendingDown, AlertTriangle, RefreshCw,
   Globe, Linkedin, Facebook, Instagram, Twitter, CheckCircle, Archive,
-  ClipboardList, Trophy, FileText, Target, Plus, Trash2,
+  ClipboardList, Trophy, FileText, Target, ListChecks,
 } from 'lucide-react'
 
 const SOURCE_ICON = {
@@ -32,13 +33,6 @@ const MOTIVATIONAL = [
   "Today's actions are tomorrow's results.",
   'Focus on progress, not perfection.',
 ]
-
-const METRIC_LABELS = {
-  leads_won: 'Leads Won',
-  leads_contacted: 'Leads Contacted',
-  proposals_sent: 'Proposals Sent',
-  conversion_rate: '% Conv. Rate',
-}
 
 const cardVariants = {
   hidden: { opacity: 0, y: 16 },
@@ -90,98 +84,173 @@ function KpiCard({ label, value, icon: Icon, color, bg, delay = 0 }) {
   )
 }
 
-function GoalBar({ goal }) {
-  const pct = goal.progress_pct || 0
-  const days = goal.period_end
-    ? Math.ceil((new Date(goal.period_end) - new Date()) / 86400000)
-    : null
-  const urgent = days !== null && days <= 2 && pct < 80
-  const barCls = pct >= 100 ? 'bg-green-500' : pct >= 80 ? 'bg-amber-400' : 'bg-[#06babe]'
-  const isPersonal = !goal.created_by
+function EOSSnapshot() {
+  const [rocks, setRocks] = useState([])
+  const [todos, setTodos] = useState([])
+  const [issues, setIssues] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      api.get('/api/rocks').catch(() => []),
+      api.get('/api/todos').catch(() => []),
+      api.get('/api/issues').catch(() => []),
+    ]).then(([r, t, i]) => {
+      setRocks(r || [])
+      setTodos(t || [])
+      setIssues(i || [])
+      setLoading(false)
+    })
+  }, [])
+
+  const onTrack   = rocks.filter(r => r.status === 'On Track').length
+  const doneTodos = todos.filter(t => t.completed).length
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-medium text-gray-800 truncate">{goal.title}</span>
-          {isPersonal && (
-            <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded shrink-0">Personal</span>
-          )}
-          {urgent && (
-            <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium shrink-0">
-              {days}d left
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.35 }}
+      className="card p-4"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <ListChecks size={14} className="text-[#06babe]" />
+          <h2 className="text-sm font-semibold text-gray-900">EOS Snapshot</h2>
+        </div>
+        <Link to="/eos" className="text-xs text-[#06babe] hover:underline">Go to EOS →</Link>
+      </div>
+      {loading ? (
+        <div className="text-xs text-gray-400 flex items-center gap-1.5">
+          <RefreshCw size={11} className="animate-spin" /> Loading…
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <p className="text-xl font-bold text-gray-900">{onTrack}<span className="text-sm font-normal text-gray-400">/{rocks.length}</span></p>
+            <p className="text-xs text-gray-400 mt-0.5">Rocks on track</p>
+          </div>
+          <div>
+            <p className="text-xl font-bold text-gray-900">{doneTodos}<span className="text-sm font-normal text-gray-400">/{todos.length}</span></p>
+            <p className="text-xs text-gray-400 mt-0.5">To-Dos done</p>
+          </div>
+          <div>
+            <p className={`text-xl font-bold ${issues.length > 0 ? 'text-amber-600' : 'text-gray-900'}`}>{issues.length}</p>
+            <p className="text-xs text-gray-400 mt-0.5">Open issues</p>
+          </div>
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+function EOSOverviewPanel() {
+  const [rocks, setRocks] = useState([])
+  const [issues, setIssues] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      api.get('/api/rocks').catch(() => []),
+      api.get('/api/issues').catch(() => []),
+    ]).then(([r, i]) => {
+      setRocks(r || [])
+      setIssues(i || [])
+      setLoading(false)
+    })
+  }, [])
+
+  const companyRocks = rocks.filter(r => r.rock_type === 'company')
+  const offTrack     = rocks.filter(r => r.status === 'Off Track')
+  const topIssues    = issues.slice(0, 3)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.4 }}
+      className="card p-5"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <ListChecks size={15} className="text-[#06babe]" />
+          <h2 className="text-sm font-semibold text-gray-900">EOS Overview</h2>
+          {offTrack.length > 0 && (
+            <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+              {offTrack.length} off track
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-          {pct >= 100 ? (
-            <span className="text-xs font-semibold text-green-600">Goal reached!</span>
-          ) : (
-            <span className="text-xs text-gray-500">
-              {goal.current_value}/{goal.target} {METRIC_LABELS[goal.metric] || goal.metric}
-            </span>
-          )}
-          <span className="text-xs font-semibold text-gray-700">{pct}%</span>
+        <Link to="/eos" className="btn-secondary text-xs">Go to EOS</Link>
+      </div>
+
+      {loading ? (
+        <div className="text-sm text-gray-400 flex items-center gap-2">
+          <RefreshCw size={13} className="animate-spin" /> Loading…
         </div>
-      </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${barCls}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-        />
-      </div>
-    </div>
+      ) : (
+        <div className="space-y-4">
+          {companyRocks.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Company Rocks</p>
+              <div className="space-y-2">
+                {companyRocks.slice(0, 4).map(rock => (
+                  <div key={rock.id} className="flex items-center gap-2.5 text-sm">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      rock.status === 'On Track' ? 'bg-green-500' :
+                      rock.status === 'Off Track' ? 'bg-red-500' : 'bg-gray-300'
+                    }`} />
+                    <span className="text-gray-700 truncate flex-1">{rock.title}</span>
+                    <span className={`text-xs shrink-0 ${
+                      rock.status === 'On Track' ? 'text-green-600' :
+                      rock.status === 'Off Track' ? 'text-red-600 font-medium' : 'text-gray-400'
+                    }`}>{rock.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {topIssues.length > 0 && (
+            <div className="border-t border-gray-100 pt-3">
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Issues Requiring Attention</p>
+              <div className="space-y-2">
+                {topIssues.map(issue => (
+                  <div key={issue.id} className="flex items-start gap-2 text-sm">
+                    <span className={`text-xs px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${
+                      issue.priority === 'High' ? 'bg-red-100 text-red-700' :
+                      issue.priority === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'
+                    }`}>{issue.priority}</span>
+                    <span className="text-gray-700 truncate flex-1">{issue.title}</span>
+                    <span className="text-xs text-gray-400 shrink-0">{issue.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {companyRocks.length === 0 && issues.length === 0 && (
+            <p className="text-sm text-gray-400">No rocks or issues yet — go to EOS to get started.</p>
+          )}
+        </div>
+      )}
+    </motion.div>
   )
 }
 
 // ── Rep Dashboard ──────────────────────────────────────────────────────────────
 
-function getPeriodDates(period) {
-  const now = new Date()
-  if (period === 'weekly') {
-    const d = new Date(now)
-    const day = d.getDay()
-    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
-    d.setHours(0, 0, 0, 0)
-    const start = d.toISOString().split('T')[0]
-    const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 6).toISOString().split('T')[0]
-    return { period_start: start, period_end: end }
-  }
-  if (period === 'monthly') {
-    const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
-    return { period_start: start, period_end: end }
-  }
-  // quarterly
-  const q = Math.floor(now.getMonth() / 3)
-  const start = new Date(now.getFullYear(), q * 3, 1).toISOString().split('T')[0]
-  const end = new Date(now.getFullYear(), q * 3 + 3, 0).toISOString().split('T')[0]
-  return { period_start: start, period_end: end }
-}
-
 function RepDashboard({ user }) {
-  const [summary,      setSummary]     = useState(null)
-  const [goals,        setGoals]       = useState({ admin_goals: [], personal_goals: [] })
-  const [weeklyFocus,  setWeeklyFocus] = useState('')
-  const [focusSaved,   setFocusSaved]  = useState(false)
-  const [loading,      setLoading]     = useState(true)
-  const [addingGoal,   setAddingGoal]  = useState(false)
-  const [newGoal,      setNewGoal]     = useState({ title: '', metric: 'leads_won', target: '', period: 'monthly' })
-  const [savingGoal,   setSavingGoal]  = useState(false)
+  const [summary,     setSummary]    = useState(null)
+  const [weeklyFocus, setWeeklyFocus] = useState('')
+  const [focusSaved,  setFocusSaved]  = useState(false)
+  const [loading,     setLoading]     = useState(true)
 
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [sum, g, wf] = await Promise.all([
+      const [sum, wf] = await Promise.all([
         api.get('/api/reports/my-summary'),
-        api.get('/api/goals/mine'),
         api.get('/api/weekly-focus'),
       ])
       setSummary(sum)
-      setGoals(g || { admin_goals: [], personal_goals: [] })
-      setWeeklyFocus(wf?.focus || '')
+      setWeeklyFocus(wf?.focus_text || '')
     } catch (err) {
       console.error('Rep dashboard error:', err)
     }
@@ -192,42 +261,21 @@ function RepDashboard({ user }) {
 
   const saveWeeklyFocus = async (val) => {
     if (!val.trim()) return
-    await api.post('/api/weekly-focus', { focus: val }).catch(console.error)
+    await api.post('/api/weekly-focus', { focus_text: val }).catch(console.error)
     setFocusSaved(true)
     setTimeout(() => setFocusSaved(false), 2500)
-  }
-
-  const handleAddPersonalGoal = async () => {
-    if (!newGoal.title || !newGoal.target) return
-    setSavingGoal(true)
-    const { period_start, period_end } = getPeriodDates(newGoal.period)
-    await api.post('/api/goals/personal', { ...newGoal, period_start, period_end }).catch(console.error)
-    const g = await api.get('/api/goals/mine').catch(() => goals)
-    setGoals(g || goals)
-    setAddingGoal(false)
-    setNewGoal({ title: '', metric: 'leads_won', target: '', period: 'monthly' })
-    setSavingGoal(false)
-  }
-
-  const handleDeletePersonalGoal = async (id) => {
-    await api.delete(`/api/goals/personal/${id}`).catch(console.error)
-    setGoals(g => ({
-      ...g,
-      personal_goals: g.personal_goals.filter(p => p.id !== id),
-    }))
   }
 
   const h = new Date().getHours()
   const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
   const motivational = MOTIVATIONAL[new Date().getDay()]
 
-  const allGoals = [...(goals.admin_goals || []), ...(goals.personal_goals || [])]
   const m = summary?.month || {}
   const kpiCards = summary ? [
-    { label: 'My Active Leads',   value: summary.allTime?.active_leads ?? 0,   icon: Users,     color: 'text-[#06babe]', bg: 'bg-teal-50' },
-    { label: 'Wins This Month',   value: m.wins || 0,                           icon: Trophy,    color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Proposals Month',   value: m.proposals || 0,                      icon: FileText,  color: 'text-blue-600',  bg: 'bg-blue-50' },
-    { label: 'Conversion Rate',   value: `${m.conversion_rate || 0}%`,          icon: TrendingDown, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'My Active Leads', value: summary.allTime?.active_leads ?? 0,  icon: Users,       color: 'text-[#06babe]',  bg: 'bg-teal-50' },
+    { label: 'Wins This Month', value: m.wins || 0,                         icon: Trophy,      color: 'text-green-600',  bg: 'bg-green-50' },
+    { label: 'Proposals Month', value: m.proposals || 0,                    icon: FileText,    color: 'text-blue-600',   bg: 'bg-blue-50' },
+    { label: 'Conversion Rate', value: `${m.conversion_rate || 0}%`,        icon: TrendingDown,color: 'text-purple-600', bg: 'bg-purple-50' },
   ] : []
 
   if (loading) return (
@@ -284,89 +332,8 @@ function RepDashboard({ user }) {
         ))}
       </div>
 
-      {/* Goal Progress */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.35 }}
-        className="card p-5"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Trophy size={14} className="text-[#06babe]" />
-            <h2 className="text-sm font-semibold text-gray-900">Goals</h2>
-            {allGoals.length > 0 && (
-              <span className="text-xs bg-[#06babe]/10 text-[#06babe] px-2 py-0.5 rounded-full font-medium">
-                {allGoals.length}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() => setAddingGoal(v => !v)}
-            className="text-xs text-[#06babe] hover:underline flex items-center gap-1"
-          >
-            <Plus size={11} /> Add personal goal
-          </button>
-        </div>
-
-        {addingGoal && (
-          <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-3">
-            <input
-              className="input text-sm"
-              placeholder="Goal title (e.g. Close 3 wins this month)"
-              value={newGoal.title}
-              onChange={e => setNewGoal(g => ({ ...g, title: e.target.value }))}
-            />
-            <div className="grid grid-cols-3 gap-2">
-              <select className="input text-sm" value={newGoal.metric} onChange={e => setNewGoal(g => ({ ...g, metric: e.target.value }))}>
-                <option value="leads_won">Leads Won</option>
-                <option value="leads_contacted">Leads Contacted</option>
-                <option value="proposals_sent">Proposals Sent</option>
-                <option value="conversion_rate">Conv. Rate %</option>
-              </select>
-              <input
-                className="input text-sm"
-                type="number"
-                placeholder="Target"
-                value={newGoal.target}
-                onChange={e => setNewGoal(g => ({ ...g, target: e.target.value }))}
-              />
-              <select className="input text-sm" value={newGoal.period} onChange={e => setNewGoal(g => ({ ...g, period: e.target.value }))}>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-              </select>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setAddingGoal(false)} className="btn-secondary text-sm flex-1">Cancel</button>
-              <button onClick={handleAddPersonalGoal} disabled={savingGoal} className="btn-primary text-sm flex-1 disabled:opacity-50">
-                {savingGoal ? 'Saving…' : 'Save Goal'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {allGoals.length === 0 && !addingGoal ? (
-          <div className="text-center py-6">
-            <Trophy size={28} className="mx-auto text-gray-200 mb-2" />
-            <p className="text-sm text-gray-400">No goals yet — your admin may set some, or add a personal goal above.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {allGoals.map(goal => (
-              <div key={goal.id} className="relative group">
-                <GoalBar goal={goal} />
-                {!goal.created_by && (
-                  <button
-                    onClick={() => handleDeletePersonalGoal(goal.id)}
-                    className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-400"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </motion.div>
+      {/* EOS Snapshot */}
+      <EOSSnapshot />
 
       {/* Recent Leads */}
       {summary?.recent_leads?.length > 0 && (
@@ -401,30 +368,23 @@ function RepDashboard({ user }) {
 // ── Admin Dashboard ────────────────────────────────────────────────────────────
 
 function AdminDashboard() {
-  const [kpis,          setKpis]         = useState(null)
-  const [coldLeads,     setColdLeads]    = useState([])
-  const [recentLeads,   setRecentLeads]  = useState([])
-  const [brandRevenue,  setBrandRevenue] = useState([])
-  const [intakeLeads,   setIntakeLeads]  = useState([])
-  const [casePipeline,  setCasePipeline] = useState([])
-  const [teamStats,     setTeamStats]    = useState([])
-  const [allGoals,      setAllGoals]     = useState([])
-  const [reps,          setReps]         = useState([])
-  const [loading,       setLoading]      = useState(true)
-  const [intakeActing,  setIntakeActing] = useState({})
-  const [teamPeriod,    setTeamPeriod]   = useState('month')
-  const [goalModal,     setGoalModal]    = useState(false)
-  const [newGoalForm,   setNewGoalForm]  = useState({ rep_id: '', title: '', metric: 'leads_won', target: '', period: 'monthly' })
-  const [savingGoal,    setSavingGoal]   = useState(false)
+  const [kpis,         setKpis]        = useState(null)
+  const [coldLeads,    setColdLeads]   = useState([])
+  const [recentLeads,  setRecentLeads] = useState([])
+  const [brandRevenue, setBrandRevenue]= useState([])
+  const [intakeLeads,  setIntakeLeads] = useState([])
+  const [casePipeline, setCasePipeline]= useState([])
+  const [teamStats,    setTeamStats]   = useState([])
+  const [loading,      setLoading]     = useState(true)
+  const [intakeActing, setIntakeActing]= useState({})
+  const [teamPeriod,   setTeamPeriod]  = useState('month')
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [data, team, goals, repList] = await Promise.all([
+      const [data, team] = await Promise.all([
         api.get('/api/dashboard'),
         api.get('/api/reports/team-comparison').catch(() => []),
-        api.get('/api/goals/all').catch(() => []),
-        api.get('/api/users/reps').catch(() => []),
       ])
       setKpis(data.kpis)
       setColdLeads(data.cold_leads || [])
@@ -437,8 +397,6 @@ function AdminDashboard() {
       }, {})
       setBrandRevenue(Object.entries(grouped).map(([brand, revenue]) => ({ brand, revenue })))
       setTeamStats(team || [])
-      setAllGoals(goals || [])
-      setReps(repList || [])
     } catch (err) {
       console.error('Admin dashboard error:', err)
     }
@@ -446,27 +404,6 @@ function AdminDashboard() {
   }
 
   useEffect(() => { fetchData() }, [])
-
-  const handleCreateGoal = async () => {
-    if (!newGoalForm.rep_id || !newGoalForm.title || !newGoalForm.target) return
-    setSavingGoal(true)
-    const { period_start, period_end } = getPeriodDates(newGoalForm.period)
-    try {
-      await api.post('/api/goals', { ...newGoalForm, period_start, period_end })
-      const goals = await api.get('/api/goals/all').catch(() => allGoals)
-      setAllGoals(goals || allGoals)
-      setGoalModal(false)
-      setNewGoalForm({ rep_id: '', title: '', metric: 'leads_won', target: '', period: 'monthly' })
-    } catch (err) {
-      console.error('Create goal error:', err)
-    }
-    setSavingGoal(false)
-  }
-
-  const handleDeleteGoal = async (id) => {
-    await api.delete(`/api/goals/${id}`).catch(console.error)
-    setAllGoals(g => g.filter(goal => goal.id !== id))
-  }
 
   const fmt = (n) => `$${Number(n || 0).toLocaleString()}`
 
@@ -587,50 +524,8 @@ function AdminDashboard() {
         </motion.div>
       )}
 
-      {/* Goal Management */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.4 }}
-        className="card p-5"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Target size={15} className="text-[#06babe]" />
-            <h2 className="text-sm font-semibold text-gray-900">Goal Management</h2>
-            {allGoals.length > 0 && (
-              <span className="text-xs bg-[#06babe]/10 text-[#06babe] px-2 py-0.5 rounded-full font-medium">
-                {allGoals.length} active
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() => setGoalModal(true)}
-            className="btn-primary text-xs flex items-center gap-1.5"
-          >
-            <Plus size={12} /> Set Goal
-          </button>
-        </div>
-
-        {allGoals.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-4">No goals set. Click "Set Goal" to assign a goal to a rep.</p>
-        ) : (
-          <div className="space-y-4">
-            {allGoals.map(goal => (
-              <div key={goal.id} className="group">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-[#06babe] font-medium">{goal.rep_name}</span>
-                  <button
-                    onClick={() => handleDeleteGoal(goal.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-400"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-                <GoalBar goal={goal} />
-              </div>
-            ))}
-          </div>
-        )}
-      </motion.div>
+      {/* EOS Overview */}
+      <EOSOverviewPanel />
 
       {/* Intake Feed */}
       {intakeLeads.length > 0 && (
@@ -818,62 +713,6 @@ function AdminDashboard() {
         </motion.div>
       </div>
 
-      {/* Set Goal Modal */}
-      {goalModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900">Set New Goal</h2>
-              <button onClick={() => setGoalModal(false)} className="text-gray-400 hover:text-gray-600">
-                <TrendingDown size={16} className="rotate-90" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="label">Assign to Rep</label>
-                <select className="input" value={newGoalForm.rep_id} onChange={e => setNewGoalForm(f => ({ ...f, rep_id: e.target.value }))}>
-                  <option value="">— Select Rep —</option>
-                  {reps.map(r => <option key={r.id} value={r.id}>{r.name || r.email}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">Goal Title</label>
-                <input className="input" placeholder="e.g. Close 5 wins this month" value={newGoalForm.title} onChange={e => setNewGoalForm(f => ({ ...f, title: e.target.value }))} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label">Metric</label>
-                  <select className="input" value={newGoalForm.metric} onChange={e => setNewGoalForm(f => ({ ...f, metric: e.target.value }))}>
-                    <option value="leads_won">Leads Won</option>
-                    <option value="leads_contacted">Leads Contacted</option>
-                    <option value="proposals_sent">Proposals Sent</option>
-                    <option value="conversion_rate">Conv. Rate %</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Target</label>
-                  <input className="input" type="number" placeholder="5" value={newGoalForm.target} onChange={e => setNewGoalForm(f => ({ ...f, target: e.target.value }))} />
-                </div>
-              </div>
-              <div>
-                <label className="label">Period</label>
-                <select className="input" value={newGoalForm.period} onChange={e => setNewGoalForm(f => ({ ...f, period: e.target.value }))}>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                </select>
-              </div>
-              <p className="text-xs text-gray-400">Period dates are computed automatically. An email will be sent to the rep.</p>
-            </div>
-            <div className="flex gap-3 px-6 pb-5">
-              <button onClick={() => setGoalModal(false)} className="btn-secondary flex-1">Cancel</button>
-              <button onClick={handleCreateGoal} disabled={savingGoal} className="btn-primary flex-1 disabled:opacity-50">
-                {savingGoal ? 'Saving…' : 'Set Goal & Notify'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

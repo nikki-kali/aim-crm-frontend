@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
   LayoutDashboard, Users, UserCheck, LogOut, Menu, X, ClipboardList,
-  BarChart3, TrendingUp, Zap, UserCog, Shield, Building2,
+  BarChart3, TrendingUp, Zap, UserCog, Shield, Building2, ListChecks,
 } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -16,6 +16,7 @@ const STAFF_NAV = [
   { to: '/cases',     icon: ClipboardList,   label: 'Cases' },
   { to: '/pipeline',  icon: BarChart3,       label: 'Pipeline' },
   { to: '/reports',   icon: TrendingUp,      label: 'My Reports' },
+  { to: '/eos',       icon: ListChecks,      label: 'EOS' },
 ]
 
 const ADMIN_NAV = [
@@ -26,6 +27,7 @@ const ADMIN_NAV = [
   { to: '/cases',       icon: ClipboardList,   label: 'Cases' },
   { to: '/pipeline',    icon: BarChart3,       label: 'Pipeline' },
   { to: '/reports',     icon: TrendingUp,      label: 'Reports' },
+  { to: '/eos',         icon: ListChecks,      label: 'EOS' },
   { to: '/automations', icon: Zap,             label: 'Automations' },
   { to: '/users',       icon: UserCog,         label: 'Users' },
 ]
