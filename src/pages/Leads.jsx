@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check, Archive, ArchiveRestore, UserCheck } from 'lucide-react'
 
@@ -85,22 +86,37 @@ function parseCsv(text) {
   )
   const col = (...keys) => { for (const k of keys) { const i = headers.indexOf(k); if (i >= 0) return i } return -1 }
   const map = {
-    doctor_name:     col('doctor_name', 'doctor'),
-    clinic_name:     col('clinic_name', 'clinic'),
+    doctor_name:     col('doctor_name', 'doctor', 'name', 'contact_person', 'person_name', 'full_name', 'title'),
+    first_name:      col('first_name'),
+    last_name:       col('last_name'),
+    clinic_name:     col('clinic_name', 'clinic', 'organization', 'company', 'org_name'),
     brand:           col('brand'),
     case_interest:   col('case_interest', 'case_type', 'case'),
-    phone:           col('phone'),
-    email:           col('email'),
-    lead_source:     col('lead_source', 'referral_source', 'source'),
-    estimated_value: col('estimated_value', 'value'),
-    notes:           col('notes'),
+    phone:           col('phone', 'phone_mobile', 'phone_work', 'phone_number'),
+    email:           col('email', 'email_work', 'email_home', 'email_address'),
+    lead_source:     col('lead_source', 'referral_source', 'source', 'channel'),
+    estimated_value: col('estimated_value', 'value', 'deal_value', 'amount'),
+    notes:           col('notes', 'note', 'description', 'comment'),
+    status:          col('status', 'stage', 'deal_stage'),
   }
+
+  // Pipedrive status values → our status
+  const PIPEDRIVE_STATUS = { open: 'Lead', won: 'Won', lost: 'Lost', deleted: 'Lost' }
 
   return lines.slice(1).map(line => {
     const cells = parseCsvLine(line)
     const g = (k) => map[k] >= 0 ? (cells[map[k]] || '').trim() : ''
-    const doctor_name = g('doctor_name')
+
+    // Handle Pipedrive "First name" / "Last name" columns if no combined name column
+    let doctor_name = g('doctor_name')
+    if (!doctor_name && (map.first_name >= 0 || map.last_name >= 0)) {
+      doctor_name = [g('first_name'), g('last_name')].filter(Boolean).join(' ')
+    }
     if (!doctor_name) return null
+
+    const rawStatus = g('status').toLowerCase()
+    const status = PIPEDRIVE_STATUS[rawStatus] || (STATUS_OPTIONS.includes(g('status')) ? g('status') : 'Lead')
+
     return {
       doctor_name,
       clinic_name:     g('clinic_name'),
@@ -111,7 +127,7 @@ function parseCsv(text) {
       lead_source:     g('lead_source'),
       estimated_value: g('estimated_value'),
       notes:           g('notes'),
-      status:          'Lead',
+      status,
       intent_level:    'Medium',
     }
   }).filter(Boolean)
@@ -239,7 +255,7 @@ function LeadModal({ lead, onClose, onSave }) {
 
 // ── CsvImportModal ────────────────────────────────────────────────────────────
 
-function CsvImportModal({ onClose, onImport, filename, setFilename }) {
+function CsvImportModal({ onClose, onImport, isAdmin }) {
   const fileRef   = useRef(null)
   const [rows,       setRows]       = useState([])
   const [step,       setStep]       = useState('pick')
@@ -247,6 +263,14 @@ function CsvImportModal({ onClose, onImport, filename, setFilename }) {
   const [result,     setResult]     = useState(null)
   const [parseError, setParseError] = useState('')
   const [localFilename, setLocalFilename] = useState('')
+  const [assignedTo, setAssignedTo] = useState('')
+  const [users,      setUsers]      = useState([])
+
+  useEffect(() => {
+    if (isAdmin) {
+      api.get('/api/users').then(data => setUsers(data || [])).catch(() => {})
+    }
+  }, [isAdmin])
 
   const handleFile = (file) => {
     if (!file) return
@@ -269,7 +293,9 @@ function CsvImportModal({ onClose, onImport, filename, setFilename }) {
   const handleImport = async () => {
     setImporting(true)
     try {
-      const res = await api.post('/api/leads/import', { rows, filename: localFilename })
+      const body = { rows, filename: localFilename }
+      if (isAdmin && assignedTo) body.assigned_to = assignedTo
+      const res = await api.post('/api/leads/import', body)
       setResult({ added: res.added, skipped: res.skipped })
       setStep('done')
     } catch (err) {
@@ -296,7 +322,7 @@ function CsvImportModal({ onClose, onImport, filename, setFilename }) {
         </div>
 
         {step === 'pick' && (
-          <div className="p-6 flex-1">
+          <div className="p-6 flex-1 space-y-4">
             <div
               className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center hover:border-[#06babe]/50 transition-colors cursor-pointer"
               onClick={() => fileRef.current?.click()}
@@ -305,17 +331,31 @@ function CsvImportModal({ onClose, onImport, filename, setFilename }) {
             >
               <Upload size={28} className="mx-auto text-gray-300 mb-3" />
               <p className="text-sm font-medium text-gray-700">Drop a CSV here or click to browse</p>
-              <p className="text-xs text-gray-400 mt-1">One lead per row — Doctor Name is required</p>
+              <p className="text-xs text-gray-400 mt-1">Standard CSV or Pipedrive export — Doctor Name or contact name required</p>
               <input ref={fileRef} type="file" accept=".csv" className="hidden"
                 onChange={e => handleFile(e.target.files[0])} />
             </div>
-            {parseError && <p className="mt-3 text-sm text-red-600">{parseError}</p>}
-            <div className="mt-4 p-3 bg-gray-50 rounded-xl flex items-start justify-between gap-4">
+            {parseError && <p className="text-sm text-red-600">{parseError}</p>}
+
+            {isAdmin && users.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-gray-700 mb-1">Expected columns (in any order):</p>
+                <label className="label">Assign imported leads to</label>
+                <select className="input" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
+                  <option value="">— Self (you) —</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name || u.email} ({u.role})</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="p-3 bg-gray-50 rounded-xl flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium text-gray-700 mb-1">Our columns (in any order):</p>
                 <p className="text-xs text-gray-500 font-mono">
                   Doctor Name, Clinic Name, Brand, Case Interest, Phone, Email, Lead Source, Estimated Value, Notes
                 </p>
+                <p className="text-xs text-gray-400 mt-1">Pipedrive exports also accepted — Organization, Value, Status etc. auto-mapped.</p>
               </div>
               <button onClick={downloadTemplate} className="btn-secondary text-xs flex items-center gap-1.5 flex-shrink-0">
                 <Download size={12} /> Template
@@ -396,6 +436,8 @@ function CsvImportModal({ onClose, onImport, filename, setFilename }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function Leads() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [leads,        setLeads]       = useState([])
   const [loading,      setLoading]     = useState(true)
   const [search,       setSearch]      = useState('')
@@ -517,7 +559,7 @@ export default function Leads() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
-                  {['Doctor / Clinic', 'Brand', 'Case', 'Value', 'Intent', 'Score', 'Status', 'Contact', ''].map(h => (
+                  {['Doctor / Clinic', 'Brand', 'Case', 'Value', 'Intent', 'Score', 'Status', ...(isAdmin ? ['Rep'] : []), 'Contact', ''].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
                       {h}
                     </th>
@@ -567,6 +609,11 @@ export default function Leads() {
                         </span>
                         {isCold && <span className="ml-1 text-xs text-amber-600">⚠ {daysSince}d</span>}
                       </td>
+                      {isAdmin && (
+                        <td className="px-4 py-3 text-xs text-gray-500">
+                          {lead.assigned_to_name || '—'}
+                        </td>
+                      )}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {lead.phone && <a href={`tel:${lead.phone}`} className="text-gray-400 hover:text-[#06babe]"><Phone size={14} /></a>}
@@ -621,6 +668,7 @@ export default function Leads() {
         <CsvImportModal
           onClose={() => setImportModal(false)}
           onImport={fetchLeads}
+          isAdmin={isAdmin}
         />
       )}
     </div>

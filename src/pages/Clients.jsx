@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { Plus, Search, Phone, Mail, X, ChevronRight, ClipboardList, Activity, CheckSquare, Square } from 'lucide-react'
 
@@ -326,6 +327,8 @@ function ClientDrawer({ clientId, onClose, onEdit }) {
 }
 
 export default function Clients() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -426,6 +429,9 @@ export default function Clients() {
                 </div>
               </div>
 
+              {isAdmin && client.assigned_to_name && (
+                <p className="text-[10px] text-gray-400 mb-2">Rep: {client.assigned_to_name}</p>
+              )}
               <div className="flex items-center justify-between">
                 <div className="flex gap-2">
                   {client.phone && <a href={`tel:${client.phone}`} className="text-gray-400 hover:text-[#06babe]"><Phone size={15} /></a>}
