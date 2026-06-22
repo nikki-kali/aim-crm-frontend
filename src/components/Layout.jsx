@@ -21,9 +21,8 @@ const STAFF_NAV = [
 
 const ADMIN_NAV = [
   ...STAFF_NAV,
-  { to: '/reports',     icon: TrendingUp, label: 'Reports' },
-  { to: '/automations', icon: Zap,        label: 'Automations' },
-  { to: '/users',       icon: UserCog,    label: 'Users' },
+  { to: '/automations', icon: Zap,    label: 'Automations' },
+  { to: '/users',       icon: UserCog, label: 'Users' },
 ]
 
 export default function Layout({ children }) {
