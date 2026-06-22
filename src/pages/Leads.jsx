@@ -25,7 +25,7 @@ const INTENT_CLASSES = {
 const EMPTY_FORM = {
   doctor_name: '', clinic_name: '', brand: 'Aim Dental', case_interest: '', phone: '',
   email: '', lead_source: '', estimated_value: '', status: 'Lead',
-  intent_level: 'Medium', notes: '',
+  intent_level: 'Medium', notes: '', assigned_to: '',
 }
 
 const CSV_TEMPLATE = [
@@ -135,14 +135,22 @@ function parseCsv(text) {
 
 // ── LeadModal ─────────────────────────────────────────────────────────────────
 
-function LeadModal({ lead, onClose, onSave }) {
+function LeadModal({ lead, onClose, onSave, isAdmin }) {
   const [form, setForm] = useState(lead ? {
     ...EMPTY_FORM, ...lead,
     lead_source:  lead.lead_source || lead.referral_source || '',
     intent_level: lead.intent_level || 'Medium',
+    assigned_to:  lead.assigned_to || '',
   } : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
+  const [users,  setUsers]  = useState([])
+
+  useEffect(() => {
+    if (isAdmin) {
+      api.get('/api/users').then(data => setUsers(data || [])).catch(() => {})
+    }
+  }, [isAdmin])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const liveScore = scoreFromLead({ ...form, estimated_value: Number(form.estimated_value) || 0 })
@@ -235,6 +243,17 @@ function LeadModal({ lead, onClose, onSave }) {
               <label className="label">Estimated Value ($)</label>
               <input className="input" type="number" value={form.estimated_value} onChange={e => set('estimated_value', e.target.value)} placeholder="0" />
             </div>
+            {isAdmin && users.length > 0 && (
+              <div className="col-span-2">
+                <label className="label">Assigned Rep</label>
+                <select className="input" value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)}>
+                  <option value="">— Unassigned —</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="col-span-2">
               <label className="label">Notes</label>
               <textarea className="input resize-none" rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Any relevant notes..." />
@@ -661,6 +680,7 @@ export default function Leads() {
           lead={modal === 'new' ? null : modal}
           onClose={() => setModal(null)}
           onSave={() => { setModal(null); fetchLeads() }}
+          isAdmin={isAdmin}
         />
       )}
 
