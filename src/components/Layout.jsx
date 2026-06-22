@@ -16,6 +16,7 @@ const STAFF_NAV = [
   { to: '/clinics',   icon: Building2,       label: 'Clinics' },
   { to: '/cases',     icon: ClipboardList,   label: 'Cases' },
   { to: '/pipeline',  icon: BarChart3,       label: 'Pipeline' },
+  { to: '/reports',   icon: TrendingUp,      label: 'Reports' },
 ]
 
 const ADMIN_NAV = [

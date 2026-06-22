@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { Send, X, Mail, FileDown } from 'lucide-react'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
 
-const TABS = [
+const STAFF_TABS = [
   { id: 'overview',   label: 'Overview' },
   { id: 'trends',     label: 'Trends' },
   { id: 'sources',    label: 'Sources' },
   { id: 'performers', label: 'Top Performers' },
+]
+
+const ADMIN_TABS = [
+  ...STAFF_TABS,
   { id: 'operations', label: 'Operations' },
   { id: 'imports',    label: 'Import History' },
   { id: 'schedule',   label: 'Schedule' },
@@ -766,6 +771,8 @@ function SendReportModal({ onClose }) {
 }
 
 export default function Reports() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [tab, setTab] = useState('overview')
   const [brand, setBrand] = useState('All')
   const [leads, setLeads] = useState([])
@@ -773,70 +780,100 @@ export default function Reports() {
   const [loading, setLoading] = useState(true)
   const [showSendModal, setShowSendModal] = useState(false)
   const [exportingPDF, setExportingPDF] = useState(false)
+  const [repFilter, setRepFilter] = useState('all')
+  const [users, setUsers] = useState([])
   const toast = useToast()
 
   useEffect(() => {
+    if (isAdmin) {
+      api.get('/api/users').then(d => setUsers(d || [])).catch(() => {})
+    }
+  }, [isAdmin])
+
+  useEffect(() => {
     async function load() {
+      setLoading(true)
+      const repParam = isAdmin && repFilter !== 'all' ? `&rep=${repFilter}` : ''
       const [leadsData, clientsData] = await Promise.all([
-        api.get('/api/leads').catch(() => []),
-        api.get('/api/clients').catch(() => []),
+        api.get(`/api/leads?archived=false${repParam}`).catch(() => []),
+        api.get(`/api/clients${repParam ? `?rep=${repFilter}` : ''}`).catch(() => []),
       ])
       setLeads(leadsData || [])
       setClients(clientsData || [])
       setLoading(false)
     }
     load()
-  }, [])
+  }, [repFilter])
 
   const fl = brand === 'All' ? leads : leads.filter(l => l.brand === brand)
   const fc = brand === 'All' ? clients : clients.filter(c => c.brand === brand)
+
+  const activeRep = repFilter !== 'all' ? users.find(u => u.id === repFilter) : null
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Reports</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Analytics and performance insights</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {activeRep ? `Viewing: ${activeRep.name || activeRep.email}` : 'Analytics and performance insights'}
+          </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <motion.button
-            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            onClick={async () => {
-              setExportingPDF(true)
-              try {
-                const { downloadReportPDF } = await import('../components/ReportPDF')
-                const [overview, dashboard] = await Promise.all([
-                  api.get('/api/reports/overview'),
-                  api.get('/api/dashboard'),
-                ])
-                await downloadReportPDF({
-                  kpis: dashboard.kpis,
-                  ytd: { ytd_leads: overview.ytd_leads, ytd_won: overview.ytd_won, ytd_lost: overview.ytd_lost },
-                  brandRevenue: overview.brand_revenue,
-                  topClients: overview.top_clients,
-                  coldCount: dashboard.cold_leads?.length ?? 0,
-                  overdueCount: 0,
-                })
-                toast('PDF downloaded', 'success')
-              } catch (err) {
-                toast('PDF export failed: ' + err.message, 'error')
-              }
-              setExportingPDF(false)
-            }}
-            disabled={exportingPDF}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm disabled:opacity-50"
-          >
-            <FileDown size={14} /> {exportingPDF ? 'Generating...' : 'Export PDF'}
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setShowSendModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm"
-            style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}
-          >
-            <Send size={14} /> Send Report
-          </motion.button>
+          {isAdmin && (
+            <>
+              <motion.button
+                whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                onClick={async () => {
+                  setExportingPDF(true)
+                  try {
+                    const { downloadReportPDF } = await import('../components/ReportPDF')
+                    const [overview, dashboard] = await Promise.all([
+                      api.get('/api/reports/overview'),
+                      api.get('/api/dashboard'),
+                    ])
+                    await downloadReportPDF({
+                      kpis: dashboard.kpis,
+                      ytd: { ytd_leads: overview.ytd_leads, ytd_won: overview.ytd_won, ytd_lost: overview.ytd_lost },
+                      brandRevenue: overview.brand_revenue,
+                      topClients: overview.top_clients,
+                      coldCount: dashboard.cold_leads?.length ?? 0,
+                      overdueCount: 0,
+                    })
+                    toast('PDF downloaded', 'success')
+                  } catch (err) {
+                    toast('PDF export failed: ' + err.message, 'error')
+                  }
+                  setExportingPDF(false)
+                }}
+                disabled={exportingPDF}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm disabled:opacity-50"
+              >
+                <FileDown size={14} /> {exportingPDF ? 'Generating...' : 'Export PDF'}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setShowSendModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}
+              >
+                <Send size={14} /> Send Report
+              </motion.button>
+            </>
+          )}
+          {isAdmin && users.length > 0 && (
+            <select
+              className="input text-sm py-1.5 w-auto"
+              value={repFilter}
+              onChange={e => setRepFilter(e.target.value)}
+            >
+              <option value="all">All Reps</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.name || u.email}</option>
+              ))}
+            </select>
+          )}
           <div className="flex gap-1 bg-gray-100 p-1 rounded-lg flex-shrink-0">
             {['All', 'Aim Dental', 'Kings Highway'].map(b => (
               <button
@@ -854,7 +891,7 @@ export default function Reports() {
       </div>
 
       <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit overflow-x-auto">
-        {TABS.map(t => (
+        {(isAdmin ? ADMIN_TABS : STAFF_TABS).map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
