@@ -8,7 +8,10 @@ import { Send, X, Mail, FileDown } from 'lucide-react'
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
 
+const MY_REPORT_TAB = { id: 'my-report', label: 'My Report' }
+
 const STAFF_TABS = [
+  MY_REPORT_TAB,
   { id: 'overview',   label: 'Overview' },
   { id: 'trends',     label: 'Trends' },
   { id: 'sources',    label: 'Sources' },
@@ -16,10 +19,14 @@ const STAFF_TABS = [
 ]
 
 const ADMIN_TABS = [
-  ...STAFF_TABS,
+  { id: 'overview',   label: 'Overview' },
+  { id: 'trends',     label: 'Trends' },
+  { id: 'sources',    label: 'Sources' },
+  { id: 'performers', label: 'Top Performers' },
   { id: 'operations', label: 'Operations' },
   { id: 'imports',    label: 'Import History' },
   { id: 'schedule',   label: 'Schedule' },
+  MY_REPORT_TAB,
 ]
 
 function TH({ cols }) {
@@ -683,6 +690,256 @@ function ScheduleTab() {
   )
 }
 
+// ─── Tab: My Report ───────────────────────────────────────────────────────────
+
+function MyReportTab() {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [exportingPDF, setExportingPDF] = useState(false)
+  const [sending, setSending] = useState(false)
+  const toast = useToast()
+
+  useEffect(() => {
+    api.get('/api/reports/my-summary')
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const handleDownloadCSV = () => {
+    const a = document.createElement('a')
+    a.href = `${import.meta.env.VITE_API_URL || ''}/api/reports/my-summary/csv`
+    const token = localStorage.getItem('token')
+    // Open in new tab with auth isn't trivially doable; use fetch + blob instead
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/reports/my-summary/csv`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob)
+        a.href = url
+        const safeName = (data?.rep?.name || 'report').toLowerCase().replace(/\s+/g, '-')
+        a.download = `${safeName}-leads-${new Date().toISOString().split('T')[0]}.csv`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      })
+      .catch(() => toast('CSV download failed', 'error'))
+  }
+
+  const handleDownloadPDF = async () => {
+    if (!data) return
+    setExportingPDF(true)
+    try {
+      const { downloadRepReportPDF } = await import('../components/ReportPDF')
+      await downloadRepReportPDF(data)
+      toast('PDF downloaded', 'success')
+    } catch (err) {
+      toast('PDF export failed: ' + err.message, 'error')
+    }
+    setExportingPDF(false)
+  }
+
+  const handleEmailReport = async () => {
+    setSending(true)
+    try {
+      await api.post('/api/reports/my-summary/email')
+      toast(`Report sent to ${data?.rep?.email}`, 'success')
+    } catch (err) {
+      toast(err.message || 'Failed to send report', 'error')
+    }
+    setSending(false)
+  }
+
+  if (loading) return <div className="text-center py-20 text-gray-400 text-sm">Loading your report...</div>
+  if (!data) return <div className="text-center py-20 text-gray-400 text-sm">No data available</div>
+
+  const { week, month, allTime, eos, rep } = data
+  const totalRocks = (eos?.rocks?.on_track || 0) + (eos?.rocks?.off_track || 0) + (eos?.rocks?.done || 0)
+
+  const StatCard = ({ label, value, sub, color = 'text-gray-900' }) => (
+    <div className="card p-4">
+      <p className="label">{label}</p>
+      <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
+      {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+    </div>
+  )
+
+  return (
+    <div className="space-y-6">
+      {/* Header + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">{rep?.name}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{rep?.email}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <motion.button
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            onClick={handleDownloadCSV}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+          >
+            <FileDown size={14} /> Download CSV
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            onClick={handleDownloadPDF}
+            disabled={exportingPDF}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm disabled:opacity-50"
+          >
+            <FileDown size={14} /> {exportingPDF ? 'Generating...' : 'Download PDF'}
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            onClick={handleEmailReport}
+            disabled={sending}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}
+          >
+            {sending
+              ? <><div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending...</>
+              : <><Mail size={14} /> Email to Me</>}
+          </motion.button>
+        </div>
+      </div>
+
+      {/* This week */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">This Week</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard label="Leads Created"  value={week.leads_created} />
+          <StatCard label="Contacted"       value={week.contacted} />
+          <StatCard label="Proposals"       value={week.proposals} />
+          <StatCard label="Wins"            value={week.wins} color="text-green-600" />
+        </div>
+      </div>
+
+      {/* This month */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">
+          This Month — {new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard label="Leads Created" value={month.leads_created} />
+          <StatCard label="Wins"          value={month.wins} color="text-green-600" />
+          <StatCard label="Revenue"       value={`$${Number(month.revenue).toLocaleString()}`} color="text-[#06babe]" />
+          <StatCard
+            label="Conversion Rate"
+            value={`${month.conversion_rate}%`}
+            color={month.conversion_rate >= 50 ? 'text-green-600' : 'text-amber-500'}
+          />
+        </div>
+      </div>
+
+      {/* All-time */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">All-Time</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard label="Active Leads"  value={allTime.active_leads} />
+          <StatCard label="Total Leads"   value={allTime.total_leads} />
+          <StatCard label="Total Wins"    value={allTime.total_wins} color="text-green-600" />
+          <StatCard label="Total Revenue" value={`$${Number(allTime.total_revenue).toLocaleString()}`} color="text-[#06babe]" />
+        </div>
+      </div>
+
+      {/* EOS Track */}
+      {eos && (
+        <div className="card p-5">
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">EOS Track</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* Rocks */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Rocks (90-day)</p>
+              {totalRocks === 0 ? (
+                <p className="text-sm text-gray-400">No rocks assigned</p>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">On Track</span>
+                    <span className="text-sm font-bold text-green-600">{eos.rocks.on_track}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Off Track</span>
+                    <span className={`text-sm font-bold ${eos.rocks.off_track > 0 ? 'text-red-500' : 'text-gray-300'}`}>{eos.rocks.off_track}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Done</span>
+                    <span className="text-sm font-bold text-gray-400">{eos.rocks.done}</span>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-gray-200">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-green-500 transition-all duration-700"
+                        style={{ width: `${Math.round(eos.rocks.on_track / totalRocks * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">{Math.round(eos.rocks.on_track / totalRocks * 100)}% on track</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* To-Dos */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Weekly To-Dos</p>
+              <p className="text-3xl font-bold text-gray-900">{eos.todos.done}<span className="text-base font-normal text-gray-400"> / {eos.todos.total}</span></p>
+              <p className="text-xs text-gray-400 mt-1">completed this week</p>
+              {eos.todos.total > 0 && (
+                <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${eos.todos.done === eos.todos.total ? 'bg-green-500' : 'bg-[#06babe]'}`}
+                    style={{ width: `${Math.round(eos.todos.done / eos.todos.total * 100)}%` }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Issues */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Open Issues</p>
+              <p className={`text-3xl font-bold ${eos.open_issues > 0 ? 'text-amber-500' : 'text-green-600'}`}>{eos.open_issues}</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {eos.open_issues === 0 ? 'All issues resolved' : `issue${eos.open_issues !== 1 ? 's' : ''} need attention`}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recent leads */}
+      {data.recent_leads?.length > 0 && (
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">Recent Leads</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><TH cols={['Doctor', 'Clinic', 'Status', 'Value', 'Created']} /></thead>
+              <tbody className="divide-y divide-gray-50">
+                {data.recent_leads.map((l, i) => (
+                  <tr key={i} className="hover:bg-gray-50/60">
+                    <td className="px-5 py-3 font-medium text-gray-900">{l.doctor_name}</td>
+                    <td className="px-5 py-3 text-gray-500">{l.clinic_name || '—'}</td>
+                    <td className="px-5 py-3">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        l.status === 'Won' ? 'bg-green-100 text-green-700'
+                        : l.status === 'Lost' ? 'bg-red-100 text-red-600'
+                        : 'bg-gray-100 text-gray-600'
+                      }`}>{l.status}</span>
+                    </td>
+                    <td className="px-5 py-3 text-gray-700">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+                    <td className="px-5 py-3 text-gray-400 text-xs">{new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 function SendReportModal({ onClose }) {
@@ -773,7 +1030,7 @@ function SendReportModal({ onClose }) {
 export default function Reports() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
-  const [tab, setTab] = useState('overview')
+  const [tab, setTab] = useState(isAdmin ? 'overview' : 'my-report')
   const [brand, setBrand] = useState('All')
   const [leads, setLeads] = useState([])
   const [clients, setClients] = useState([])
@@ -820,7 +1077,7 @@ export default function Reports() {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          {isAdmin && (
+          {isAdmin && tab !== 'my-report' && (
             <>
               <motion.button
                 whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
@@ -862,7 +1119,7 @@ export default function Reports() {
               </motion.button>
             </>
           )}
-          {isAdmin && users.length > 0 && (
+          {isAdmin && users.length > 0 && tab !== 'my-report' && (
             <select
               className="input text-sm py-1.5 w-auto"
               value={repFilter}
@@ -874,19 +1131,21 @@ export default function Reports() {
               ))}
             </select>
           )}
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-lg flex-shrink-0">
-            {['All', 'Aim Dental', 'Kings Highway'].map(b => (
-              <button
-                key={b}
-                onClick={() => setBrand(b)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  brand === b ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {b === 'All' ? 'Both' : b === 'Aim Dental' ? 'Aim' : 'KH'}
-              </button>
-            ))}
-          </div>
+          {tab !== 'my-report' && (
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg flex-shrink-0">
+              {['All', 'Aim Dental', 'Kings Highway'].map(b => (
+                <button
+                  key={b}
+                  onClick={() => setBrand(b)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    brand === b ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {b === 'All' ? 'Both' : b === 'Aim Dental' ? 'Aim' : 'KH'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -904,7 +1163,9 @@ export default function Reports() {
         ))}
       </div>
 
-      {loading && !['operations','imports','schedule'].includes(tab) ? (
+      {tab === 'my-report' ? (
+        <MyReportTab />
+      ) : loading && !['operations','imports','schedule'].includes(tab) ? (
         <div className="text-center py-20 text-gray-400 text-sm">Loading reports...</div>
       ) : (
         <>
