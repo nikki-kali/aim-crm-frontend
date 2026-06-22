@@ -147,9 +147,13 @@ export default function UsersPage() {
                   <tr key={u.id} className={`hover:bg-gray-50/60 transition-colors ${isSelf ? 'bg-[#06babe]/5' : ''}`}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-[#06babe]/10 flex items-center justify-center text-[#06babe] font-bold text-xs flex-shrink-0">
-                          {(u.name || u.email)[0].toUpperCase()}
-                        </div>
+                        {u.avatar ? (
+                          <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover ring-2 ring-[#06babe]/20 flex-shrink-0" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}>
+                            {(u.name || u.email)[0].toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <p className="font-medium text-gray-900">{u.name || '—'}</p>
                           {isSelf && <p className="text-xs text-[#06babe]">You</p>}

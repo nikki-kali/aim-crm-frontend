@@ -16,16 +16,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = api.getToken()
-    if (token) {
-      const payload = decodeToken(token)
-      if (payload && payload.exp * 1000 > Date.now()) {
-        setUser(payload)
-      } else {
-        api.clearToken()
+    const init = async () => {
+      const token = api.getToken()
+      if (token) {
+        const payload = decodeToken(token)
+        if (payload && payload.exp * 1000 > Date.now()) {
+          setUser(payload)
+          try {
+            const { user: full } = await api.get('/api/auth/me')
+            setUser(full)
+          } catch {}
+        } else {
+          api.clearToken()
+        }
       }
+      setLoading(false)
     }
-    setLoading(false)
+    init()
   }, [])
 
   const signIn = async (email, password) => {
@@ -33,6 +40,10 @@ export function AuthProvider({ children }) {
       const { token, user: userData } = await api.post('/api/auth/login', { email, password })
       api.setToken(token)
       setUser(userData)
+      try {
+        const { user: full } = await api.get('/api/auth/me')
+        setUser(full)
+      } catch {}
       return { error: null }
     } catch (err) {
       return { error: { message: err.message || 'Invalid email or password' } }
@@ -44,8 +55,15 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const refreshUser = async () => {
+    try {
+      const { user: full } = await api.get('/api/auth/me')
+      setUser(full)
+    } catch {}
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

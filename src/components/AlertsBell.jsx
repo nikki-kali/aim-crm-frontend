@@ -1,6 +1,31 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Bell, X, Check, CheckCheck } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
+
+function playChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const notes = [
+      { freq: 1047, start: 0,    dur: 0.35 },
+      { freq: 1319, start: 0.13, dur: 0.4  },
+      { freq: 1568, start: 0.26, dur: 0.5  },
+    ]
+    notes.forEach(({ freq, start, dur }) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
+      gain.gain.setValueAtTime(0, ctx.currentTime + start)
+      gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + start + 0.01)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur)
+      osc.start(ctx.currentTime + start)
+      osc.stop(ctx.currentTime + start + dur)
+    })
+  } catch {}
+}
 
 const TYPE_STYLE = {
   cold_lead:     { dot: 'bg-amber-400', label: 'Cold Lead' },
@@ -22,10 +47,17 @@ function timeAgo(ts) {
 export default function AlertsBell() {
   const [open, setOpen] = useState(false)
   const [alerts, setAlerts] = useState([])
+  const prevUnreadRef = useRef(null)
 
   const fetchAlerts = async () => {
     const data = await api.get('/api/alerts').catch(() => [])
-    setAlerts(data || [])
+    const list = data || []
+    const newUnread = list.filter(a => !a.read).length
+    if (prevUnreadRef.current !== null && newUnread > prevUnreadRef.current) {
+      playChime()
+    }
+    prevUnreadRef.current = newUnread
+    setAlerts(list)
   }
 
   useEffect(() => {
