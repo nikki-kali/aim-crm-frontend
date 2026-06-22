@@ -51,7 +51,7 @@ function AnimatedRoutes() {
         <Route path="/clinics"     element={<ProtectedRoute><Clinics /></ProtectedRoute>} />
         <Route path="/cases"       element={<ProtectedRoute><Cases /></ProtectedRoute>} />
         <Route path="/pipeline"    element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
-        <Route path="/reports"     element={<AdminRoute><Reports /></AdminRoute>} />
+        <Route path="/reports"     element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/automations" element={<AdminRoute><Automations /></AdminRoute>} />
         <Route path="/users"       element={<AdminRoute><Users /></AdminRoute>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
