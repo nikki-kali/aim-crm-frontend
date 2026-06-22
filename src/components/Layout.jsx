@@ -13,16 +13,21 @@ const STAFF_NAV = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/leads',     icon: Users,           label: 'Leads' },
   { to: '/clients',   icon: UserCheck,       label: 'Clients' },
-  { to: '/clinics',   icon: Building2,       label: 'Clinics' },
   { to: '/cases',     icon: ClipboardList,   label: 'Cases' },
   { to: '/pipeline',  icon: BarChart3,       label: 'Pipeline' },
-  { to: '/reports',   icon: TrendingUp,      label: 'Reports' },
+  { to: '/reports',   icon: TrendingUp,      label: 'My Reports' },
 ]
 
 const ADMIN_NAV = [
-  ...STAFF_NAV,
-  { to: '/automations', icon: Zap,    label: 'Automations' },
-  { to: '/users',       icon: UserCog, label: 'Users' },
+  { to: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/leads',       icon: Users,           label: 'Leads' },
+  { to: '/clients',     icon: UserCheck,       label: 'Clients' },
+  { to: '/clinics',     icon: Building2,       label: 'Clinics' },
+  { to: '/cases',       icon: ClipboardList,   label: 'Cases' },
+  { to: '/pipeline',    icon: BarChart3,       label: 'Pipeline' },
+  { to: '/reports',     icon: TrendingUp,      label: 'Reports' },
+  { to: '/automations', icon: Zap,             label: 'Automations' },
+  { to: '/users',       icon: UserCog,         label: 'Users' },
 ]
 
 export default function Layout({ children }) {

@@ -33,7 +33,6 @@ const CSV_TEMPLATE = [
   'Dr. Jane Smith,Smith Dental Group,Aim Dental,Implant,(718) 555-0100,dr.smith@example.com,Referral,8500,Interested in full arch implants',
 ].join('\n')
 
-// Live score preview — kept client-side for UI feedback; backend recalculates on save
 const SOURCE_SCORES = {
   Referral: 25, LinkedIn: 20, 'Office Visit': 20, Google: 15,
   'Walk-in': 12, Facebook: 10, Instagram: 10, 'X (Twitter)': 8,
@@ -61,8 +60,6 @@ function scoreColor(s) {
   if (s >= 60) return 'text-amber-600 bg-amber-50'
   return 'text-red-500 bg-red-50'
 }
-
-// ── CSV parsing (client-side for preview step) ────────────────────────────────
 
 function parseCsvLine(line) {
   const cells = []
@@ -100,14 +97,12 @@ function parseCsv(text) {
     status:          col('status', 'stage', 'deal_stage'),
   }
 
-  // Pipedrive status values → our status
   const PIPEDRIVE_STATUS = { open: 'Lead', won: 'Won', lost: 'Lost', deleted: 'Lost' }
 
   return lines.slice(1).map(line => {
     const cells = parseCsvLine(line)
     const g = (k) => map[k] >= 0 ? (cells[map[k]] || '').trim() : ''
 
-    // Handle Pipedrive "First name" / "Last name" columns if no combined name column
     let doctor_name = g('doctor_name')
     if (!doctor_name && (map.first_name >= 0 || map.last_name >= 0)) {
       doctor_name = [g('first_name'), g('last_name')].filter(Boolean).join(' ')
@@ -144,13 +139,11 @@ function LeadModal({ lead, onClose, onSave, isAdmin }) {
   } : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
-  const [users,  setUsers]  = useState([])
+  const [reps,   setReps]   = useState([])
 
   useEffect(() => {
-    if (isAdmin) {
-      api.get('/api/users').then(data => setUsers(data || [])).catch(() => {})
-    }
-  }, [isAdmin])
+    api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
+  }, [])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const liveScore = scoreFromLead({ ...form, estimated_value: Number(form.estimated_value) || 0 })
@@ -243,12 +236,12 @@ function LeadModal({ lead, onClose, onSave, isAdmin }) {
               <label className="label">Estimated Value ($)</label>
               <input className="input" type="number" value={form.estimated_value} onChange={e => set('estimated_value', e.target.value)} placeholder="0" />
             </div>
-            {isAdmin && users.length > 0 && (
+            {reps.length > 0 && (
               <div className="col-span-2">
                 <label className="label">Assigned Rep</label>
                 <select className="input" value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)}>
                   <option value="">— Unassigned —</option>
-                  {users.map(u => (
+                  {reps.map(u => (
                     <option key={u.id} value={u.id}>{u.name || u.email}</option>
                   ))}
                 </select>
@@ -283,11 +276,11 @@ function CsvImportModal({ onClose, onImport, isAdmin }) {
   const [parseError, setParseError] = useState('')
   const [localFilename, setLocalFilename] = useState('')
   const [assignedTo, setAssignedTo] = useState('')
-  const [users,      setUsers]      = useState([])
+  const [reps,       setReps]       = useState([])
 
   useEffect(() => {
     if (isAdmin) {
-      api.get('/api/users').then(data => setUsers(data || [])).catch(() => {})
+      api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
     }
   }, [isAdmin])
 
@@ -356,13 +349,13 @@ function CsvImportModal({ onClose, onImport, isAdmin }) {
             </div>
             {parseError && <p className="text-sm text-red-600">{parseError}</p>}
 
-            {isAdmin && users.length > 0 && (
+            {isAdmin && reps.length > 0 && (
               <div>
                 <label className="label">Assign imported leads to</label>
                 <select className="input" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
                   <option value="">— Self (you) —</option>
-                  {users.map(u => (
-                    <option key={u.id} value={u.id}>{u.name || u.email} ({u.role})</option>
+                  {reps.map(u => (
+                    <option key={u.id} value={u.id}>{u.name || u.email}</option>
                   ))}
                 </select>
               </div>
@@ -454,6 +447,12 @@ function CsvImportModal({ onClose, onImport, isAdmin }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+const VIEW_TABS = [
+  { id: 'mine',        label: 'My Leads' },
+  { id: 'all',         label: 'All Leads' },
+  { id: 'unassigned',  label: 'Unassigned Pool' },
+]
+
 export default function Leads() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
@@ -463,19 +462,25 @@ export default function Leads() {
   const [filterBrand,  setFilterBrand] = useState('All')
   const [filterStatus, setFilterStatus]= useState('All')
   const [showArchived, setShowArchived]= useState(false)
+  const [viewTab,      setViewTab]     = useState(isAdmin ? 'all' : 'mine')
+  const [reps,         setReps]        = useState([])
   const [modal,        setModal]       = useState(null)
   const [importModal,  setImportModal] = useState(false)
   const [converting,   setConverting]  = useState(null)
   const toast = useToast()
 
+  useEffect(() => {
+    api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
+  }, [])
+
   const fetchLeads = async () => {
     setLoading(true)
-    const data = await api.get(`/api/leads?archived=${showArchived}`).catch(() => [])
+    const data = await api.get(`/api/leads?archived=${showArchived}&view=${viewTab}`).catch(() => [])
     setLeads(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchLeads() }, [showArchived])
+  useEffect(() => { fetchLeads() }, [showArchived, viewTab])
 
   const filtered = leads.filter(l => {
     const q = search.toLowerCase()
@@ -522,9 +527,27 @@ export default function Leads() {
     setConverting(null)
   }
 
+  const handleAssign = async (lead, assigned_to) => {
+    try {
+      await api.put(`/api/leads/${lead.id}/assign`, { assigned_to: assigned_to || null })
+      const rep = reps.find(r => r.id === assigned_to)
+      setLeads(prev => prev.map(l => l.id === lead.id
+        ? { ...l, assigned_to: assigned_to || null, assigned_to_name: rep?.name || null }
+        : l
+      ))
+      toast(assigned_to ? `Assigned to ${rep?.name || 'rep'}` : 'Unassigned', 'success')
+    } catch (err) {
+      toast('Assignment failed', 'error')
+    }
+  }
+
+  const handleClaim = (lead) => handleAssign(lead, user.id)
+
+  const tableHeaders = ['Doctor / Clinic', 'Brand', 'Case', 'Value', 'Intent', 'Score', 'Status', 'Assign', 'Contact', '']
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
+      <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Leads</h1>
           <p className="text-sm text-gray-500 mt-0.5">{leads.length} {showArchived ? 'archived' : 'active'} leads</p>
@@ -543,6 +566,23 @@ export default function Leads() {
             <Plus size={16} /> New Lead
           </button>
         </div>
+      </div>
+
+      {/* View tabs */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-5">
+        {VIEW_TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setViewTab(tab.id)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+              viewTab === tab.id
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap gap-3 mb-5">
@@ -570,15 +610,19 @@ export default function Leads() {
           <div className="text-center py-16 text-gray-400 text-sm">Loading leads...</div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-gray-400 text-sm mb-3">No leads found</p>
-            <button onClick={() => setModal('new')} className="btn-primary">Add your first lead</button>
+            <p className="text-gray-400 text-sm mb-3">
+              {viewTab === 'unassigned' ? 'No unassigned leads — great!' : 'No leads found'}
+            </p>
+            {viewTab !== 'unassigned' && (
+              <button onClick={() => setModal('new')} className="btn-primary">Add your first lead</button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
-                  {['Doctor / Clinic', 'Brand', 'Case', 'Value', 'Intent', 'Score', 'Status', ...(isAdmin ? ['Rep'] : []), 'Contact', ''].map(h => (
+                  {tableHeaders.map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
                       {h}
                     </th>
@@ -628,11 +672,27 @@ export default function Leads() {
                         </span>
                         {isCold && <span className="ml-1 text-xs text-amber-600">⚠ {daysSince}d</span>}
                       </td>
-                      {isAdmin && (
-                        <td className="px-4 py-3 text-xs text-gray-500">
-                          {lead.assigned_to_name || '—'}
-                        </td>
-                      )}
+                      <td className="px-4 py-3">
+                        {viewTab === 'unassigned' ? (
+                          <button
+                            onClick={() => handleClaim(lead)}
+                            className="text-xs font-medium text-[#06babe] hover:text-[#207290] bg-teal-50 hover:bg-teal-100 px-2 py-1 rounded-lg transition-colors"
+                          >
+                            Claim
+                          </button>
+                        ) : (
+                          <select
+                            value={lead.assigned_to || ''}
+                            onChange={e => handleAssign(lead, e.target.value || null)}
+                            className="text-xs text-gray-600 border border-gray-200 rounded-lg px-2 py-1 bg-white hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#06babe] max-w-[110px]"
+                          >
+                            <option value="">— None —</option>
+                            {reps.map(r => (
+                              <option key={r.id} value={r.id}>{r.name || r.email}</option>
+                            ))}
+                          </select>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {lead.phone && <a href={`tel:${lead.phone}`} className="text-gray-400 hover:text-[#06babe]"><Phone size={14} /></a>}
@@ -663,7 +723,9 @@ export default function Leads() {
                           <button onClick={() => handleArchive(lead)} className="text-xs text-gray-400 hover:text-amber-600" title={showArchived ? 'Restore' : 'Archive'}>
                             {showArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
                           </button>
-                          <button onClick={() => handleDelete(lead.id)} className="text-xs text-red-400 hover:text-red-600">Del</button>
+                          {isAdmin && (
+                            <button onClick={() => handleDelete(lead.id)} className="text-xs text-red-400 hover:text-red-600">Del</button>
+                          )}
                         </div>
                       </td>
                     </tr>
