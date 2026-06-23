@@ -5,7 +5,89 @@ import { useAuth } from '../hooks/useAuth'
 import {
   ChevronDown, ChevronUp, Plus, Check, X, RefreshCw,
   MessageSquare, Trash2, Link2, CheckCircle,
+  Target, CheckSquare, AlertCircle, Users, Lightbulb,
 } from 'lucide-react'
+
+// ── Suggestions Panel ─────────────────────────────────────────────────────────
+
+const SUGGESTION_STYLES = {
+  high:   { bar: 'bg-red-500',   badge: 'bg-red-50 border-red-100',   text: 'text-red-700',   label: 'Needs Attention' },
+  medium: { bar: 'bg-amber-400', badge: 'bg-amber-50 border-amber-100', text: 'text-amber-700', label: 'Worth Noting' },
+  low:    { bar: 'bg-green-500', badge: 'bg-green-50 border-green-100', text: 'text-green-700', label: 'Great Work' },
+}
+
+const TYPE_ICON = {
+  rock:  Target,
+  todo:  CheckSquare,
+  issue: AlertCircle,
+  lead:  Users,
+}
+
+function SuggestionsPanel() {
+  const [suggestions, setSuggestions] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/api/eos/suggestions')
+      .then(d => { setSuggestions(d || []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  if (loading) return (
+    <div className="card p-4 flex items-center gap-3">
+      <div className="w-4 h-4 border-2 border-[#06babe]/30 border-t-[#06babe] rounded-full animate-spin" />
+      <span className="text-sm text-gray-400">Analysing your EOS data...</span>
+    </div>
+  )
+
+  if (suggestions.length === 0) return (
+    <div className="card p-4 flex items-center gap-3">
+      <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
+        <CheckCircle size={16} className="text-green-500" />
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-900">You're all on track!</p>
+        <p className="text-xs text-gray-400 mt-0.5">No issues flagged across your rocks, to-dos, issues, or leads.</p>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 mb-1">
+        <Lightbulb size={14} className="text-[#06babe]" />
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Suggestions for you</p>
+      </div>
+      {suggestions.map((s, i) => {
+        const style = SUGGESTION_STYLES[s.priority]
+        const Icon = TYPE_ICON[s.type] || Lightbulb
+        return (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.07, duration: 0.25 }}
+            className={`flex items-start gap-3 p-3.5 rounded-xl border ${style.badge} relative overflow-hidden`}
+          >
+            <div className={`absolute left-0 top-0 bottom-0 w-1 ${style.bar} rounded-l-xl`} />
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ml-1 ${style.badge}`}>
+              <Icon size={14} className={style.text} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-800 leading-snug">{s.message}</p>
+              {s.action && (
+                <p className={`text-xs font-medium mt-1 ${style.text}`}>{s.action} →</p>
+              )}
+            </div>
+            <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border flex-shrink-0 ${style.badge} ${style.text}`}>
+              {style.label}
+            </span>
+          </motion.div>
+        )
+      })}
+    </div>
+  )
+}
 
 const TABS = [
   { key: 'rocks',  label: 'Rocks' },
@@ -608,6 +690,9 @@ export default function EOS() {
         <h1 className="text-xl font-bold text-gray-900">EOS</h1>
         <p className="text-sm text-gray-400 mt-0.5">Rocks · Weekly To-Dos · Issues</p>
       </motion.div>
+
+      {/* Suggestions */}
+      <SuggestionsPanel />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
