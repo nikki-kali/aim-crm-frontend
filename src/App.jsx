@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { ToastProvider } from './components/Toast'
+import { ThemeProvider } from './context/ThemeContext'
 import Layout from './components/Layout'
 import PageTransition from './components/PageTransition'
 import Login from './pages/Login'
@@ -64,12 +65,14 @@ function AnimatedRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <BrowserRouter>
-          <AnimatedRoutes />
-        </BrowserRouter>
-      </ToastProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <AnimatedRoutes />
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }

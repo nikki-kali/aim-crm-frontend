@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Cell,
+} from 'recharts'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
-import { Send, X, Mail, FileDown } from 'lucide-react'
+import { Send, X, Mail, FileDown, TrendingUp, Users, DollarSign, ArrowUpRight } from 'lucide-react'
+import { SkeletonTable } from '../components/Skeleton'
+import EmptyState from '../components/EmptyState'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
@@ -31,12 +37,21 @@ const ADMIN_TABS = [
 
 function TH({ cols }) {
   return (
-    <tr className="bg-gray-50/60 border-b border-gray-100">
+    <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
       {cols.map(h => (
-        <th key={h} className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
+        <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
       ))}
     </tr>
   )
+}
+
+const ChartTooltipStyle = {
+  contentStyle: {
+    background: 'white', border: '1px solid #e2e8f0',
+    borderRadius: 10, fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+  },
+  labelStyle: { fontWeight: 600, color: '#0f172a', marginBottom: 2 },
+  itemStyle: { color: '#475569' },
 }
 
 // ─── Tab: Overview ────────────────────────────────────────────────────────────
@@ -82,27 +97,28 @@ function OverviewTab({ leads, clients }) {
       </div>
 
       <div className="card p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">YTD Win/Loss Breakdown</h3>
-        <div className="space-y-3">
-          {bars.map(b => (
-            <div key={b.label} className="flex items-center gap-3">
-              <span className="w-12 text-xs text-gray-500 text-right flex-shrink-0">{b.label}</span>
-              <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${(b.count / maxBar) * 100}%`,
-                    backgroundColor: b.color,
-                    minWidth: b.count > 0 ? 6 : 0,
-                  }}
-                />
-              </div>
-              <span className="w-24 text-xs text-gray-600 font-medium flex-shrink-0">
-                {b.count} ({total > 0 ? Math.round((b.count / total) * 100) : 0}%)
-              </span>
-            </div>
-          ))}
-        </div>
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">YTD Win/Loss Breakdown</h3>
+        {bars.every(b => b.count === 0) ? (
+          <EmptyState icon={TrendingUp} title="No lead data yet" size="sm" />
+        ) : (
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={bars} margin={{ top: 4, right: 8, left: -20, bottom: 4 }} barSize={36}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip {...ChartTooltipStyle} formatter={(v) => [v, 'Leads']} />
+                <Bar dataKey="count" radius={[6, 6, 0, 0]}
+                  label={{ position: 'top', fontSize: 11, fill: '#64748b', formatter: (v) => v > 0 ? v : '' }}
+                >
+                  {bars.map((b, i) => (
+                    <Cell key={i} fill={b.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       <div className="card overflow-hidden">
@@ -157,46 +173,86 @@ function TrendsTab({ leads }) {
   })
 
   const rows = Object.entries(byMonth)
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .slice(0, 12)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-12)
     .map(([k, d]) => {
       const [y, m] = k.split('-')
       const pct = d.leads > 0 ? (d.won / d.leads) * 100 : 0
-      return { label: `${MONTHS[Number(m) - 1].slice(0, 3)} ${y}`, ...d, pct }
+      return { label: `${MONTHS[Number(m) - 1].slice(0, 3)} '${y.slice(2)}`, ...d, pct }
     })
 
+  const tableRows = [...rows].reverse()
+
   return (
-    <div className="card overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-900">Monthly Trends — Last 12 Months</h3>
-      </div>
+    <div className="space-y-5">
       {rows.length === 0 ? (
-        <p className="text-center py-12 text-sm text-gray-400">No data available</p>
+        <div className="card p-5">
+          <EmptyState icon={TrendingUp} title="No trend data yet" description="Data will appear as leads are added." size="sm" />
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><TH cols={['Month', 'Leads', 'Won', 'Lost', 'Est. Revenue', 'Conv. Rate']} /></thead>
-            <tbody className="divide-y divide-gray-50">
-              {rows.map((r, i) => (
-                <tr key={i} className="hover:bg-gray-50/60">
-                  <td className="px-5 py-3 font-medium text-gray-900">{r.label}</td>
-                  <td className="px-5 py-3 text-gray-600">{r.leads}</td>
-                  <td className="px-5 py-3 font-medium text-green-600">{r.won}</td>
-                  <td className="px-5 py-3 text-red-500">{r.lost}</td>
-                  <td className="px-5 py-3 font-medium text-gray-700">
-                    {r.revenue > 0 ? `$${r.revenue.toLocaleString()}` : '—'}
-                  </td>
-                  <td className="px-5 py-3">
-                    <span className={`font-semibold ${r.pct >= 50 ? 'text-green-600' : r.pct > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
-                      {r.leads > 0 ? `${r.pct.toFixed(0)}%` : '—'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card p-5">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">Monthly Lead Volume — Last 12 Months</h3>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={rows} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="grad-leads" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06babe" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#06babe" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="grad-won" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip {...ChartTooltipStyle} />
+                <Area type="monotone" dataKey="leads" name="Total Leads" stroke="#06babe" strokeWidth={2} fill="url(#grad-leads)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="won" name="Won" stroke="#22c55e" strokeWidth={2} fill="url(#grad-won)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center gap-4 mt-3 justify-end">
+            <div className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full bg-[#06babe]" /><span className="text-xs text-slate-500">Total Leads</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full bg-emerald-500" /><span className="text-xs text-slate-500">Won</span></div>
+          </div>
         </div>
       )}
+
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Monthly Breakdown — Last 12 Months</h3>
+        </div>
+        {tableRows.length === 0 ? (
+          <EmptyState icon={TrendingUp} title="No data available" size="sm" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead><TH cols={['Month', 'Leads', 'Won', 'Lost', 'Est. Revenue', 'Conv. Rate']} /></thead>
+              <tbody>
+                {tableRows.map((r, i) => (
+                  <tr key={i} className="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-5 py-3 font-semibold text-slate-900 dark:text-slate-100">{r.label}</td>
+                    <td className="px-5 py-3 text-slate-600 dark:text-slate-400">{r.leads}</td>
+                    <td className="px-5 py-3 font-semibold text-emerald-600">{r.won}</td>
+                    <td className="px-5 py-3 text-red-500">{r.lost}</td>
+                    <td className="px-5 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                      {r.revenue > 0 ? `$${r.revenue.toLocaleString()}` : '—'}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`font-bold text-xs ${r.pct >= 50 ? 'text-emerald-600' : r.pct > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                        {r.leads > 0 ? `${r.pct.toFixed(0)}%` : '—'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -228,29 +284,22 @@ function SourcesTab({ leads }) {
   return (
     <div className="space-y-5">
       <div className="card p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Lead Volume by Source</h3>
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4">Lead Volume by Source</h3>
         {rows.length === 0 ? (
-          <p className="text-sm text-gray-400">No data available</p>
+          <EmptyState icon={Users} title="No source data yet" size="sm" />
         ) : (
-          <div className="space-y-3">
-            {rows.map(r => (
-              <div key={r.src} className="flex items-center gap-3">
-                <span className="w-24 text-xs text-gray-500 text-right flex-shrink-0 truncate">{r.src}</span>
-                <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${(r.total / maxTotal) * 100}%`,
-                      backgroundColor: '#06babe',
-                      minWidth: r.total > 0 ? 6 : 0,
-                    }}
-                  />
-                </div>
-                <span className="w-28 text-xs text-gray-600 font-medium flex-shrink-0">
-                  {r.total} leads ({r.pct.toFixed(0)}%)
-                </span>
-              </div>
-            ))}
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={rows.slice(0, 8)} layout="vertical" margin={{ top: 0, right: 32, left: 0, bottom: 0 }} barSize={20}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="src" width={90} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <Tooltip {...ChartTooltipStyle} formatter={(v) => [v, 'Leads']} />
+                <Bar dataKey="total" fill="#06babe" radius={[0, 6, 6, 0]}
+                  label={{ position: 'right', fontSize: 11, fill: '#94a3b8', formatter: (v) => v }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         )}
       </div>
@@ -1071,8 +1120,8 @@ export default function Reports() {
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Reports</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="page-title">Reports</h1>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
             {activeRep ? `Viewing: ${activeRep.name || activeRep.email}` : 'Analytics and performance insights'}
           </p>
         </div>
@@ -1149,14 +1198,12 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit overflow-x-auto">
+      <div className="flex gap-0.5 mb-6 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit max-w-full overflow-x-auto no-scrollbar">
         {(isAdmin ? ADMIN_TABS : STAFF_TABS).map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-              tab === t.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`tab-item ${tab === t.id ? 'tab-item-active' : ''}`}
           >
             {t.label}
           </button>
@@ -1166,7 +1213,12 @@ export default function Reports() {
       {tab === 'my-report' ? (
         <MyReportTab />
       ) : loading && !['operations','imports','schedule'].includes(tab) ? (
-        <div className="text-center py-20 text-gray-400 text-sm">Loading reports...</div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[0,1,2,3].map(i => <div key={i} className="card p-4 space-y-3"><div className="skeleton h-3 w-20 rounded" /><div className="skeleton h-8 w-16 rounded" /></div>)}
+          </div>
+          <div className="card overflow-hidden"><SkeletonTable rows={6} cols={5} /></div>
+        </div>
       ) : (
         <>
           {tab === 'overview'   && <OverviewTab leads={fl} clients={fc} />}

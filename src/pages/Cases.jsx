@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useToast } from '../components/Toast'
 import { Plus, Search, X, AlertTriangle, Calendar, Mail, RefreshCw } from 'lucide-react'
+import { SkeletonTable } from '../components/Skeleton'
+import EmptyState from '../components/EmptyState'
 
 const BRAND_OPTIONS = ['Aim Dental', 'Kings Highway']
 const CASE_TYPES = ['Crown & Bridge', 'Dentures', 'Implant', 'Ortho', 'Partial', 'Other']
@@ -246,11 +248,11 @@ export default function Cases() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Cases</h1>
-          <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-3">
+          <h1 className="page-title">Cases</h1>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-3">
             {cases.length} total
-            {dueSoonCount > 0 && <span className="inline-flex items-center gap-1 text-amber-600 font-medium"><AlertTriangle size={12} /> {dueSoonCount} due soon</span>}
-            {overdueCount > 0 && <span className="inline-flex items-center gap-1 text-red-600 font-medium"><AlertTriangle size={12} /> {overdueCount} overdue</span>}
+            {dueSoonCount > 0 && <span className="inline-flex items-center gap-1 text-amber-600 font-semibold"><AlertTriangle size={12} /> {dueSoonCount} due soon</span>}
+            {overdueCount > 0 && <span className="inline-flex items-center gap-1 text-red-600 font-semibold"><AlertTriangle size={12} /> {overdueCount} overdue</span>}
           </p>
         </div>
         <div className="flex gap-2">
@@ -260,16 +262,14 @@ export default function Cases() {
       </div>
 
       {/* Stage filter tabs — scrollable */}
-      <div className="overflow-x-auto pb-1 mb-5">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-max">
+      <div className="overflow-x-auto pb-1 mb-5 no-scrollbar">
+        <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-max">
           {['All', ...STAGES].map(stage => (
             <button key={stage} onClick={() => setActiveStage(stage)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                activeStage === stage ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
+              className={`tab-item ${activeStage === stage ? 'tab-item-active' : ''}`}
             >
               {stage}
-              <span className="ml-1 text-gray-400">{stageCounts[stage] ?? 0}</span>
+              <span className="ml-1 text-slate-400 dark:text-slate-500 text-[10px]">{stageCounts[stage] ?? 0}</span>
             </button>
           ))}
         </div>
@@ -277,7 +277,7 @@ export default function Cases() {
 
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input className="input pl-9" placeholder="Search case #, client, patient, type..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <select className="input w-auto" value={filterBrand} onChange={e => setFilterBrand(e.target.value)}>
@@ -288,12 +288,15 @@ export default function Cases() {
 
       <div className="card overflow-hidden">
         {loading ? (
-          <div className="text-center py-16 text-gray-400 text-sm">Loading cases...</div>
+          <SkeletonTable rows={5} cols={8} />
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-400 text-sm mb-3">No cases found</p>
-            <button onClick={() => setModal('new')} className="btn-primary">Add your first case</button>
-          </div>
+          <EmptyState
+            icon={Plus}
+            title="No cases found"
+            description={search ? 'Try a different search term or filter.' : 'Add your first case to get started.'}
+            action={!search ? () => setModal('new') : undefined}
+            actionLabel="New Case"
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

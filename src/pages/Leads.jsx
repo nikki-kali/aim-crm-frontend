@@ -4,6 +4,8 @@ import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check, Archive, ArchiveRestore, UserCheck } from 'lucide-react'
+import { SkeletonTable } from '../components/Skeleton'
+import EmptyState from '../components/EmptyState'
 
 const STATUS_OPTIONS = ['Lead', 'Contacted', 'Proposal', 'Won', 'Lost', 'Pending']
 const BRAND_OPTIONS = ['Aim Dental', 'Kings Highway']
@@ -549,8 +551,10 @@ export default function Leads() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Leads</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{leads.length} {showArchived ? 'archived' : 'active'} leads</p>
+          <h1 className="page-title">Leads</h1>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
+            {leads.length} {showArchived ? 'archived' : 'active'} leads
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -569,16 +573,12 @@ export default function Leads() {
       </div>
 
       {/* View tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit mb-5">
+      <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit mb-5">
         {VIEW_TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setViewTab(tab.id)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-              viewTab === tab.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-900'
-            }`}
+            className={`tab-item ${viewTab === tab.id ? 'tab-item-active' : ''}`}
           >
             {tab.label}
           </button>
@@ -587,7 +587,7 @@ export default function Leads() {
 
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             className="input pl-9"
             placeholder="Search doctor, clinic, case type..."
@@ -607,76 +607,85 @@ export default function Leads() {
 
       <div className="card overflow-hidden">
         {loading ? (
-          <div className="text-center py-16 text-gray-400 text-sm">Loading leads...</div>
+          <SkeletonTable rows={6} cols={10} />
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-400 text-sm mb-3">
-              {viewTab === 'unassigned' ? 'No unassigned leads — great!' : 'No leads found'}
-            </p>
-            {viewTab !== 'unassigned' && (
-              <button onClick={() => setModal('new')} className="btn-primary">Add your first lead</button>
-            )}
-          </div>
+          <EmptyState
+            icon={viewTab === 'unassigned' ? UserCheck : Plus}
+            title={viewTab === 'unassigned' ? 'No unassigned leads — great!' : 'No leads found'}
+            description={viewTab !== 'unassigned' && !search ? 'Add your first lead to get started.' : search ? 'Try a different search term.' : undefined}
+            action={viewTab !== 'unassigned' && !search ? () => setModal('new') : undefined}
+            actionLabel="Add Lead"
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="data-table">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/60">
+                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
                   {tableHeaders.map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filtered.map(lead => {
+              <tbody>
+                {filtered.map((lead, i) => {
                   const daysSince = lead.last_contacted_at
                     ? Math.floor((Date.now() - new Date(lead.last_contacted_at)) / 86400000)
                     : null
                   const isCold = daysSince !== null && daysSince >= 14 && !['Won', 'Lost'].includes(lead.status)
 
                   return (
-                    <tr key={lead.id} className={`hover:bg-gray-50/60 transition-colors ${isCold ? 'bg-amber-50/30' : ''}`}>
+                    <motion.tr
+                      key={lead.id}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2 }}
+                      className={`border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors ${isCold ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}`}
+                    >
                       <td className="px-4 py-3">
-                        <p className="font-medium text-gray-900">{lead.doctor_name}</p>
-                        <p className="text-xs text-gray-400">{lead.clinic_name}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{lead.doctor_name}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{lead.clinic_name}</p>
                       </td>
                       <td className="px-4 py-3">
                         <span className={lead.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
                           {lead.brand === 'Aim Dental' ? 'Aim' : 'KH'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{lead.case_interest || '—'}</td>
-                      <td className="px-4 py-3 font-medium text-gray-700">
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-sm">{lead.case_interest || '—'}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 text-sm">
                         {lead.estimated_value ? `$${Number(lead.estimated_value).toLocaleString()}` : '—'}
                       </td>
                       <td className="px-4 py-3">
                         {lead.intent_level ? (
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${INTENT_CLASSES[lead.intent_level] || 'bg-gray-100 text-gray-500'}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${INTENT_CLASSES[lead.intent_level] || 'bg-slate-100 text-slate-500'}`}>
                             {lead.intent_level}
                           </span>
                         ) : '—'}
                       </td>
                       <td className="px-4 py-3">
                         {lead.ai_score != null ? (
-                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${scoreColor(lead.ai_score)}`}>
+                          <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${scoreColor(lead.ai_score)}`}>
                             <Star size={10} />
                             {lead.ai_score}
                           </span>
                         ) : '—'}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_CLASSES[lead.status] || ''}`}>
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${STATUS_CLASSES[lead.status] || ''}`}>
                           {lead.status}
                         </span>
-                        {isCold && <span className="ml-1 text-xs text-amber-600">⚠ {daysSince}d</span>}
+                        {isCold && (
+                          <span className="ml-1.5 text-xs text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded">
+                            {daysSince}d cold
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {viewTab === 'unassigned' ? (
                           <button
                             onClick={() => handleClaim(lead)}
-                            className="text-xs font-medium text-[#06babe] hover:text-[#207290] bg-teal-50 hover:bg-teal-100 px-2 py-1 rounded-lg transition-colors"
+                            className="text-xs font-semibold text-[#06babe] hover:text-[#207290] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-colors"
                           >
                             Claim
                           </button>
@@ -684,7 +693,7 @@ export default function Leads() {
                           <select
                             value={lead.assigned_to || ''}
                             onChange={e => handleAssign(lead, e.target.value || null)}
-                            className="text-xs text-gray-600 border border-gray-200 rounded-lg px-2 py-1 bg-white hover:border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#06babe] max-w-[110px]"
+                            className="text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-1 focus:ring-[#06babe] max-w-[110px]"
                           >
                             <option value="">— None —</option>
                             {reps.map(r => (
@@ -695,14 +704,14 @@ export default function Leads() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          {lead.phone && <a href={`tel:${lead.phone}`} className="text-gray-400 hover:text-[#06babe]"><Phone size={14} /></a>}
-                          {lead.email && <a href={`mailto:${lead.email}`} className="text-gray-400 hover:text-[#06babe]"><Mail size={14} /></a>}
+                          {lead.phone && <a href={`tel:${lead.phone}`} className="text-slate-400 hover:text-[#06babe] transition-colors"><Phone size={14} /></a>}
+                          {lead.email && <a href={`mailto:${lead.email}`} className="text-slate-400 hover:text-[#06babe] transition-colors"><Mail size={14} /></a>}
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 justify-end flex-wrap">
                           {!showArchived && (
-                            <button onClick={() => handleContactNow(lead)} className="text-xs text-[#06babe] hover:underline">
+                            <button onClick={() => handleContactNow(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
                               Contacted
                             </button>
                           )}
@@ -710,25 +719,25 @@ export default function Leads() {
                             <button
                               onClick={() => handleConvert(lead)}
                               disabled={converting === lead.id}
-                              className="text-xs flex items-center gap-1 text-green-600 hover:text-green-700 font-medium disabled:opacity-50"
+                              className="text-xs flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold disabled:opacity-50"
                             >
                               <UserCheck size={11} />
                               {converting === lead.id ? '…' : 'Convert'}
                             </button>
                           )}
                           {lead.converted_to_client_id && (
-                            <span className="text-xs text-gray-400 flex items-center gap-0.5"><UserCheck size={10} /> Client</span>
+                            <span className="text-xs text-slate-400 flex items-center gap-0.5"><UserCheck size={10} /> Client</span>
                           )}
-                          <button onClick={() => setModal(lead)} className="text-xs text-gray-500 hover:text-gray-900">Edit</button>
-                          <button onClick={() => handleArchive(lead)} className="text-xs text-gray-400 hover:text-amber-600" title={showArchived ? 'Restore' : 'Archive'}>
+                          <button onClick={() => setModal(lead)} className="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 font-medium">Edit</button>
+                          <button onClick={() => handleArchive(lead)} className="text-xs text-slate-400 hover:text-amber-600 transition-colors" title={showArchived ? 'Restore' : 'Archive'}>
                             {showArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
                           </button>
                           {isAdmin && (
-                            <button onClick={() => handleDelete(lead.id)} className="text-xs text-red-400 hover:text-red-600">Del</button>
+                            <button onClick={() => handleDelete(lead.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors font-medium">Del</button>
                           )}
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   )
                 })}
               </tbody>
