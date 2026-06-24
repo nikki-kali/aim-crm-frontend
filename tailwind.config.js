@@ -5,6 +5,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        brand: {
+          50:  '#f0fafa',
+          100: '#ccf1f2',
+          200: '#99e2e6',
+          600: '#06babe',
+          700: '#207290',
+        },
         teal: {
           50:  '#f0fdfc',
           100: '#ccfbf6',

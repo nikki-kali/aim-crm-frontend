@@ -129,8 +129,8 @@ function ReportDocument({ data, month }) {
   )
 }
 
-export async function downloadReportPDF(data) {
-  const month = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })
+export async function downloadReportPDF(data, dateLabel) {
+  const month = dateLabel || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })
   const blob = await pdf(<ReportDocument data={data} month={month} />).toBlob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')

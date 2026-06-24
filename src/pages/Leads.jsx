@@ -134,10 +134,20 @@ function parseCsv(text) {
 
 function LeadModal({ lead, onClose, onSave, isAdmin }) {
   const [form, setForm] = useState(lead ? {
-    ...EMPTY_FORM, ...lead,
-    lead_source:  lead.lead_source || lead.referral_source || '',
-    intent_level: lead.intent_level || 'Medium',
-    assigned_to:  lead.assigned_to || '',
+    ...EMPTY_FORM,
+    doctor_name:     lead.doctor_name    || '',
+    clinic_name:     lead.clinic_name    || '',
+    brand:           lead.brand          || 'Aim Dental',
+    case_interest:   lead.case_interest  || '',
+    phone:           lead.phone          || '',
+    email:           lead.email          || '',
+    notes:           lead.notes          || '',
+    status:          lead.status         || 'Lead',
+    estimated_value: lead.estimated_value != null ? lead.estimated_value : '',
+    lead_source:     lead.lead_source    || lead.referral_source || '',
+    intent_level:    lead.intent_level   || 'Medium',
+    assigned_to:     lead.assigned_to    || '',
+    id:              lead.id,
   } : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
@@ -151,14 +161,24 @@ function LeadModal({ lead, onClose, onSave, isAdmin }) {
   const liveScore = scoreFromLead({ ...form, estimated_value: Number(form.estimated_value) || 0 })
 
   const handleSave = async () => {
-    if (!form.doctor_name.trim()) return setError('Doctor name is required')
+    if (!form.doctor_name?.trim()) return setError('Doctor name is required')
     setSaving(true)
     setError('')
     try {
       const data = {
-        ...form,
+        doctor_name:     form.doctor_name.trim(),
+        clinic_name:     form.clinic_name     || '',
+        brand:           form.brand           || 'Aim Dental',
+        case_interest:   form.case_interest   || '',
+        phone:           form.phone           || '',
+        email:           form.email           || '',
+        notes:           form.notes           || '',
+        status:          form.status          || 'Lead',
+        intent_level:    form.intent_level    || 'Medium',
+        lead_source:     form.lead_source     || '',
+        referral_source: form.lead_source     || '',
         estimated_value: Number(form.estimated_value) || 0,
-        referral_source: form.lead_source,
+        assigned_to:     form.assigned_to     || null,
       }
       if (lead?.id) {
         await api.put(`/api/leads/${lead.id}`, data)
@@ -167,7 +187,7 @@ function LeadModal({ lead, onClose, onSave, isAdmin }) {
       }
       onSave()
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Save failed — please try again')
     }
     setSaving(false)
   }
@@ -238,7 +258,7 @@ function LeadModal({ lead, onClose, onSave, isAdmin }) {
               <label className="label">Estimated Value ($)</label>
               <input className="input" type="number" value={form.estimated_value} onChange={e => set('estimated_value', e.target.value)} placeholder="0" />
             </div>
-            {reps.length > 0 && (
+            {isAdmin && reps.length > 0 && (
               <div className="col-span-2">
                 <label className="label">Assigned Rep</label>
                 <select className="input" value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)}>
@@ -271,12 +291,12 @@ function LeadModal({ lead, onClose, onSave, isAdmin }) {
 
 function CsvImportModal({ onClose, onImport, isAdmin }) {
   const fileRef   = useRef(null)
+  const [csvFile,    setCsvFile]    = useState(null)
   const [rows,       setRows]       = useState([])
   const [step,       setStep]       = useState('pick')
   const [importing,  setImporting]  = useState(false)
   const [result,     setResult]     = useState(null)
   const [parseError, setParseError] = useState('')
-  const [localFilename, setLocalFilename] = useState('')
   const [assignedTo, setAssignedTo] = useState('')
   const [reps,       setReps]       = useState([])
 
@@ -289,7 +309,7 @@ function CsvImportModal({ onClose, onImport, isAdmin }) {
   const handleFile = (file) => {
     if (!file) return
     if (!file.name.match(/\.csv$/i)) { setParseError('Please select a .csv file'); return }
-    setLocalFilename(file.name)
+    setCsvFile(file)
     const reader = new FileReader()
     reader.onload = (ev) => {
       setParseError('')
@@ -307,9 +327,10 @@ function CsvImportModal({ onClose, onImport, isAdmin }) {
   const handleImport = async () => {
     setImporting(true)
     try {
-      const body = { rows, filename: localFilename }
-      if (isAdmin && assignedTo) body.assigned_to = assignedTo
-      const res = await api.post('/api/leads/import', body)
+      const fd = new FormData()
+      fd.append('file', csvFile)
+      if (isAdmin && assignedTo) fd.append('assigned_to', assignedTo)
+      const res = await api.upload('/api/leads/import', fd)
       setResult({ added: res.added, skipped: res.skipped })
       setStep('done')
     } catch (err) {
@@ -385,7 +406,7 @@ function CsvImportModal({ onClose, onImport, isAdmin }) {
                 <span className="font-semibold text-gray-900">{rows.length}</span>{' '}
                 lead{rows.length !== 1 ? 's' : ''} ready to import
               </p>
-              <button onClick={() => { setStep('pick'); setRows([]) }}
+              <button onClick={() => { setStep('pick'); setRows([]); setCsvFile(null) }}
                 className="text-xs text-gray-500 hover:text-gray-900">← Change file</button>
             </div>
             <div className="overflow-auto flex-1">
@@ -728,7 +749,9 @@ export default function Leads() {
                           {lead.converted_to_client_id && (
                             <span className="text-xs text-slate-400 flex items-center gap-0.5"><UserCheck size={10} /> Client</span>
                           )}
-                          <button onClick={() => setModal(lead)} className="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 font-medium">Edit</button>
+                          {(isAdmin || !lead.assigned_to || lead.assigned_to === user.id) && (
+                            <button onClick={() => setModal(lead)} className="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 font-medium">Edit</button>
+                          )}
                           <button onClick={() => handleArchive(lead)} className="text-xs text-slate-400 hover:text-amber-600 transition-colors" title={showArchived ? 'Restore' : 'Archive'}>
                             {showArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
                           </button>

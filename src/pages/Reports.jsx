@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -13,6 +13,30 @@ import EmptyState from '../components/EmptyState'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
+
+const DATE_PRESETS = [
+  { id: 'all',    label: 'All Time' },
+  { id: '7d',     label: '7 Days' },
+  { id: '30d',    label: '30 Days' },
+  { id: '90d',    label: '90 Days' },
+  { id: 'ytd',    label: 'YTD' },
+  { id: 'custom', label: 'Custom' },
+]
+
+function dateRangeBounds(dr) {
+  const now = new Date()
+  if (dr.preset === '7d')  return { from: new Date(now - 7*86400000).toISOString(), to: null }
+  if (dr.preset === '30d') return { from: new Date(now - 30*86400000).toISOString(), to: null }
+  if (dr.preset === '90d') return { from: new Date(now - 90*86400000).toISOString(), to: null }
+  if (dr.preset === 'ytd') return { from: new Date(now.getFullYear(), 0, 1).toISOString(), to: null }
+  if (dr.preset === 'custom') {
+    return {
+      from: dr.from ? new Date(dr.from).toISOString() : null,
+      to:   dr.to   ? new Date(dr.to + 'T23:59:59.999').toISOString() : null,
+    }
+  }
+  return { from: null, to: null }
+}
 
 const MY_REPORT_TAB = { id: 'my-report', label: 'My Report' }
 
@@ -159,6 +183,156 @@ function OverviewTab({ leads, clients }) {
   )
 }
 
+// ─── Period Charts (weekly / monthly / quarterly) ─────────────────────────────
+
+function PeriodCharts({ leads }) {
+  const [view, setView] = useState('all')
+
+  const weeklyData = useMemo(() => {
+    const byWeek = {}
+    leads.forEach(l => {
+      const d = new Date(l.created_at)
+      const sun = new Date(d)
+      sun.setDate(d.getDate() - d.getDay())
+      sun.setHours(0, 0, 0, 0)
+      const k = sun.toISOString().slice(0, 10)
+      if (!byWeek[k]) byWeek[k] = { leads: 0, won: 0 }
+      byWeek[k].leads++
+      if (l.status === 'Won') byWeek[k].won++
+    })
+    const now = new Date()
+    return Array.from({ length: 12 }, (_, i) => {
+      const sun = new Date(now)
+      sun.setDate(now.getDate() - now.getDay() - (11 - i) * 7)
+      sun.setHours(0, 0, 0, 0)
+      const k = sun.toISOString().slice(0, 10)
+      return {
+        label: sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        ...(byWeek[k] || { leads: 0, won: 0 }),
+      }
+    })
+  }, [leads])
+
+  const monthlyData = useMemo(() => {
+    const byMonth = {}
+    leads.forEach(l => {
+      const d = new Date(l.created_at)
+      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      if (!byMonth[k]) byMonth[k] = { leads: 0, won: 0 }
+      byMonth[k].leads++
+      if (l.status === 'Won') byMonth[k].won++
+    })
+    const now = new Date()
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
+      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      return {
+        label: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        ...(byMonth[k] || { leads: 0, won: 0 }),
+      }
+    })
+  }, [leads])
+
+  const quarterlyData = useMemo(() => {
+    const byQ = {}
+    leads.forEach(l => {
+      const d = new Date(l.created_at)
+      const q = Math.floor(d.getMonth() / 3) + 1
+      const k = `${d.getFullYear()}-Q${q}`
+      if (!byQ[k]) byQ[k] = { leads: 0, won: 0 }
+      byQ[k].leads++
+      if (l.status === 'Won') byQ[k].won++
+    })
+    const now = new Date()
+    return Array.from({ length: 8 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (7 - i) * 3, 1)
+      const q = Math.floor(d.getMonth() / 3) + 1
+      const k = `${d.getFullYear()}-Q${q}`
+      return {
+        label: `Q${q} '${String(d.getFullYear()).slice(2)}`,
+        ...(byQ[k] || { leads: 0, won: 0 }),
+      }
+    })
+  }, [leads])
+
+  const periods = [
+    { id: 'weekly',    label: 'Weekly',    sub: 'Last 12 weeks',   data: weeklyData },
+    { id: 'monthly',   label: 'Monthly',   sub: 'Last 12 months',  data: monthlyData },
+    { id: 'quarterly', label: 'Quarterly', sub: 'Last 8 quarters', data: quarterlyData },
+  ]
+
+  const shownPeriods = view === 'all' ? periods : periods.filter(p => p.id === view)
+
+  const renderChart = (p, tall) => (
+    <div className={tall ? 'h-64' : 'h-44'}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={p.data} margin={{ top: 4, right: 8, left: -28, bottom: 0 }}>
+          <defs>
+            <linearGradient id={`gl-${p.id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#06babe" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="#06babe" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id={`gw-${p.id}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.15} />
+              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}
+            interval={tall ? 0 : 'preserveStartEnd'} />
+          <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+          <Tooltip {...ChartTooltipStyle} />
+          <Area type="monotone" dataKey="leads" name="Leads" stroke="#06babe" strokeWidth={2}
+            fill={`url(#gl-${p.id})`} dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
+          <Area type="monotone" dataKey="won" name="Won" stroke="#22c55e" strokeWidth={2}
+            fill={`url(#gw-${p.id})`} dot={false} activeDot={{ r: 3, strokeWidth: 0 }} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+
+  return (
+    <div className="card p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Period Comparison</h3>
+        <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+          {[{ id: 'all', label: 'All' }, ...periods.map(p => ({ id: p.id, label: p.label }))].map(v => (
+            <button
+              key={v.id}
+              onClick={() => setView(v.id)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                view === v.id
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={view === 'all' ? 'grid md:grid-cols-3 gap-5' : ''}>
+        {shownPeriods.map(p => (
+          <div key={p.id}>
+            {view === 'all' ? (
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">{p.label}</p>
+            ) : (
+              <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">{p.sub}</p>
+            )}
+            {renderChart(p, view !== 'all')}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-4 mt-3 justify-end">
+        <div className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full bg-[#06babe]" /><span className="text-xs text-slate-500">Leads</span></div>
+        <div className="flex items-center gap-1.5"><span className="w-3 h-0.5 rounded-full bg-emerald-500" /><span className="text-xs text-slate-500">Won</span></div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Tab: Trends ──────────────────────────────────────────────────────────────
 
 function TrendsTab({ leads }) {
@@ -185,6 +359,8 @@ function TrendsTab({ leads }) {
 
   return (
     <div className="space-y-5">
+      <PeriodCharts leads={leads} />
+
       {rows.length === 0 ? (
         <div className="card p-5">
           <EmptyState icon={TrendingUp} title="No trend data yet" description="Data will appear as leads are added." size="sm" />
@@ -1088,6 +1264,7 @@ export default function Reports() {
   const [exportingPDF, setExportingPDF] = useState(false)
   const [repFilter, setRepFilter] = useState('all')
   const [users, setUsers] = useState([])
+  const [dateRange, setDateRange] = useState({ preset: 'all', from: '', to: '' })
   const toast = useToast()
 
   useEffect(() => {
@@ -1111,10 +1288,31 @@ export default function Reports() {
     load()
   }, [repFilter])
 
-  const fl = brand === 'All' ? leads : leads.filter(l => l.brand === brand)
+  const fl = useMemo(() => {
+    const { from: drFrom, to: drTo } = dateRangeBounds(dateRange)
+    let list = brand === 'All' ? leads : leads.filter(l => l.brand === brand)
+    if (drFrom) list = list.filter(l => l.created_at >= drFrom)
+    if (drTo)   list = list.filter(l => l.created_at <= drTo)
+    return list
+  }, [leads, brand, dateRange])
   const fc = brand === 'All' ? clients : clients.filter(c => c.brand === brand)
 
   const activeRep = repFilter !== 'all' ? users.find(u => u.id === repFilter) : null
+
+  function getDateLabel() {
+    if (dateRange.preset === 'all')    return 'All Time'
+    if (dateRange.preset === '7d')     return 'Last 7 Days'
+    if (dateRange.preset === '30d')    return 'Last 30 Days'
+    if (dateRange.preset === '90d')    return 'Last 90 Days'
+    if (dateRange.preset === 'ytd')    return `YTD ${new Date().getFullYear()}`
+    if (dateRange.preset === 'custom') {
+      const fmt = d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      const from = dateRange.from ? fmt(dateRange.from) : '…'
+      const to   = dateRange.to   ? fmt(dateRange.to)   : 'Present'
+      return `${from} – ${to}`
+    }
+    return ''
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -1134,18 +1332,25 @@ export default function Reports() {
                   setExportingPDF(true)
                   try {
                     const { downloadReportPDF } = await import('../components/ReportPDF')
-                    const [overview, dashboard] = await Promise.all([
-                      api.get('/api/reports/overview'),
-                      api.get('/api/dashboard'),
-                    ])
+                    const won    = fl.filter(l => l.status === 'Won')
+                    const lost   = fl.filter(l => l.status === 'Lost')
+                    const active = fl.filter(l => !['Won', 'Lost'].includes(l.status))
+                    const cold14 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+                    const brandMap = {}
+                    won.forEach(l => { brandMap[l.brand] = (brandMap[l.brand] || 0) + Number(l.estimated_value || 0) })
                     await downloadReportPDF({
-                      kpis: dashboard.kpis,
-                      ytd: { ytd_leads: overview.ytd_leads, ytd_won: overview.ytd_won, ytd_lost: overview.ytd_lost },
-                      brandRevenue: overview.brand_revenue,
-                      topClients: overview.top_clients,
-                      coldCount: dashboard.cold_leads?.length ?? 0,
+                      kpis: {
+                        active_leads:  active.length,
+                        total_clients: fc.length,
+                        total_revenue: fc.reduce((s, c) => s + Number(c.total_revenue || 0), 0),
+                        lost_leads:    lost.length,
+                      },
+                      ytd: { ytd_leads: fl.length, ytd_won: won.length, ytd_lost: lost.length },
+                      brandRevenue: Object.entries(brandMap).map(([brand, revenue]) => ({ brand, revenue })),
+                      topClients: [...fc].sort((a, b) => Number(b.total_revenue || 0) - Number(a.total_revenue || 0)).slice(0, 5),
+                      coldCount: active.filter(l => (l.last_contacted_at || l.created_at) < cold14).length,
                       overdueCount: 0,
-                    })
+                    }, getDateLabel())
                     toast('PDF downloaded', 'success')
                   } catch (err) {
                     toast('PDF export failed: ' + err.message, 'error')
@@ -1197,6 +1402,45 @@ export default function Reports() {
           )}
         </div>
       </div>
+
+      {!['my-report', 'operations', 'imports', 'schedule'].includes(tab) && (
+        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">Date Range:</span>
+          {DATE_PRESETS.map(p => (
+            <button
+              key={p.id}
+              onClick={() => setDateRange(dr => ({ ...dr, preset: p.id }))}
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                dateRange.preset === p.id
+                  ? 'bg-[#06babe] text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-[#06babe] hover:text-[#06babe]'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+          {dateRange.preset === 'custom' && (
+            <div className="flex items-center gap-2 ml-1">
+              <input
+                type="date"
+                value={dateRange.from}
+                onChange={e => setDateRange(dr => ({ ...dr, from: e.target.value }))}
+                className="input text-xs py-1 w-36"
+              />
+              <span className="text-xs text-slate-400">to</span>
+              <input
+                type="date"
+                value={dateRange.to}
+                onChange={e => setDateRange(dr => ({ ...dr, to: e.target.value }))}
+                className="input text-xs py-1 w-36"
+              />
+            </div>
+          )}
+          {dateRange.preset !== 'all' && (
+            <span className="ml-auto text-xs text-slate-400 dark:text-slate-500">{fl.length} lead{fl.length !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-0.5 mb-6 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit max-w-full overflow-x-auto no-scrollbar">
         {(isAdmin ? ADMIN_TABS : STAFF_TABS).map(t => (
