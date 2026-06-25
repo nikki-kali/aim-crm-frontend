@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import schedulerApi from "../../lib/schedulerApi";
-import { Globe, Check, AlertCircle, Link2, Sparkles, Trash2 } from "lucide-react";
+import { Globe, Check, AlertCircle, Link2, Trash2, Users, CheckCircle2, XCircle } from "lucide-react";
 
 const SCHEDULER_API = import.meta.env.VITE_SCHEDULER_API_URL || "http://localhost:5000";
 
 export default function SchedulerIntegrations() {
   const [integrations, setIntegrations] = useState([]);
+  const [teamStatus, setTeamStatus] = useState([]);
+  const [teamStatusError, setTeamStatusError] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [error, setError] = useState("");
@@ -25,6 +27,7 @@ export default function SchedulerIntegrations() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
     fetchIntegrations();
+    fetchTeamStatus();
   }, []);
 
   const fetchIntegrations = async () => {
@@ -36,6 +39,15 @@ export default function SchedulerIntegrations() {
       setError("Failed to load integrations status.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTeamStatus = async () => {
+    try {
+      const res = await schedulerApi.get("/integrations/team-status");
+      setTeamStatus(res.data);
+    } catch {
+      setTeamStatusError("Failed to load team connection status.");
     }
   };
 
@@ -59,24 +71,6 @@ export default function SchedulerIntegrations() {
     const token = localStorage.getItem("crm_token");
     const paths = { google_calendar: "google" };
     window.location.href = `${SCHEDULER_API}/integrations/${paths[provider] || provider}/connect?token=${token}`;
-  };
-
-  const handleDevMockConnect = async (provider) => {
-    setActionLoading(provider);
-    setError(""); setSuccess("");
-    const labels = { google_calendar: "Google Calendar" };
-    try {
-      const res = await schedulerApi.post("/integrations/dev-connect", { provider });
-      setIntegrations((prev) => {
-        const next = prev.filter((item) => item.provider !== provider);
-        return [...next, res.data].sort((a, b) => a.provider.localeCompare(b.provider));
-      });
-      setSuccess(`Mock connection created successfully for ${labels[provider] || provider}.`);
-    } catch {
-      setError("Failed to create mock connection.");
-    } finally {
-      setActionLoading(null);
-    }
   };
 
   const getIntegrationByProvider = (provider) => integrations.find((item) => item.provider === provider);
@@ -149,20 +143,45 @@ export default function SchedulerIntegrations() {
             );
           })()}
 
-          <div className="bg-slate-50/60 border border-slate-200/50 rounded-3xl p-6 mt-8">
-            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4 text-brand-600" />
-              Development Mock Connections
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-xs p-6 mt-8">
+            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 mb-1">
+              <Users className="h-4 w-4 text-brand-600" />
+              Team Connection Status
             </h3>
-            <p className="text-slate-500 text-xs leading-relaxed mb-6">
-              OAuth applications require production setup. Click below to instantly connect mock environments locally without configuring external credentials.
+            <p className="text-slate-500 text-xs leading-relaxed mb-5">
+              See which teammates have connected their Google Calendar to the scheduler.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <button type="button" onClick={() => handleDevMockConnect("google_calendar")} disabled={actionLoading !== null}
-                className="py-2 px-4 border border-dashed border-red-300 hover:bg-red-50/50 text-red-600 text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50">
-                Mock Connect Google Calendar
-              </button>
-            </div>
+
+            {teamStatusError ? (
+              <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" /><span>{teamStatusError}</span>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {teamStatus.map((member) => (
+                  <div key={member.userId} className="flex items-center justify-between py-3 gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{member.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{member.email}</p>
+                    </div>
+                    {member.connected ? (
+                      <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-green-50 text-green-700 flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Connected{member.connectedAs ? ` · ${member.connectedAs}` : ""}
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 flex items-center gap-1.5">
+                        <XCircle className="h-3.5 w-3.5" />
+                        Not Connected
+                      </span>
+                    )}
+                  </div>
+                ))}
+                {teamStatus.length === 0 && (
+                  <p className="text-xs text-slate-400 py-3">No team members found yet.</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
