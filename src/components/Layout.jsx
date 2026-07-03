@@ -143,9 +143,9 @@ function SidebarContent({ user, isAdmin, navItems, currentPath, onClose, onAvata
     : ['main', 'crm', 'tools']
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800">
+    <div className="flex flex-col h-full bg-white/35 dark:bg-slate-900/35 backdrop-blur-2xl backdrop-saturate-150 border-r border-white/40 dark:border-white/10 shadow-[4px_0_40px_-8px_rgba(6,186,190,0.25)]">
       {/* Logo row */}
-      <div className="px-4 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800">
+      <div className="px-4 pt-5 pb-4 border-b border-white/40 dark:border-white/5">
         <div className="flex items-center justify-between">
           <img src="/logo.png" alt="Aim Dental" className="h-7 w-auto" />
           <AlertsBell />
@@ -166,9 +166,9 @@ function SidebarContent({ user, isAdmin, navItems, currentPath, onClose, onAvata
       </nav>
 
       {/* User section */}
-      <div className="px-3 pb-3 border-t border-slate-100 dark:border-slate-800 pt-3 space-y-1">
+      <div className="px-3 pb-3 border-t border-white/40 dark:border-white/5 pt-3 space-y-1">
         {/* User info + avatar */}
-        <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+        <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
           <Avatar user={user} size={36} onClick={onAvatarClick} uploading={uploading} />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">
@@ -216,7 +216,7 @@ const SCHEDULER_TABS = [
 
 function SchedulerSubNav({ currentPath }) {
   return (
-    <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-4 sm:px-6 lg:px-8">
+    <div className="bg-white/35 dark:bg-slate-900/35 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/40 dark:border-white/10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto flex gap-1 overflow-x-auto">
         {SCHEDULER_TABS.map(({ to, label, exact }) => {
           const isActive = exact ? currentPath === to : currentPath === to || currentPath.startsWith(to + '/')
@@ -294,12 +294,20 @@ export default function Layout({ children }) {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="relative flex h-screen overflow-hidden bg-slate-100 dark:bg-[#050b14]">
+      {/* Ambient brand-colored blobs — the color glass panels blur/reveal */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
+        <div className="absolute -top-32 -left-32 w-[34rem] h-[34rem] rounded-full bg-brand-600/60 dark:bg-brand-600/45 blur-3xl" />
+        <div className="absolute top-1/4 -right-32 w-[36rem] h-[36rem] rounded-full bg-navy-700/55 dark:bg-navy-600/45 blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-[28rem] h-[28rem] rounded-full bg-teal-400/50 dark:bg-teal-400/35 blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-brand-700/40 dark:bg-brand-500/30 blur-3xl" />
+      </div>
+
       {/* Hidden file input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 flex-col flex-shrink-0">
+      <aside className="relative z-10 hidden md:flex w-60 flex-col flex-shrink-0">
         <SidebarContent {...sidebarProps} onClose={() => {}} />
       </aside>
 
@@ -324,9 +332,9 @@ export default function Layout({ children }) {
       </AnimatePresence>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile header */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white/35 dark:bg-slate-900/35 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/40 dark:border-white/10">
           <button onClick={() => setMobileOpen(true)} className="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Menu size={20} />
           </button>
