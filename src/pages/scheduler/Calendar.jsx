@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import schedulerApi from "../../lib/schedulerApi";
-import { ChevronLeft, ChevronRight, Clock, User, Video, ExternalLink, Users } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import { ChevronLeft, ChevronRight, Clock, User, Video, ExternalLink, Users, CalendarClock } from "lucide-react";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -13,9 +14,10 @@ const EMPLOYEE_COLORS = [
   "bg-rose-500", "bg-emerald-500", "bg-orange-500", "bg-cyan-500",
 ];
 
-const CRM_API = import.meta.env.VITE_CRM_API_URL || "http://localhost:4000";
+const CRM_API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export default function SchedulerCalendar() {
+  const { user } = useAuth();
   const today = new Date();
   const [current, setCurrent] = useState({ year: today.getFullYear(), month: today.getMonth() });
   const [bookings, setBookings] = useState([]);
@@ -23,11 +25,17 @@ export default function SchedulerCalendar() {
   const [selectedEmployee, setSelectedEmployee] = useState("all");
   const [selectedDay, setSelectedDay] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [googleOwnEvents, setGoogleOwnEvents] = useState([]);
+  const [googleTeammatesBusy, setGoogleTeammatesBusy] = useState([]);
 
   useEffect(() => {
     fetchBookings();
     fetchEmployees();
   }, []);
+
+  useEffect(() => {
+    fetchGoogleOverlay();
+  }, [current.year, current.month]);
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -50,6 +58,22 @@ export default function SchedulerCalendar() {
       if (res.ok) setEmployees(await res.json());
     } catch (err) {
       console.error("Could not load employee list:", err);
+    }
+  };
+
+  const fetchGoogleOverlay = async () => {
+    try {
+      const rangeStart = new Date(current.year, current.month, 1);
+      const rangeEnd = new Date(current.year, current.month + 1, 0, 23, 59, 59);
+      const res = await schedulerApi.get("/integrations/google/calendar-overlay", {
+        params: { start: rangeStart.toISOString(), end: rangeEnd.toISOString() },
+      });
+      setGoogleOwnEvents(res.data.own || []);
+      setGoogleTeammatesBusy(res.data.teammatesBusy || []);
+    } catch (err) {
+      console.error("Failed to load Google Calendar overlay:", err);
+      setGoogleOwnEvents([]);
+      setGoogleTeammatesBusy([]);
     }
   };
 
@@ -79,6 +103,40 @@ export default function SchedulerCalendar() {
       return d.getFullYear() === current.year && d.getMonth() === current.month && d.getDate() === day;
     });
 
+  const isOnDay = (isoString, day) => {
+    const d = new Date(isoString);
+    return d.getFullYear() === current.year && d.getMonth() === current.month && d.getDate() === day;
+  };
+
+  // Google Calendar overlay: full-detail events for the logged-in user's own
+  // calendar, plus generic "Busy" blocks for any other connected teammate.
+  const googleItemsOnDay = (day) => {
+    const items = [];
+    const showOwn = selectedEmployee === "all" || selectedEmployee === user?.id;
+    if (showOwn) {
+      for (const ev of googleOwnEvents) {
+        if (isOnDay(ev.start, day)) {
+          items.push({ id: `own-${ev.id}`, label: ev.summary, start: ev.start, isOwn: true, userId: user?.id });
+        }
+      }
+    }
+    for (const teammate of googleTeammatesBusy) {
+      if (selectedEmployee !== "all" && selectedEmployee !== teammate.userId) continue;
+      teammate.busy.forEach((b, i) => {
+        if (isOnDay(b.start, day)) {
+          items.push({
+            id: `busy-${teammate.userId}-${i}`,
+            label: `Busy — ${teammate.name}`,
+            start: b.start,
+            isOwn: false,
+            userId: teammate.userId,
+          });
+        }
+      });
+    }
+    return items.sort((a, b) => new Date(a.start) - new Date(b.start));
+  };
+
   const isToday = (day) =>
     today.getFullYear() === current.year && today.getMonth() === current.month && today.getDate() === day;
 
@@ -86,6 +144,7 @@ export default function SchedulerCalendar() {
     new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 
   const selectedBookings = selectedDay ? bookingsOnDay(selectedDay) : [];
+  const selectedGoogleItems = selectedDay ? googleItemsOnDay(selectedDay) : [];
 
   const cells = [];
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
@@ -153,7 +212,12 @@ export default function SchedulerCalendar() {
           <div className="grid grid-cols-7">
             {cells.map((day, idx) => {
               const dayBookings = day ? bookingsOnDay(day) : [];
+              const dayGoogleItems = day ? googleItemsOnDay(day) : [];
               const isSelected = selectedDay === day;
+              const visibleBookings = dayBookings.slice(0, 2);
+              const visibleGoogleItems = dayGoogleItems.slice(0, Math.max(0, 2 - visibleBookings.length));
+              const hiddenCount =
+                (dayBookings.length - visibleBookings.length) + (dayGoogleItems.length - visibleGoogleItems.length);
               return (
                 <div
                   key={idx}
@@ -168,7 +232,7 @@ export default function SchedulerCalendar() {
                         {day}
                       </span>
                       <div className="flex flex-col gap-0.5">
-                        {dayBookings.slice(0, 2).map((b) => {
+                        {visibleBookings.map((b) => {
                           const empIdx = employees.findIndex((e) => e.id === (b.assigned_to || b.eventType?.user_id));
                           const colorClass = empIdx >= 0 ? EMPLOYEE_COLORS[empIdx % EMPLOYEE_COLORS.length] : "bg-brand-600";
                           return (
@@ -177,8 +241,16 @@ export default function SchedulerCalendar() {
                             </div>
                           );
                         })}
-                        {dayBookings.length > 2 && (
-                          <div className="text-[10px] text-slate-400 font-semibold px-1">+{dayBookings.length - 2} more</div>
+                        {visibleGoogleItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md truncate text-red-700 bg-red-50 border border-dashed border-red-200"
+                          >
+                            {formatTime(item.start)} {item.label}
+                          </div>
+                        ))}
+                        {hiddenCount > 0 && (
+                          <div className="text-[10px] text-slate-400 font-semibold px-1">+{hiddenCount} more</div>
                         )}
                       </div>
                     </>
@@ -199,7 +271,7 @@ export default function SchedulerCalendar() {
             </span>
           </h3>
           {selectedBookings.length === 0 ? (
-            <p className="text-slate-400 text-sm">No appointments on this day.</p>
+            selectedGoogleItems.length === 0 && <p className="text-slate-400 text-sm">No appointments on this day.</p>
           ) : (
             <div className="space-y-3">
               {selectedBookings.map((b) => (
@@ -230,6 +302,25 @@ export default function SchedulerCalendar() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {selectedGoogleItems.length > 0 && (
+            <div className="mt-5 pt-5 border-t border-slate-100">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <CalendarClock className="h-3.5 w-3.5 text-red-500" />
+                Google Calendar
+              </h4>
+              <div className="space-y-2">
+                {selectedGoogleItems.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-4 p-3 rounded-2xl border border-dashed border-red-200 bg-red-50/40">
+                    <span className="text-sm font-semibold text-slate-700">{item.label}</span>
+                    <span className="flex items-center gap-1 text-xs text-slate-500">
+                      <Clock className="h-3.5 w-3.5" />{formatTime(item.start)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

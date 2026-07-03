@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import schedulerApi from "../../lib/schedulerApi";
 import { Video, Clock, ExternalLink, AlertCircle, CalendarClock, PhoneCall, UserCheck, ChevronDown } from "lucide-react";
 
-const CRM_API = import.meta.env.VITE_CRM_API_URL || "http://localhost:4000";
+const CRM_API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export default function SchedulerAppointments() {
   const [filter, setFilter] = useState("upcoming");
