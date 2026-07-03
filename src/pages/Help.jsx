@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
+import api from '../lib/api'
 import {
   LayoutDashboard, Users, UserCheck, ClipboardList, BarChart3,
   TrendingUp, ListChecks, CalendarDays, Zap, UserCog, Building2,
   ChevronDown, ChevronRight, Star, Upload, Download, Search,
   AlertTriangle, Layers, Calendar, Clock, Globe, CheckCircle,
   BookOpen, HelpCircle, Shield, Info, Lightbulb, ArrowRight,
+  MessageSquare, Bug, Sparkles, Send, Inbox,
 } from 'lucide-react'
 
 const SECTIONS = [
@@ -610,6 +612,214 @@ function SectionContent({ section }) {
   )
 }
 
+const FEEDBACK_TYPES = [
+  { id: 'bug', label: 'Bug', icon: Bug, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-950/40', activeBg: 'bg-red-500' },
+  { id: 'feature', label: 'Feature Request', icon: Sparkles, color: 'text-violet-500', bg: 'bg-violet-50 dark:bg-violet-950/40', activeBg: 'bg-violet-500' },
+  { id: 'general', label: 'General Feedback', icon: MessageSquare, color: 'text-[#06babe]', bg: 'bg-[#06babe]/10', activeBg: 'bg-[#06babe]' },
+]
+
+const STATUS_LABELS = { new: 'New', in_progress: 'In Progress', resolved: 'Resolved' }
+const STATUS_STYLES = {
+  new: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
+  in_progress: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+  resolved: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+}
+
+function FeedbackForm() {
+  const [type, setType] = useState('general')
+  const [subject, setSubject] = useState('')
+  const [message, setMessage] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!subject.trim() || !message.trim()) return
+    setSubmitting(true)
+    setError('')
+    try {
+      await api.post('/api/feedback', { type, subject: subject.trim(), message: message.trim() })
+      setSubmitted(true)
+      setSubject('')
+      setMessage('')
+    } catch (err) {
+      setError(err.message || 'Failed to submit feedback. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="text-center py-10">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center mx-auto mb-4">
+          <CheckCircle size={26} className="text-emerald-500" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-1">Thanks for the feedback!</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">We've received your submission and will take a look.</p>
+        <button onClick={() => setSubmitted(false)} className="btn-secondary">Submit another</button>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div>
+        <label className="label">What kind of feedback is this?</label>
+        <div className="grid grid-cols-3 gap-2">
+          {FEEDBACK_TYPES.map(t => {
+            const isActive = type === t.id
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setType(t.id)}
+                className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-xs font-semibold transition-all ${
+                  isActive
+                    ? `${t.activeBg} text-white border-transparent shadow-sm`
+                    : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <t.icon size={16} />
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div>
+        <label className="label" htmlFor="fb-subject">Subject</label>
+        <input
+          id="fb-subject"
+          className="input"
+          value={subject}
+          onChange={e => setSubject(e.target.value)}
+          placeholder={type === 'bug' ? 'e.g. Export button not working on Leads page' : 'Short summary'}
+          maxLength={150}
+          required
+        />
+      </div>
+
+      <div>
+        <label className="label" htmlFor="fb-message">Details</label>
+        <textarea
+          id="fb-message"
+          className="input min-h-[140px] resize-y"
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          placeholder={type === 'bug' ? 'What happened? What did you expect instead? Steps to reproduce help a lot.' : 'Tell us what you have in mind...'}
+          required
+        />
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertTriangle size={14} />{error}</p>
+      )}
+
+      <button type="submit" disabled={submitting} className="btn-primary w-full sm:w-auto justify-center">
+        <Send size={15} />
+        {submitting ? 'Sending...' : 'Send Feedback'}
+      </button>
+    </form>
+  )
+}
+
+function FeedbackInbox() {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(null)
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true)
+      try {
+        setItems(await api.get('/api/feedback'))
+      } catch {
+        setItems([])
+      }
+      setLoading(false)
+    })()
+  }, [])
+
+  const updateStatus = async (id, status) => {
+    setUpdating(id)
+    try {
+      await api.put(`/api/feedback/${id}/status`, { status })
+      setItems(prev => prev.map(i => i.id === id ? { ...i, status } : i))
+    } catch {}
+    setUpdating(null)
+  }
+
+  if (loading) return <p className="text-sm text-slate-400 py-6 text-center">Loading submissions...</p>
+  if (items.length === 0) return <p className="text-sm text-slate-400 py-6 text-center">No feedback submitted yet.</p>
+
+  return (
+    <div className="space-y-3">
+      {items.map(item => {
+        const typeMeta = FEEDBACK_TYPES.find(t => t.id === item.type) || FEEDBACK_TYPES[2]
+        return (
+          <div key={item.id} className="rounded-xl border border-slate-100 dark:border-slate-800 p-4">
+            <div className="flex items-start justify-between gap-3 mb-1.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-6 h-6 rounded-lg ${typeMeta.bg} flex items-center justify-center flex-shrink-0`}>
+                  <typeMeta.icon size={12} className={typeMeta.color} />
+                </div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{item.subject}</p>
+              </div>
+              <select
+                value={item.status}
+                disabled={updating === item.id}
+                onChange={e => updateStatus(item.id, e.target.value)}
+                className={`text-xs font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer flex-shrink-0 ${STATUS_STYLES[item.status]}`}
+              >
+                {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-2 whitespace-pre-wrap">{item.message}</p>
+            <p className="text-xs text-slate-400">
+              {item.user_name || item.user_email || 'Unknown'} · {new Date(item.created_at).toLocaleDateString()}
+            </p>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function FeedbackPanel({ isAdmin }) {
+  const [tab, setTab] = useState('submit')
+  return (
+    <div>
+      <div className="flex items-start gap-4 mb-6">
+        <div className="w-11 h-11 rounded-2xl bg-[#06babe]/10 flex items-center justify-center flex-shrink-0">
+          <MessageSquare size={20} className="text-[#06babe]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">Feedback & Issues</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            Spotted a bug, have an idea, or want to see something new in the CRM? Let us know below.
+          </p>
+        </div>
+      </div>
+
+      {isAdmin && (
+        <div className="tab-bar mb-6 w-fit">
+          <button onClick={() => setTab('submit')} className={`tab-item ${tab === 'submit' ? 'tab-item-active' : ''}`}>Submit</button>
+          <button onClick={() => setTab('inbox')} className={`tab-item flex items-center gap-1.5 ${tab === 'inbox' ? 'tab-item-active' : ''}`}>
+            <Inbox size={13} />Inbox
+          </button>
+        </div>
+      )}
+
+      {tab === 'submit' ? <FeedbackForm /> : <FeedbackInbox />}
+    </div>
+  )
+}
+
 export default function Help() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
@@ -667,6 +877,18 @@ export default function Help() {
             </nav>
           </div>
 
+          <button
+            onClick={() => setActiveId('feedback')}
+            className={`w-full mt-3 flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all text-left border ${
+              activeId === 'feedback'
+                ? 'bg-[#06babe]/8 text-[#06babe] dark:text-teal-400 border-[#06babe]/20'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-[#06babe]/30 hover:text-[#06babe] dark:hover:text-teal-400'
+            }`}
+          >
+            <MessageSquare size={15} className="flex-shrink-0" />
+            <span className="flex-1">Feedback & Issues</span>
+          </button>
+
           {/* Quick tip card */}
           <div className="mt-4 rounded-2xl bg-gradient-to-br from-[#06babe]/10 to-[#207290]/10 border border-[#06babe]/20 p-4">
             <div className="flex items-center gap-2 mb-2">
@@ -690,7 +912,7 @@ export default function Help() {
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="card p-6 sm:p-8"
             >
-              <SectionContent section={active} />
+              {activeId === 'feedback' ? <FeedbackPanel isAdmin={isAdmin} /> : <SectionContent section={active} />}
             </motion.div>
           </AnimatePresence>
         </main>
