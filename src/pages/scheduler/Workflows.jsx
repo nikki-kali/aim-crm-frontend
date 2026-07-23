@@ -250,7 +250,7 @@ export default function SchedulerWorkflows() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2.5">
+          <h1 className="page-title flex items-center gap-2.5">
             <span className="p-2 bg-brand-700 rounded-xl"><Zap className="h-5 w-5 text-white" /></span>
             Workflows
           </h1>

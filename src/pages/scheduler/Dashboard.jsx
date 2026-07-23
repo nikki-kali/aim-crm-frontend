@@ -111,7 +111,7 @@ export default function SchedulerDashboard() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Scheduler</h1>
+          <h1 className="page-title">Scheduler</h1>
           <p className="text-slate-500 text-sm mt-1">Manage event templates and track client reservations.</p>
         </div>
         <Link

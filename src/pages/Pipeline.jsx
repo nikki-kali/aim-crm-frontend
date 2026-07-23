@@ -54,7 +54,7 @@ export default function Pipeline() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Sales Pipeline</h1>
+          <h1 className="page-title">Sales Pipeline</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {leads.length} active leads · ${totalValue.toLocaleString()} pipeline value
           </p>

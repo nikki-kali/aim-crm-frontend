@@ -151,7 +151,7 @@ export default function SchedulerAnalytics() {
     <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-2">
+          <h1 className="page-title flex items-center gap-2">
             <BarChart2 className="h-7 w-7 text-brand-700" />Analytics
           </h1>
           <p className="text-slate-500 text-sm mt-1">Track your scheduling performance and booking trends.</p>

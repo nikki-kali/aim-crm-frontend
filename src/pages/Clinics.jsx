@@ -306,7 +306,7 @@ export default function Clinics() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Clinics</h1>
+          <h1 className="page-title">Clinics</h1>
           <p className="text-sm text-gray-500 mt-0.5">{clinics.length} clinic profiles</p>
         </div>
         <button onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">

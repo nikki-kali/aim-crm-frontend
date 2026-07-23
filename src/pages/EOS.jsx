@@ -687,7 +687,7 @@ export default function EOS() {
       <motion.div
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
       >
-        <h1 className="text-xl font-bold text-gray-900">EOS</h1>
+        <h1 className="page-title">EOS</h1>
         <p className="text-sm text-gray-400 mt-0.5">Rocks · Weekly To-Dos · Issues</p>
       </motion.div>
 

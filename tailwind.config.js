@@ -4,7 +4,22 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        // Matches aimdentallab.com's type system: DM Sans for UI text,
+        // Cormorant Garamond for editorial display headings, DM Mono for
+        // stat/number callouts.
+        sans:  ['"DM Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        mono:  ['"DM Mono"', 'ui-monospace', 'monospace'],
+      },
       colors: {
+        gold: {
+          50:  '#fbf6ec',
+          100: '#f3e6c8',
+          400: '#e0b95c',
+          500: '#d9a441',
+          600: '#b4842f',
+        },
         brand: {
           50:  '#f0fafa',
           100: '#ccf1f2',

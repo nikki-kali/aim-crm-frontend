@@ -294,14 +294,16 @@ export default function Layout({ children }) {
   }
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-slate-100 dark:bg-[#050b14]">
-      {/* Ambient brand-colored blobs — the color glass panels blur/reveal */}
+    <div className="relative flex h-screen overflow-hidden bg-[#f0fbfc] dark:bg-[#050b14]">
+      {/* Ambient brand-colored blobs — same soft, low-opacity treatment as the
+          Login page and aimdentallab.com's pale gradient background, rather
+          than a saturated color field */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
-        <div className="absolute -top-40 -left-40 w-[40rem] h-[40rem] rounded-full bg-brand-600/80 dark:bg-brand-600/65 blur-3xl" />
-        <div className="absolute top-1/4 -right-40 w-[42rem] h-[42rem] rounded-full bg-navy-700/75 dark:bg-navy-600/65 blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-[34rem] h-[34rem] rounded-full bg-teal-400/70 dark:bg-teal-400/55 blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-brand-700/60 dark:bg-brand-500/50 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30rem] h-[30rem] rounded-full bg-teal-500/40 dark:bg-teal-500/30 blur-3xl" />
+        <div className="absolute -top-40 -left-40 w-[40rem] h-[40rem] rounded-full bg-brand-600/20 dark:bg-brand-600/40 blur-3xl" />
+        <div className="absolute top-1/4 -right-40 w-[42rem] h-[42rem] rounded-full bg-navy-700/18 dark:bg-navy-600/35 blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-[34rem] h-[34rem] rounded-full bg-teal-400/15 dark:bg-teal-400/30 blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-brand-700/12 dark:bg-brand-500/25 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30rem] h-[30rem] rounded-full bg-teal-500/10 dark:bg-teal-500/20 blur-3xl" />
       </div>
 
       {/* Hidden file input */}

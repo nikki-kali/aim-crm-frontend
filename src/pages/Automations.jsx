@@ -139,7 +139,7 @@ export default function Automations() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Automations</h1>
+          <h1 className="page-title">Automations</h1>
           <p className="text-sm text-gray-500 mt-0.5">{enabledCount} of {automations.length} rules active</p>
         </div>
         <button onClick={runAll} disabled={runningAll || enabledCount === 0} className="btn-primary flex items-center gap-2 disabled:opacity-50">

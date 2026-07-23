@@ -78,7 +78,7 @@ export default function SchedulerIntegrations() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Connected Apps & Integrations</h1>
+        <h1 className="page-title">Connected Apps & Integrations</h1>
         <p className="text-slate-500 text-sm mt-1">Link video conferencing platforms to automatically generate meeting rooms for scheduled appointments.</p>
       </div>
 

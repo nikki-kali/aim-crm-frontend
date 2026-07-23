@@ -837,7 +837,7 @@ export default function Help() {
             <BookOpen size={18} className="text-[#06babe]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Help Center</h1>
+            <h1 className="page-title">Help Center</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Step-by-step guides for every feature in the CRM</p>
           </div>
         </div>

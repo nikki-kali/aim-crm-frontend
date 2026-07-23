@@ -83,7 +83,7 @@ export default function SchedulerAppointments() {
     <div className="max-w-5xl mx-auto px-4 py-8 animate-fade-in">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Appointment Calls</h1>
+          <h1 className="page-title">Appointment Calls</h1>
           <p className="text-slate-500 text-sm mt-1">All scheduled calls and meetings with your invitees.</p>
         </div>
         <div className="flex bg-slate-100 p-1 rounded-xl text-sm font-semibold">

@@ -17,8 +17,7 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-slate-50 text-slate-900 antialiased font-sans;
   }
 
   /* Dark mode base */
@@ -44,7 +43,7 @@
   /* ── Buttons ── */
   .btn-primary {
     @apply inline-flex items-center gap-1.5 bg-[#06babe] hover:bg-[#0597a0] active:bg-[#047882]
-           text-white font-medium px-4 py-2 rounded-lg
+           text-white font-medium px-4 py-2 rounded-full
            transition-all duration-150 text-sm select-none
            shadow-[0_1px_2px_0_rgba(6,186,190,0.3)]
            hover:shadow-[0_2px_6px_0_rgba(6,186,190,0.4)]
@@ -52,7 +51,7 @@
   }
   .btn-secondary {
     @apply inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 active:bg-slate-100
-           text-slate-700 font-medium px-4 py-2 rounded-lg
+           text-slate-700 font-medium px-4 py-2 rounded-full
            border border-slate-200 hover:border-slate-300
            transition-all duration-150 text-sm select-none
            shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]
@@ -60,14 +59,14 @@
   }
   .btn-danger {
     @apply inline-flex items-center gap-1.5 bg-red-50 hover:bg-red-100 active:bg-red-200
-           text-red-700 font-medium px-4 py-2 rounded-lg
+           text-red-700 font-medium px-4 py-2 rounded-full
            border border-red-100 hover:border-red-200
            transition-all duration-150 text-sm select-none
            active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
   }
   .btn-ghost {
     @apply inline-flex items-center gap-1.5 hover:bg-slate-100 active:bg-slate-200
-           text-slate-600 hover:text-slate-900 font-medium px-3 py-2 rounded-lg
+           text-slate-600 hover:text-slate-900 font-medium px-3 py-2 rounded-full
            transition-all duration-150 text-sm select-none
            active:scale-[0.98];
   }
@@ -186,7 +185,7 @@
   }
   .dark .page-header { @apply border-slate-800; }
   .page-title {
-    @apply text-xl font-bold text-slate-900 tracking-tight;
+    @apply text-2xl font-semibold text-slate-900 font-serif;
   }
   .dark .page-title { @apply text-slate-50; }
 
@@ -243,7 +242,8 @@
     background: linear-gradient(135deg, #06babe 0%, #207290 100%);
   }
   .gradient-surface {
-    background: linear-gradient(160deg, #f8fafc 0%, #eef2f7 100%);
+    /* Same soft teal wash as aimdentallab.com's page background */
+    background: linear-gradient(160deg, #f0fdfc 0%, #e6f9f9 45%, #f8fafc 100%);
   }
 
   /* Truncate helpers */

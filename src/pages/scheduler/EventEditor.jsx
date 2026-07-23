@@ -119,7 +119,7 @@ export default function SchedulerEventEditor() {
       <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
         <div className="h-3 transition-colors duration-300" style={{ backgroundColor: color }} />
         <div className="p-6 sm:p-8">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          <h1 className="page-title mb-2">
             {isEditMode ? "Edit Event Type" : "Create New Event Type"}
           </h1>
           <p className="text-slate-500 text-sm mb-6">Configure how client scheduling slots behave for this appointment type.</p>
