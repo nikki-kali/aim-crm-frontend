@@ -10,6 +10,7 @@ import { useToast } from '../components/Toast'
 import { Send, X, Mail, FileDown, TrendingUp, Users, DollarSign, ArrowUpRight } from 'lucide-react'
 import { SkeletonTable } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
+import { normalizeSource } from '../lib/leadSource'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
@@ -438,7 +439,7 @@ function TrendsTab({ leads }) {
 function SourcesTab({ leads }) {
   const bySource = {}
   leads.forEach(l => {
-    const src = l.referral_source || 'Unknown'
+    const src = normalizeSource(l.referral_source || l.lead_source) || 'Unknown'
     if (!bySource[src]) bySource[src] = { total: 0, won: 0, lost: 0 }
     bySource[src].total++
     if (l.status === 'Won') bySource[src].won++
@@ -540,7 +541,7 @@ function PerformersTab({ leads, clients }) {
 
   const srcMap = {}
   leads.forEach(l => {
-    const src = l.referral_source || 'Unknown'
+    const src = normalizeSource(l.referral_source || l.lead_source) || 'Unknown'
     if (!srcMap[src]) srcMap[src] = { total: 0, won: 0 }
     srcMap[src].total++
     if (l.status === 'Won') srcMap[src].won++

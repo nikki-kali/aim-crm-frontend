@@ -6,11 +6,11 @@ import { useToast } from '../components/Toast'
 import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check, Archive, ArchiveRestore, UserCheck } from 'lucide-react'
 import { SkeletonTable } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
+import { LEAD_SOURCES, normalizeSource } from '../lib/leadSource'
 
 const STATUS_OPTIONS = ['Lead', 'Contacted', 'Proposal', 'Won', 'Lost', 'Pending']
 const BRAND_OPTIONS = ['Aim Dental', 'Kings Highway']
 const CASE_TYPES = ['Crown & Bridge', 'Dentures', 'Implant', 'Ortho', 'Partial', 'Other']
-const LEAD_SOURCES = ['Referral', 'Google', 'LinkedIn', 'Facebook', 'Instagram', 'X (Twitter)', 'Office Visit', 'Walk-in', 'Other']
 const INTENT_OPTIONS = ['High', 'Medium', 'Low']
 
 const STATUS_CLASSES = {
@@ -48,14 +48,15 @@ const CSV_TEMPLATE = [
 
 const SOURCE_SCORES = {
   Referral: 25, LinkedIn: 20, 'Office Visit': 20, Google: 15,
-  'Walk-in': 12, Facebook: 10, Instagram: 10, 'X (Twitter)': 8,
+  'Website Form Submission': 15, Email: 10, 'Walk-in': 12, Facebook: 10,
+  Instagram: 10, X: 8, 'Email Marketing': 8,
 }
 const CASE_SCORES = { Implant: 15, 'Crown & Bridge': 12, Ortho: 10, Dentures: 8, Partial: 5 }
 const INTENT_SCORES = { High: 20, Medium: 10, Low: 0 }
 
 function scoreFromLead(lead) {
   let s = 0
-  s += SOURCE_SCORES[lead.lead_source || lead.referral_source] || 0
+  s += SOURCE_SCORES[normalizeSource(lead.lead_source || lead.referral_source)] || 0
   const val = Number(lead.estimated_value) || 0
   if (val >= 8000) s += 25
   else if (val >= 4000) s += 15
@@ -589,7 +590,7 @@ export default function Leads() {
 
   const handleClaim = (lead) => handleAssign(lead, user.id)
 
-  const tableHeaders = ['Doctor / Clinic', 'Brand', 'Case', 'Value', 'Intent', 'Score', 'Status', 'Assign', 'Contact', '']
+  const tableHeaders = ['Doctor / Clinic', 'Brand', 'Case', 'Source', 'Value', 'Intent', 'Score', 'Status', 'Assign', 'Contact', '']
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -651,7 +652,7 @@ export default function Leads() {
 
       <div className="card overflow-hidden">
         {loading ? (
-          <SkeletonTable rows={6} cols={10} />
+          <SkeletonTable rows={6} cols={11} />
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={viewTab === 'unassigned' ? UserCheck : Plus}
@@ -697,6 +698,13 @@ export default function Leads() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-sm">{lead.case_interest || '—'}</td>
+                      <td className="px-4 py-3">
+                        {normalizeSource(lead.lead_source || lead.referral_source) ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 whitespace-nowrap">
+                            {normalizeSource(lead.lead_source || lead.referral_source)}
+                          </span>
+                        ) : '—'}
+                      </td>
                       <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 text-sm">
                         {lead.estimated_value ? `$${Number(lead.estimated_value).toLocaleString()}` : '—'}
                       </td>

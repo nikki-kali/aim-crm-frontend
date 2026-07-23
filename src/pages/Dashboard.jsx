@@ -6,19 +6,22 @@ import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import {
   Users, UserCheck, DollarSign, TrendingDown, AlertTriangle, RefreshCw,
-  Globe, Linkedin, Facebook, Instagram, Twitter, CheckCircle, Archive,
+  Globe, Linkedin, Facebook, Instagram, Twitter, Mail, CheckCircle, Archive,
   ClipboardList, Trophy, FileText, Target, ListChecks, ArrowUpRight,
   ArrowDownRight, Minus,
 } from 'lucide-react'
 import { SkeletonCard, SkeletonKpiCards, Skeleton } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
+import { normalizeSource } from '../lib/leadSource'
 
 const SOURCE_ICON = {
-  'LinkedIn':    { Icon: Linkedin,  cls: 'text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400' },
-  'Facebook':    { Icon: Facebook,  cls: 'text-blue-700 bg-blue-100 dark:bg-blue-950 dark:text-blue-400' },
-  'Instagram':   { Icon: Instagram, cls: 'text-pink-500 bg-pink-50 dark:bg-pink-950 dark:text-pink-400' },
-  'X (Twitter)': { Icon: Twitter,   cls: 'text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-400' },
-  'Website':     { Icon: Globe,     cls: 'text-teal-500 bg-teal-50 dark:bg-teal-950 dark:text-teal-400' },
+  'LinkedIn':                 { Icon: Linkedin,  cls: 'text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400' },
+  'Facebook':                 { Icon: Facebook,  cls: 'text-blue-700 bg-blue-100 dark:bg-blue-950 dark:text-blue-400' },
+  'Instagram':                { Icon: Instagram, cls: 'text-pink-500 bg-pink-50 dark:bg-pink-950 dark:text-pink-400' },
+  'X':                        { Icon: Twitter,   cls: 'text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-400' },
+  'Email':                    { Icon: Mail,      cls: 'text-purple-600 bg-purple-50 dark:bg-purple-950 dark:text-purple-400' },
+  'Email Marketing':          { Icon: Mail,      cls: 'text-purple-600 bg-purple-50 dark:bg-purple-950 dark:text-purple-400' },
+  'Website Form Submission':  { Icon: Globe,     cls: 'text-teal-500 bg-teal-50 dark:bg-teal-950 dark:text-teal-400' },
 }
 
 const BRAND_COLORS = { 'Aim Dental': '#06babe', 'Kings Highway': '#207290' }
@@ -90,7 +93,7 @@ function KpiCard({ label, value, icon: Icon, color, bg, bgDark, delay = 0, trend
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-0.5">{label}</p>
-          <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{animated}</p>
+          <p className="text-2xl font-bold font-mono text-slate-900 dark:text-slate-50">{animated}</p>
         </div>
         <div className={`w-9 h-9 rounded-xl ${bg} dark:${bgDark || 'bg-slate-800'} flex items-center justify-center flex-shrink-0`}>
           <Icon size={17} className={color} />
@@ -600,7 +603,7 @@ function AdminDashboard() {
           </div>
           <div className="space-y-1">
             {intakeLeads.map((lead, i) => {
-              const src = SOURCE_ICON[lead.lead_source || lead.referral_source] || { Icon: Globe, cls: 'text-slate-400 bg-slate-100 dark:bg-slate-800' }
+              const src = SOURCE_ICON[normalizeSource(lead.lead_source || lead.referral_source)] || { Icon: Globe, cls: 'text-slate-400 bg-slate-100 dark:bg-slate-800' }
               const acting = intakeActing[lead.id]
               return (
                 <motion.div
