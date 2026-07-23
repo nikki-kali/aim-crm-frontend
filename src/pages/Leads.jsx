@@ -24,6 +24,17 @@ const INTENT_CLASSES = {
   Low: 'bg-gray-100 text-gray-500',
 }
 
+// Pickup-request lifecycle (requested → dispatched → received) — separate
+// from the sales-pipeline STATUS_CLASSES above, only shown/used for leads
+// where case_interest === 'Schedule Pickup'. See PROJECT_NOTES-equivalent
+// note in the backend repo for the full stage-email flow.
+const PICKUP_STATUS_LABELS = { requested: 'Requested', dispatched: 'Dispatched', received: 'Received' }
+const PICKUP_STATUS_CLASSES = {
+  requested: 'bg-amber-100 text-amber-700',
+  dispatched: 'bg-blue-100 text-blue-700',
+  received: 'bg-green-100 text-green-700',
+}
+
 const EMPTY_FORM = {
   doctor_name: '', clinic_name: '', brand: 'Aim Dental', case_interest: '', phone: '',
   email: '', lead_source: '', estimated_value: '', status: 'Lead',
@@ -529,6 +540,18 @@ export default function Leads() {
     fetchLeads()
   }
 
+  const handleMarkDispatched = async (lead) => {
+    await api.post(`/api/leads/${lead.id}/dispatch`).catch(console.error)
+    toast('Marked as dispatched — requester notified', 'success')
+    fetchLeads()
+  }
+
+  const handleMarkReceived = async (lead) => {
+    await api.post(`/api/leads/${lead.id}/receive`).catch(console.error)
+    toast('Marked as received — requester notified', 'success')
+    fetchLeads()
+  }
+
   const handleArchive = async (lead) => {
     const action = lead.is_archived ? 'unarchive' : 'archive'
     await api.post(`/api/leads/${lead.id}/${action}`).catch(console.error)
@@ -701,6 +724,11 @@ export default function Leads() {
                             {daysSince}d cold
                           </span>
                         )}
+                        {lead.case_interest === 'Schedule Pickup' && lead.pickup_status && (
+                          <span className={`ml-1.5 text-xs px-2 py-0.5 rounded-full font-semibold ${PICKUP_STATUS_CLASSES[lead.pickup_status] || 'bg-slate-100 text-slate-600'}`}>
+                            {PICKUP_STATUS_LABELS[lead.pickup_status] || lead.pickup_status}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {viewTab === 'unassigned' ? (
@@ -734,6 +762,16 @@ export default function Leads() {
                           {!showArchived && (
                             <button onClick={() => handleContactNow(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
                               Contacted
+                            </button>
+                          )}
+                          {!showArchived && lead.case_interest === 'Schedule Pickup' && lead.pickup_status === 'requested' && (
+                            <button onClick={() => handleMarkDispatched(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
+                              Dispatch
+                            </button>
+                          )}
+                          {!showArchived && lead.case_interest === 'Schedule Pickup' && lead.pickup_status === 'dispatched' && (
+                            <button onClick={() => handleMarkReceived(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
+                              Received
                             </button>
                           )}
                           {lead.status === 'Won' && !lead.converted_to_client_id && !showArchived && (
