@@ -8,8 +8,62 @@ import {
   ChevronDown, ChevronRight, Star, Upload, Download, Search,
   AlertTriangle, Layers, Calendar, Clock, Globe, CheckCircle,
   BookOpen, HelpCircle, Shield, Info, Lightbulb, ArrowRight,
-  MessageSquare, Bug, Sparkles, Send, Inbox,
+  MessageSquare, Bug, Sparkles, Send, Inbox, Plus, Mail, Truck, Package,
 } from 'lucide-react'
+
+// ── Small visual mockups used inside Cases help content, styled to match ──
+// the real components exactly (same classes as Frontend/src/pages/Cases.jsx)
+// so staff recognize the actual buttons/controls, not just a description.
+function BtnPreview({ icon: Icon, children, variant = 'primary' }) {
+  const cls = variant === 'primary'
+    ? 'bg-[#06babe] text-white'
+    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+  return (
+    <span className={`inline-flex items-center gap-1.5 ${cls} font-medium px-3.5 py-1.5 rounded-full text-xs align-middle shadow-sm`}>
+      {Icon && <Icon size={12} />}
+      {children}
+    </span>
+  )
+}
+
+function DotsPreview({ removable = false }) {
+  const steps = removable
+    ? [['S', true], ['E', true], ['P', false], ['D', false], ['K', false]]
+    : [['S', true], ['E', false]]
+  return (
+    <span className="inline-flex items-center gap-1 align-middle">
+      {steps.map(([label, done], i) => (
+        <span
+          key={i}
+          className={`w-5 h-5 rounded-full text-[9px] font-bold flex items-center justify-center ${
+            done
+              ? 'bg-[#06babe] text-white'
+              : 'bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 border border-dashed border-gray-300 dark:border-slate-600'
+          }`}
+        >
+          {label}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function StagePillPreview({ label, className }) {
+  return <span className={`inline-block text-xs px-2.5 py-1 rounded-full font-medium align-middle ${className}`}>{label}</span>
+}
+
+function CheckboxPreview({ checked = true }) {
+  return (
+    <span className={`inline-flex w-4 h-4 rounded border items-center justify-center align-middle ${checked ? 'bg-[#06babe] border-[#06babe]' : 'border-gray-300 dark:border-slate-600'}`}>
+      {checked && <CheckCircle size={11} className="text-white" strokeWidth={3} />}
+    </span>
+  )
+}
+
+function LinkPreview({ children, tone = 'default' }) {
+  const cls = tone === 'danger' ? 'text-red-400' : 'text-slate-500 dark:text-slate-400'
+  return <span className={`text-xs font-medium align-middle ${cls}`}>{children}</span>
+}
 
 const SECTIONS = [
   {
@@ -171,37 +225,101 @@ const SECTIONS = [
     color: 'text-amber-500',
     bg: 'bg-amber-50',
     adminOnly: false,
-    summary: 'Track every lab case from receipt to completion — manage stages, priorities, due dates, and automated client notifications.',
+    summary: 'Track every lab case from receipt through delivery — the doctor-facing stage pipeline, day-to-day production tracking (sterilization, Evident entry, plaster, packing), and shipping Removable cases to the outsourcing lab.',
     steps: [
       {
+        title: 'Finding a Case',
+        desc: (
+          <ul>
+            <li>Use the search box to find a case by case number, client/doctor name, patient name, or case type.</li>
+            <li>Use the stage tabs across the top (Case Received, In Production, etc.) to filter to one stage, or "All".</li>
+            <li>A row highlighted <strong>amber</strong> is due within 2 days; <strong>red</strong> means it's overdue.</li>
+          </ul>
+        ),
+      },
+      {
         title: 'Creating a New Case',
-        desc: 'Click "New Case". Fill in Case Number, Client Name, Brand, Case Type (Crown & Bridge, Dentures, Implant, Ortho, Partial, Other), Patient Name, Assigned Technician, Tracking Number, Due Date, and Estimated Value. Set Priority to Normal, Rush, or STAT.',
+        desc: (
+          <>
+            <p className="mb-2">Click <BtnPreview icon={Plus}>New Case</BtnPreview> — only two fields are required:</p>
+            <ul>
+              <li><strong>Client / Doctor Name</strong></li>
+              <li><strong>Due Date</strong></li>
+            </ul>
+            <p className="mt-2">Everything else — case number, patient, brand, case type, priority, technician, doctor contact info — can be added now or later by editing the case. Case number auto-generates if left blank.</p>
+          </>
+        ),
       },
       {
-        title: 'Case Stages',
-        desc: 'Cases move through 8 stages: Case Received → Awaiting Scan → Case Accepted → In Production → Quality Control → Ready for Dispatch → Dispatched → Completed. Update the stage in the edit modal as work progresses.',
+        title: 'Doctor-Facing Stage',
+        desc: (
+          <>
+            <p className="mb-2">
+              The Stage dropdown (e.g. <StagePillPreview label="In Production" className="bg-purple-50 text-purple-700 border border-purple-200" />) is what the doctor sees. The 8 stages, in order:
+            </p>
+            <ul>
+              <li>Case Received → Awaiting Scan → Case Accepted → In Production → Quality Control → Ready for Dispatch → Dispatched → Completed.</li>
+              <li><strong>Moving this dropdown forward automatically emails the doctor</strong> for that stage — only change it once the case has genuinely reached it.</li>
+              <li>This is separate from the production dots below — changing one never changes the other.</li>
+            </ul>
+          </>
+        ),
       },
       {
-        title: 'Priority Flags',
-        desc: '"Normal" cases follow standard flow. "Rush" cases need extra attention — they appear with an amber badge. "STAT" cases are urgent — they show a red badge and the system will highlight overdue STAT cases prominently.',
+        title: 'Marking Production Steps',
+        desc: (
+          <>
+            <p className="mb-2">Every case row has a row of small dots under <strong>Production</strong> — the fastest way to log your own work:</p>
+            <ul>
+              <li>Click the dot for the step you just finished, choose your name, confirm the date, and save.</li>
+              <li>A filled dot means done (hover to see who/when); an outlined dot means not yet. Click any dot to correct a mistake.</li>
+              <li>Crown &amp; Bridge / Implant / Ortho / Other cases show two dots: <DotsPreview /> (Sterilized, Entered).</li>
+              <li>Dentures / Partial cases show all five: <DotsPreview removable /> (adds Plaster Checked, Delivered, Packed) — those are the only cases that go through the plaster department and ship to the outsourcing lab.</li>
+              <li>None of this emails the doctor or touches the Stage dropdown above.</li>
+            </ul>
+          </>
+        ),
       },
       {
-        title: 'Due Date Alerts',
-        desc: 'The system calculates days remaining for each case. Cases due within 2 days show a countdown in red. Overdue cases are highlighted with a warning icon.',
+        title: 'Shipping Removable Cases to the Outsourcing Lab',
+        desc: (
+          <>
+            <p className="mb-2">Once a Dentures/Partial case is marked Packed, it's ready to ship:</p>
+            <ul>
+              <li>Click <BtnPreview icon={Package} variant="secondary">Ready to Ship</BtnPreview> at the top of the page (the badge shows how many are waiting).</li>
+              <li>Check the box <CheckboxPreview /> next to every case going out in this shipment.</li>
+              <li>Click <BtnPreview icon={Truck}>Send to Outsourcing Lab</BtnPreview>, enter the tracking number, and send.</li>
+              <li>This emails the outsourcing lab one summary (case #, patient, product, tooth #, quantity, shade, return date) plus the tracking number — those cases then drop off the Ready to Ship list.</li>
+            </ul>
+          </>
+        ),
       },
       {
-        title: 'Sending Case Notifications',
-        desc: 'In the edit modal, you can trigger an email notification to the doctor (using the Doctor Email field) to update them on case status — e.g., when a case is dispatched.',
+        title: 'Pickup Requests Become Cases Automatically',
+        desc: (
+          <ul>
+            <li>When a "Schedule Pickup" lead is marked <strong>Received</strong> on the Leads tab, a matching case is created automatically — no manual re-entry.</li>
+            <li>It starts with Case Type "Other" and a due date 3 days out as placeholders — <strong>open it and set the real case type, due date, and product details</strong> once the case is physically opened.</li>
+            <li>If one pickup turned out to contain more than one case, create separate case records for the rest.</li>
+          </ul>
+        ),
       },
       {
-        title: 'Filtering Cases',
-        desc: 'Use the search bar to find by case number, client name, or patient. Filter by Stage or Priority using the dropdown filters. Combine filters to narrow results.',
+        title: 'Editing a Case',
+        desc: (
+          <ul>
+            <li>Click <LinkPreview>Edit</LinkPreview> on any case row to open the full form.</li>
+            <li>The Production Detail section (product, tooth number(s), quantity, shade, Evident case #, special instructions) stays collapsed until you open it, or automatically expands if a case already has that data.</li>
+            <li>Use <BtnPreview icon={Mail} variant="secondary">Resend notification</BtnPreview> to re-send the current stage's email without changing anything.</li>
+            <li><LinkPreview tone="danger">Del</LinkPreview> is admin-only — ask an admin if it doesn't seem to work for you.</li>
+          </ul>
+        ),
       },
     ],
     tips: [
-      'Always fill in the Doctor Email field when creating a case — it enables automated dispatch notifications.',
-      'Set Est. Completion Date separately from Due Date to track internal vs. client-facing deadlines.',
-      'Use the Tracking Number field for courier/shipping reference numbers.',
+      'Fill in Doctor Email as soon as you have it — it\'s what enables the automatic stage emails.',
+      'The production dots (Sterilized, Entered, Plaster, Delivered, Packed) are internal only — use them freely without worrying about notifying the doctor.',
+      'Check "Ready to Ship" at the start of each shipping run so nothing packed gets left behind.',
     ],
   },
   {
@@ -509,7 +627,9 @@ function StepCard({ step, index }) {
       </div>
       <div className="flex-1 min-w-0 pb-5 border-b border-slate-100 dark:border-slate-800 last:border-0 last:pb-0">
         <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1">{step.title}</p>
-        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{step.desc}</p>
+        <div className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-1.5 [&_li]:pl-0.5 [&_strong]:text-slate-700 dark:[&_strong]:text-slate-200">
+          {step.desc}
+        </div>
       </div>
     </div>
   )
