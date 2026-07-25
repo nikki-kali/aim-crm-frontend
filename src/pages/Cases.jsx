@@ -72,6 +72,159 @@ const DATE_FIELDS = [
   'plaster_checked_at', 'delivered_at', 'packed_at', 'outsourcing_return_date',
 ]
 
+// The handful of people who actually do this work — see PRODUCTION_STEPS
+// below and the "Assigned Technician" field. "Other" reveals free text so
+// anyone not on the list can still be recorded.
+const STAFF_OPTIONS = ['Frankie', 'Cecile', 'Anjali', 'Miguel', 'Victor']
+
+function StaffPicker({ value, onChange, placeholder }) {
+  const [showOther, setShowOther] = useState(() => !!value && !STAFF_OPTIONS.includes(value))
+  return (
+    <div className="space-y-1.5">
+      <select
+        className="input"
+        value={showOther ? 'Other' : (value || '')}
+        onChange={e => {
+          if (e.target.value === 'Other') { setShowOther(true); onChange('') }
+          else { setShowOther(false); onChange(e.target.value) }
+        }}
+      >
+        <option value="">— Select —</option>
+        {STAFF_OPTIONS.map(s => <option key={s}>{s}</option>)}
+        <option value="Other">Other…</option>
+      </select>
+      {showOther && (
+        <input className="input" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder || 'Name'} autoFocus />
+      )}
+    </div>
+  )
+}
+
+// The internal production checkpoints from AIM's real workflow. The last
+// three only apply to Removable cases (Dentures/Partial) — see
+// stepsForCase(). Kept fully separate from the doctor-facing STAGES above:
+// marking these never changes `status` and never sends a doctor email.
+const PRODUCTION_STEPS = [
+  { key: 'sterilized',      label: 'Sterilized',              byField: 'sterilized_by',      atField: 'sterilized_at',      badge: 'S' },
+  { key: 'entered',         label: 'Entered Into Evident',    byField: 'entered_by',          atField: 'entered_at',         badge: 'E' },
+  { key: 'plaster_checked', label: 'Plaster Checked',         byField: 'plaster_checked_by',  atField: 'plaster_checked_at', badge: 'P', removableOnly: true },
+  { key: 'delivered',       label: 'Delivered to Shipping',   byField: 'delivered_by',        atField: 'delivered_at',       badge: 'D', removableOnly: true },
+  { key: 'packed',          label: 'Packed',                  byField: 'packed_by',           atField: 'packed_at',          badge: 'K', removableOnly: true },
+]
+
+function stepsForCase(c) {
+  const removable = REMOVABLE_TYPES.includes(c.case_type)
+  return PRODUCTION_STEPS.filter(s => !s.removableOnly || removable)
+}
+
+function ProductionSteps({ caseRow, onStepClick }) {
+  return (
+    <div className="flex items-center gap-1">
+      {stepsForCase(caseRow).map(step => {
+        const done = !!caseRow[step.atField]
+        const title = done
+          ? `${step.label} — ${caseRow[step.byField] || 'unknown'}, ${new Date(caseRow[step.atField]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+          : `${step.label} — not yet. Click to mark.`
+        return (
+          <button
+            key={step.key}
+            type="button"
+            title={title}
+            onClick={() => onStepClick(caseRow, step)}
+            className={`w-5 h-5 rounded-full text-[9px] font-bold flex items-center justify-center transition-colors flex-shrink-0 ${
+              done
+                ? 'bg-[#06babe] text-white hover:bg-[#0597a0]'
+                : 'bg-gray-100 text-gray-400 border border-dashed border-gray-300 hover:border-gray-400 hover:text-gray-500'
+            }`}
+          >
+            {step.badge}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function QuickStepModal({ caseRow, step, onClose, onSaved }) {
+  const [by, setBy] = useState(caseRow[step.byField] || '')
+  const [on, setOn] = useState(toDateInput(caseRow[step.atField]) || new Date().toISOString().slice(0, 10))
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const toast = useToast()
+
+  const handleSave = async () => {
+    if (!by.trim()) return setError('Who did this is required')
+    setSaving(true)
+    setError('')
+    try {
+      await api.put(`/api/cases/${caseRow.id}`, { ...caseRow, [step.byField]: by.trim(), [step.atField]: on })
+      toast(`${step.label} marked`, 'success')
+      onSaved()
+    } catch (err) {
+      setError(err.message || 'Failed to save')
+    }
+    setSaving(false)
+  }
+
+  const handleClear = async () => {
+    setSaving(true)
+    try {
+      await api.put(`/api/cases/${caseRow.id}`, { ...caseRow, [step.byField]: '', [step.atField]: null })
+      toast(`${step.label} cleared`, 'success')
+      onSaved()
+    } catch (err) {
+      setError(err.message || 'Failed to clear')
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]">
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 8, scale: 0.97 }}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-sm"
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="font-semibold text-gray-900 text-sm">{step.label}</h2>
+            <p className="text-xs text-gray-400 font-mono mt-0.5">{caseRow.case_number}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X size={16} /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="label">By</label>
+            <StaffPicker value={by} onChange={setBy} />
+          </div>
+          <div>
+            <label className="label">On</label>
+            <input className="input" type="date" value={on} onChange={e => setOn(e.target.value)} />
+          </div>
+          {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+        </div>
+        <div className="flex gap-2 px-5 pb-5">
+          {caseRow[step.atField] && (
+            <button onClick={handleClear} disabled={saving} className="btn-secondary text-xs disabled:opacity-50">Clear</button>
+          )}
+          <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+// Fields shown behind the "Production Detail" toggle — auto-expanded on
+// edit when a case already has any of this filled in.
+const PRODUCTION_DETAIL_FIELDS = [
+  'product', 'tooth_numbers', 'quantity', 'shade', 'special_instructions',
+  'evident_case_number', 'outsourcing_return_date', 'outsourcing_tracking_number',
+]
+
 function CaseModal({ caseData, onClose, onSave }) {
   const [form, setForm] = useState(() => {
     if (!caseData) return EMPTY_FORM
@@ -79,6 +232,9 @@ function CaseModal({ caseData, onClose, onSave }) {
     DATE_FIELDS.forEach(f => { merged[f] = toDateInput(merged[f]) })
     return merged
   })
+  const [showProduction, setShowProduction] = useState(() =>
+    !!caseData && PRODUCTION_DETAIL_FIELDS.some(f => caseData[f])
+  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const toast = useToast()
@@ -183,7 +339,7 @@ function CaseModal({ caseData, onClose, onSave }) {
             </div>
             <div>
               <label className="label">Assigned Technician</label>
-              <input className="input" value={form.assigned_technician} onChange={e => set('assigned_technician', e.target.value)} placeholder="Tech name" />
+              <StaffPicker value={form.assigned_technician} onChange={v => set('assigned_technician', v)} />
             </div>
             <div>
               <label className="label">Tracking Number</label>
@@ -203,88 +359,63 @@ function CaseModal({ caseData, onClose, onSave }) {
             </div>
 
             <div className="col-span-2 pt-2 mt-1 border-t border-gray-100">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Production Detail</h3>
-            </div>
-            <div>
-              <label className="label">Product</label>
-              <input className="input" value={form.product} onChange={e => set('product', e.target.value)} placeholder="e.g. PFM Crown, Valplast Partial" />
-            </div>
-            <div>
-              <label className="label">Tooth Number(s)</label>
-              <input className="input" value={form.tooth_numbers} onChange={e => set('tooth_numbers', e.target.value)} placeholder="e.g. 8, 9" />
-            </div>
-            <div>
-              <label className="label">Quantity</label>
-              <input className="input" type="number" min="1" value={form.quantity} onChange={e => set('quantity', e.target.value)} />
-            </div>
-            <div>
-              <label className="label">Shade</label>
-              <input className="input" value={form.shade} onChange={e => set('shade', e.target.value)} placeholder="e.g. A2" />
-            </div>
-            <div>
-              <label className="label">Evident Case # <span className="text-gray-400 font-normal">(Evident system reference)</span></label>
-              <input className="input font-mono" value={form.evident_case_number} onChange={e => set('evident_case_number', e.target.value)} />
-            </div>
-            <div />
-            <div>
-              <label className="label">Sterilized By</label>
-              <input className="input" value={form.sterilized_by} onChange={e => set('sterilized_by', e.target.value)} placeholder="e.g. Frankie" />
-            </div>
-            <div>
-              <label className="label">Sterilized On</label>
-              <input className="input" type="date" value={form.sterilized_at} onChange={e => set('sterilized_at', e.target.value)} />
-            </div>
-            <div>
-              <label className="label">Entered Into Evident By</label>
-              <input className="input" value={form.entered_by} onChange={e => set('entered_by', e.target.value)} placeholder="e.g. Cecile or Anjali" />
-            </div>
-            <div>
-              <label className="label">Entered On</label>
-              <input className="input" type="date" value={form.entered_at} onChange={e => set('entered_at', e.target.value)} />
-            </div>
-            <div className="col-span-2">
-              <label className="label">Special Instructions <span className="text-gray-400 font-normal">(mirrors Evident's Special Instructions field)</span></label>
-              <textarea className="input resize-none" rows={2} value={form.special_instructions} onChange={e => set('special_instructions', e.target.value)} placeholder="Doctor's special instructions for this case..." />
+              <button
+                type="button"
+                onClick={() => setShowProduction(v => !v)}
+                className="text-xs font-semibold text-[#06babe] hover:text-[#207290] flex items-center gap-1.5"
+              >
+                <span className={`transition-transform ${showProduction ? 'rotate-90' : ''}`}>▸</span>
+                Production Detail {!showProduction && <span className="text-gray-400 font-normal">(product, tooth #, shade, Evident #...)</span>}
+              </button>
+              <p className="text-xs text-gray-400 mt-1">
+                Sterilized / Entered / Plaster / Packed are tracked from the case row's status dots, not here.
+              </p>
             </div>
 
-            {isRemovable && (
+            {showProduction && (
               <>
-                <div className="col-span-2 pt-2 mt-1 border-t border-gray-100">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Removable Production — Plaster &amp; Outsourcing</h3>
+                <div>
+                  <label className="label">Product</label>
+                  <input className="input" value={form.product} onChange={e => set('product', e.target.value)} placeholder="e.g. PFM Crown, Valplast Partial" />
                 </div>
                 <div>
-                  <label className="label">Plaster Checked By <span className="text-gray-400 font-normal">(Removables Supervisor)</span></label>
-                  <input className="input" value={form.plaster_checked_by} onChange={e => set('plaster_checked_by', e.target.value)} placeholder="e.g. Miguel" />
+                  <label className="label">Tooth Number(s)</label>
+                  <input className="input" value={form.tooth_numbers} onChange={e => set('tooth_numbers', e.target.value)} placeholder="e.g. 8, 9" />
                 </div>
                 <div>
-                  <label className="label">Plaster Checked On</label>
-                  <input className="input" type="date" value={form.plaster_checked_at} onChange={e => set('plaster_checked_at', e.target.value)} />
+                  <label className="label">Quantity</label>
+                  <input className="input" type="number" min="1" value={form.quantity} onChange={e => set('quantity', e.target.value)} />
                 </div>
                 <div>
-                  <label className="label">Delivered to Shipping By</label>
-                  <input className="input" value={form.delivered_by} onChange={e => set('delivered_by', e.target.value)} placeholder="e.g. Victor" />
+                  <label className="label">Shade</label>
+                  <input className="input" value={form.shade} onChange={e => set('shade', e.target.value)} placeholder="e.g. A2" />
                 </div>
                 <div>
-                  <label className="label">Delivered On</label>
-                  <input className="input" type="date" value={form.delivered_at} onChange={e => set('delivered_at', e.target.value)} />
+                  <label className="label">Evident Case # <span className="text-gray-400 font-normal">(Evident system reference)</span></label>
+                  <input className="input font-mono" value={form.evident_case_number} onChange={e => set('evident_case_number', e.target.value)} />
                 </div>
-                <div>
-                  <label className="label">Packed By</label>
-                  <input className="input" value={form.packed_by} onChange={e => set('packed_by', e.target.value)} placeholder="e.g. Anjali" />
+                <div />
+                <div className="col-span-2">
+                  <label className="label">Special Instructions <span className="text-gray-400 font-normal">(mirrors Evident's Special Instructions field)</span></label>
+                  <textarea className="input resize-none" rows={2} value={form.special_instructions} onChange={e => set('special_instructions', e.target.value)} placeholder="Doctor's special instructions for this case..." />
                 </div>
-                <div>
-                  <label className="label">Packed On</label>
-                  <input className="input" type="date" value={form.packed_at} onChange={e => set('packed_at', e.target.value)} />
-                </div>
-                <div>
-                  <label className="label">Outsourcing Lab Return-By Date</label>
-                  <input className="input" type="date" value={form.outsourcing_return_date} onChange={e => set('outsourcing_return_date', e.target.value)} />
-                </div>
-                <div>
-                  <label className="label">Outsourcing Tracking #</label>
-                  <input className="input" value={form.outsourcing_tracking_number} onChange={e => set('outsourcing_tracking_number', e.target.value)}
-                    placeholder={form.shipped_to_outsourcing_at ? '' : 'Set via "Send to Outsourcing Lab"'} />
-                </div>
+
+                {isRemovable && (
+                  <>
+                    <div className="col-span-2">
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Outsourcing</h3>
+                    </div>
+                    <div>
+                      <label className="label">Outsourcing Lab Return-By Date</label>
+                      <input className="input" type="date" value={form.outsourcing_return_date} onChange={e => set('outsourcing_return_date', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="label">Outsourcing Tracking #</label>
+                      <input className="input" value={form.outsourcing_tracking_number} onChange={e => set('outsourcing_tracking_number', e.target.value)}
+                        placeholder={form.shipped_to_outsourcing_at ? '' : 'Set via "Send to Outsourcing Lab"'} />
+                    </div>
+                  </>
+                )}
               </>
             )}
 
@@ -381,6 +512,7 @@ export default function Cases() {
   const [view, setView] = useState('all') // 'all' | 'ready-to-ship'
   const [selectedIds, setSelectedIds] = useState([])
   const [shipModal, setShipModal] = useState(false)
+  const [stepModal, setStepModal] = useState(null) // { caseRow, step } | null
   const toast = useToast()
 
   const fetchCases = async () => {
@@ -416,6 +548,8 @@ export default function Cases() {
     await api.put(`/api/cases/${id}`, { ...c, status }).catch(console.error)
     setCases(prev => prev.map(c => c.id === id ? { ...c, status } : c))
   }
+
+  const handleStepClick = (caseRow, step) => setStepModal({ caseRow, step })
 
   const readyToShip = cases.filter(c =>
     REMOVABLE_TYPES.includes(c.case_type) && c.packed_at && !c.shipped_to_outsourcing_at
@@ -491,7 +625,7 @@ export default function Cases() {
 
           <div className="card overflow-hidden">
             {loading ? (
-              <SkeletonTable rows={5} cols={8} />
+              <SkeletonTable rows={5} cols={11} />
             ) : filtered.length === 0 ? (
               <EmptyState
                 icon={Plus}
@@ -505,7 +639,7 @@ export default function Cases() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50/60">
-                      {['Case #', 'Client', 'Patient', 'Brand', 'Type', 'Due Date', 'Value', 'Priority', 'Stage', ''].map(h => (
+                      {['Case #', 'Client', 'Patient', 'Brand', 'Type', 'Due Date', 'Value', 'Priority', 'Stage', 'Production', ''].map(h => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
                       ))}
                     </tr>
@@ -554,6 +688,9 @@ export default function Cases() {
                             >
                               {STAGES.map(s => <option key={s}>{s}</option>)}
                             </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <ProductionSteps caseRow={c} onStepClick={handleStepClick} />
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-2 justify-end">
@@ -640,6 +777,14 @@ export default function Cases() {
             cases={selectedCases}
             onClose={() => setShipModal(false)}
             onSent={() => { setShipModal(false); setSelectedIds([]); fetchCases() }}
+          />
+        )}
+        {stepModal && (
+          <QuickStepModal
+            caseRow={stepModal.caseRow}
+            step={stepModal.step}
+            onClose={() => setStepModal(null)}
+            onSaved={() => { setStepModal(null); fetchCases() }}
           />
         )}
       </AnimatePresence>
