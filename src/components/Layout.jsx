@@ -2,14 +2,15 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../context/ThemeContext'
 import {
-  LayoutDashboard, Users, UserCheck, LogOut, Menu, X, ClipboardList,
+  LayoutDashboard, Users, UserCheck, LogOut, ClipboardList,
   BarChart3, TrendingUp, Zap, UserCog, Shield, Building2, ListChecks,
   Camera, Sun, Moon, ChevronRight, CalendarDays, HelpCircle,
 } from 'lucide-react'
 import { useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import AlertsBell from './AlertsBell'
 import QuickLeadButton from './QuickLeadButton'
+import MobileTabBar from './MobileTabBar'
 import api from '../lib/api'
 
 const STAFF_NAV = [
@@ -39,14 +40,14 @@ const ADMIN_NAV = [
   { group: 'admin', to: '/users',       icon: UserCog,         label: 'Users' },
 ]
 
-const GROUP_LABELS = {
+export const GROUP_LABELS = {
   main:  null,
   crm:   'CRM',
   tools: 'Tools',
   admin: 'Admin',
 }
 
-function Avatar({ user, size = 32, onClick, uploading }) {
+export function Avatar({ user, size = 32, onClick, uploading }) {
   const initials = (user?.name || user?.email || '?')[0].toUpperCase()
   return (
     <button
@@ -243,7 +244,6 @@ export default function Layout({ children }) {
   const { user, signOut, refreshUser } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [mobileOpen, setMobileOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef(null)
 
@@ -294,7 +294,7 @@ export default function Layout({ children }) {
   }
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-[#f0fbfc] dark:bg-[#050b14]">
+    <div className="relative flex h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden bg-[#f0fbfc] dark:bg-[#050b14]">
       {/* Ambient brand-colored blobs — same soft, low-opacity treatment as the
           Login page and aimdentallab.com's pale gradient background, rather
           than a saturated color field */}
@@ -314,44 +314,22 @@ export default function Layout({ children }) {
         <SidebarContent {...sidebarProps} onClose={() => {}} />
       </aside>
 
-      {/* Mobile sidebar */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <div className="fixed inset-0 z-50 flex md:hidden">
-            <motion.div
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
-            />
-            <motion.aside
-              className="relative w-64 flex flex-col h-full shadow-2xl"
-              initial={{ x: -256 }} animate={{ x: 0 }} exit={{ x: -256 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 36 }}
-            >
-              <SidebarContent {...sidebarProps} onClose={() => setMobileOpen(false)} />
-            </motion.aside>
-          </div>
-        )}
-      </AnimatePresence>
-
       {/* Main content */}
       <div className="relative z-10 flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile header */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white/20 dark:bg-slate-900/20 backdrop-blur-3xl backdrop-saturate-200 border-b border-white/40 dark:border-white/10">
-          <button onClick={() => setMobileOpen(true)} className="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            <Menu size={20} />
-          </button>
-          <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Aim Dental CRM</span>
+        <header className="md:hidden flex items-center justify-between px-4 py-3 pt-safe bg-white/20 dark:bg-slate-900/20 backdrop-blur-3xl backdrop-saturate-200 border-b border-white/40 dark:border-white/10">
+          <img src="/logo.png" alt="Aim Dental" className="h-6 w-auto" />
           <AlertsBell />
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-tabbar">
           {location.pathname.startsWith('/scheduler') && <SchedulerSubNav currentPath={location.pathname} />}
           {children}
         </main>
-      </div>
 
-      <QuickLeadButton />
+        <MobileTabBar {...sidebarProps} />
+        <QuickLeadButton />
+      </div>
     </div>
   )
 }

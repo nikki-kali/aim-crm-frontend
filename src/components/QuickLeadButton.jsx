@@ -86,18 +86,18 @@ export default function QuickLeadButton() {
       <button
         onClick={() => setOpen(true)}
         title="Quick Lead"
-        className="fixed bottom-6 right-6 z-40 w-13 h-13 rounded-full bg-[#06babe] text-white shadow-lg hover:bg-[#05a9ac] hover:shadow-xl transition-all flex items-center justify-center gap-1.5 px-4 text-sm font-semibold"
+        className="fixed right-4 sm:right-6 above-tabbar md:bottom-6 z-30 rounded-full bg-[#06babe] text-white shadow-lg hover:bg-[#05a9ac] hover:shadow-xl transition-all flex items-center justify-center gap-1.5 px-4 text-sm font-semibold"
         style={{ width: 'auto', height: '44px' }}
       >
         <Zap size={15} />
-        Quick Lead
+        <span className="hidden sm:inline">Quick Lead</span>
       </button>
 
       {/* Modal */}
       {open && (
         <>
           <div className="fixed inset-0 z-50 bg-black/30" onClick={handleClose} />
-          <div className="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 left-0 right-0 sm:left-auto sm:right-6 z-50 sm:w-80 sm:max-w-[92vw]">
+          <div className="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 left-0 right-0 sm:left-auto sm:right-6 z-50 sm:w-80 sm:max-w-[92vw] pb-safe">
             <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">

@@ -9,6 +9,15 @@
     --color-primary-dark: #0597a0;
     --color-secondary: #207290;
     --sidebar-width: 240px;
+    /* Mobile bottom tab bar offset — collapses to 0 on desktop below, so
+       anything using .pb-tabbar/.above-tabbar self-neutralizes with no
+       md: overrides needed at the call site. */
+    --tabbar-h: 56px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+
+  @media (min-width: 768px) {
+    :root { --tabbar-h: 0px; }
   }
 
   * {
@@ -105,6 +114,10 @@
   .dark .input {
     @apply bg-slate-800 border-slate-700 text-slate-100 placeholder-slate-500
            focus:ring-[#06babe]/20 focus:border-[#06babe]/80 hover:border-slate-600;
+  }
+  /* iOS Safari auto-zooms the page on focusing any input under 16px */
+  @media (max-width: 767px) {
+    .input { font-size: 16px; }
   }
 
   .label {
@@ -262,4 +275,15 @@
   /* No scrollbar */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* ── Mobile bottom-tab-bar-aware spacing ──────────────────────────────────
+     --tabbar-h collapses to 0 above the md breakpoint (see @layer base), so
+     these never need a md: override at the call site. */
+  .pb-tabbar { padding-bottom: calc(var(--tabbar-h) + var(--safe-b)); }
+  .above-tabbar { bottom: calc(var(--tabbar-h) + var(--safe-b) + 1rem); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+
+  /* Minimum comfortable touch target (iOS HIG / Material both land on ~44px) */
+  .tap { min-height: 44px; min-width: 44px; }
 }

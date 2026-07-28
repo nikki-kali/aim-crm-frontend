@@ -64,6 +64,24 @@ export function SkeletonTable({ rows = 5, cols = 4 }) {
   )
 }
 
+export function SkeletonCards({ rows = 5 }) {
+  return (
+    <div className="space-y-2.5">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="card p-3.5 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-3 w-24 rounded" />
+            <Skeleton className="h-3 w-16 rounded" />
+          </div>
+          <Skeleton className="h-4 w-40 rounded" />
+          <Skeleton className="h-3 w-32 rounded" />
+          <Skeleton className="h-8 w-full rounded-xl" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function SkeletonKpiCards({ count = 4 }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
