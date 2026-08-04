@@ -7,7 +7,16 @@ import {
 } from 'lucide-react'
 import { SkeletonCard } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
-import { PICKUP_STATUS_LABELS, PICKUP_STATUS_CLASSES } from '../lib/leads'
+
+// Mirrors the pickup-request lifecycle labels/colors used on the Leads page
+// (src/pages/Leads.jsx) — duplicated here rather than imported from a shared
+// module since Leads.jsx doesn't currently export them from one.
+const PICKUP_STATUS_LABELS = { requested: 'Requested', dispatched: 'Dispatched', received: 'Received' }
+const PICKUP_STATUS_CLASSES = {
+  requested: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+  dispatched: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
+  received: 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400',
+}
 
 const BRAND_COLORS = { 'Aim Dental': '#06babe', 'Kings Highway': '#207290' }
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
