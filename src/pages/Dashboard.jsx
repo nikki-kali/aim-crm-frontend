@@ -8,11 +8,13 @@ import {
   Users, UserCheck, DollarSign, TrendingDown, AlertTriangle, RefreshCw,
   Globe, Linkedin, Facebook, Instagram, Twitter, Mail, CheckCircle, Archive,
   ClipboardList, Trophy, FileText, Target, ListChecks, ArrowUpRight,
-  ArrowDownRight, Minus,
+  ArrowDownRight, Minus, GraduationCap,
 } from 'lucide-react'
 import { SkeletonCard, SkeletonKpiCards, Skeleton } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { normalizeSource } from '../lib/leadSource'
+import AnimatedModal from '../components/AnimatedModal'
+import { useTour } from '../context/TourContext'
 
 const SOURCE_ICON = {
   'LinkedIn':                 { Icon: Linkedin,  cls: 'text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400' },
@@ -156,6 +158,7 @@ function EOSSnapshot() {
 
   return (
     <motion.div
+      data-tour="dashboard-eos-snapshot"
       initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.35 }}
       className="card p-5"
     >
@@ -369,7 +372,7 @@ function RepDashboard({ user }) {
       {loading ? (
         <SkeletonKpiCards count={4} />
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div data-tour="dashboard-kpi-cards" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {kpiCards.map((card, i) => (
             <KpiCard key={card.label} {...card} delay={i * 0.08} />
           ))}
@@ -382,6 +385,7 @@ function RepDashboard({ user }) {
       {/* Recent Leads */}
       {!loading && summary?.recent_leads?.length > 0 && (
         <motion.div
+          data-tour="dashboard-recent-leads"
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.35 }}
           className="card p-5"
         >
@@ -789,11 +793,54 @@ function AdminDashboard() {
   )
 }
 
+// ── First-run tour nudge ─────────────────────────────────────────────────────
+
+function WelcomeTourNudge() {
+  const tour = useTour()
+  const [dismissed, setDismissed] = useState(false)
+
+  if (!tour?.progressLoaded || dismissed) return null
+  const alreadyOffered = tour.completed.some((c) => c.item_type === 'tour')
+  if (alreadyOffered) return null
+
+  const handleDismiss = () => {
+    setDismissed(true)
+    tour.markComplete('tour', 'welcome-dismissed')
+  }
+
+  return (
+    <AnimatedModal onClose={handleDismiss} maxWidth="sm">
+      <div className="p-6 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-[#06babe]/10 flex items-center justify-center mx-auto mb-4">
+          <GraduationCap size={26} className="text-[#06babe]" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-1.5">New here? Take a quick tour</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
+          We'll walk you through every part of the CRM, page by page — takes a few minutes. You can also find this later under Help &gt; Training.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={handleDismiss} className="btn-secondary flex-1">Maybe later</button>
+          <button
+            onClick={() => { setDismissed(true); tour.markComplete('tour', 'welcome-dismissed'); tour.startFullTour() }}
+            className="btn-primary flex-1"
+          >
+            Take the tour
+          </button>
+        </div>
+      </div>
+    </AnimatedModal>
+  )
+}
+
 // ── Default export ─────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const { user } = useAuth()
   if (!user) return null
-  if (user.role === 'staff') return <RepDashboard user={user} />
-  return <AdminDashboard />
+  return (
+    <>
+      {user.role === 'staff' ? <RepDashboard user={user} /> : <AdminDashboard />}
+      <WelcomeTourNudge />
+    </>
+  )
 }

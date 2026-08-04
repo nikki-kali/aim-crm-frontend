@@ -309,12 +309,12 @@ export default function Clinics() {
           <h1 className="page-title">Clinics</h1>
           <p className="text-sm text-gray-500 mt-0.5">{clinics.length} clinic profiles</p>
         </div>
-        <button onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
+        <button data-tour="clinics-new" onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
           <Plus size={16} /> New Clinic
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div data-tour="clinics-search" className="flex flex-wrap gap-3 mb-5">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input className="input pl-9" placeholder="Search clinics..." value={search} onChange={e => setSearch(e.target.value)} />

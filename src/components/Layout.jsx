@@ -94,7 +94,7 @@ function NavGroup({ items, groupKey, currentPath, onClose }) {
       {items.map(({ to, icon: Icon, label: navLabel }, i) => {
         const isActive = currentPath === to || (to !== '/dashboard' && currentPath.startsWith(to))
         return (
-          <NavLink key={to} to={to} onClick={onClose}>
+          <NavLink key={to} to={to} onClick={onClose} data-tour={`nav-${to.slice(1)}`}>
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}

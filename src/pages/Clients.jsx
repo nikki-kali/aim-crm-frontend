@@ -369,12 +369,12 @@ export default function Clients() {
           <h1 className="page-title">Clients</h1>
           <p className="text-sm text-gray-500 mt-0.5">{clients.length} total clients · ${totalRevenue.toLocaleString()} revenue</p>
         </div>
-        <button onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
+        <button data-tour="clients-new" onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
           <Plus size={16} /> New Client
         </button>
       </div>
 
-      <div className="flex gap-3 mb-5 flex-wrap">
+      <div data-tour="clients-search" className="flex gap-3 mb-5 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input className="input pl-9" placeholder="Search doctor or clinic..." value={search} onChange={e => setSearch(e.target.value)} />

@@ -692,10 +692,12 @@ export default function EOS() {
       </motion.div>
 
       {/* Suggestions */}
-      <SuggestionsPanel />
+      <div data-tour="eos-suggestions">
+        <SuggestionsPanel />
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+      <div data-tour="eos-tabs" className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
         {TABS.map(tab => (
           <button
             key={tab.key}

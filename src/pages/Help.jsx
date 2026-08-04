@@ -9,7 +9,9 @@ import {
   AlertTriangle, Layers, Calendar, Clock, Globe, CheckCircle,
   BookOpen, HelpCircle, Shield, Info, Lightbulb, ArrowRight,
   MessageSquare, Bug, Sparkles, Send, Inbox, Plus, Mail, Truck, Package,
+  GraduationCap,
 } from 'lucide-react'
+import TrainingPanel from '../components/TrainingPanel'
 
 // ── Small visual mockups used inside Cases help content, styled to match ──
 // the real components exactly (same classes as Frontend/src/pages/Cases.jsx)
@@ -998,8 +1000,20 @@ export default function Help() {
           </div>
 
           <button
-            onClick={() => setActiveId('feedback')}
+            onClick={() => setActiveId('training')}
             className={`w-full mt-3 flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all text-left border ${
+              activeId === 'training'
+                ? 'bg-[#06babe]/8 text-[#06babe] dark:text-teal-400 border-[#06babe]/20'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-[#06babe]/30 hover:text-[#06babe] dark:hover:text-teal-400'
+            }`}
+          >
+            <GraduationCap size={15} className="flex-shrink-0" />
+            <span className="flex-1">Training</span>
+          </button>
+
+          <button
+            onClick={() => setActiveId('feedback')}
+            className={`w-full mt-2 flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all text-left border ${
               activeId === 'feedback'
                 ? 'bg-[#06babe]/8 text-[#06babe] dark:text-teal-400 border-[#06babe]/20'
                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-[#06babe]/30 hover:text-[#06babe] dark:hover:text-teal-400'
@@ -1032,7 +1046,9 @@ export default function Help() {
               transition={{ duration: 0.18, ease: 'easeOut' }}
               className="card p-6 sm:p-8"
             >
-              {activeId === 'feedback' ? <FeedbackPanel isAdmin={isAdmin} /> : <SectionContent section={active} />}
+              {activeId === 'feedback' ? <FeedbackPanel isAdmin={isAdmin} />
+                : activeId === 'training' ? <TrainingPanel isAdmin={isAdmin} />
+                : <SectionContent section={active} />}
             </motion.div>
           </AnimatePresence>
         </main>

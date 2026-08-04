@@ -1,7 +1,81 @@
 import { useEffect, useState } from 'react'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
-import { Plus, X, Shield, User, Trash2, Pencil } from 'lucide-react'
+import { Plus, X, Shield, User, Trash2, Pencil, GraduationCap, ChevronDown, ChevronRight, Check } from 'lucide-react'
+import { TOUR_MODULES } from '../lib/tourSteps'
+import { TRAINING_MODULES } from '../lib/trainingScenarios'
+
+function TrainingProgressSection() {
+  const [team, setTeam] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open || team.length) return
+    setLoading(true)
+    api.get('/api/training/team').then(rows => setTeam(rows || [])).catch(() => setTeam([])).finally(() => setLoading(false))
+  }, [open])
+
+  const totalTours = TOUR_MODULES.length
+  const totalScenarios = TRAINING_MODULES.reduce((s, m) => s + m.scenarios.length, 0)
+
+  return (
+    <div className="mt-4 card overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+      >
+        <div className="w-9 h-9 rounded-xl bg-[#06babe]/10 flex items-center justify-center flex-shrink-0">
+          <GraduationCap size={16} className="text-[#06babe]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Training Progress</p>
+          <p className="text-xs text-slate-400">See who's completed the CRM tour and training scenarios</p>
+        </div>
+        {open ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
+      </button>
+      {open && (
+        <div className="border-t border-slate-100 dark:border-slate-800 px-5 py-4">
+          {loading ? (
+            <p className="text-sm text-slate-400 text-center py-4">Loading...</p>
+          ) : team.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-4">No data yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {team.map(u => {
+                const tours = u.completed.filter(c => c.item_type === 'tour' && c.item_id !== 'welcome-dismissed').length
+                const scenarios = u.completed.filter(c => c.item_type === 'scenario').length
+                const lastActivity = u.completed.length
+                  ? new Date(Math.max(...u.completed.map(c => new Date(c.completed_at).getTime())))
+                  : null
+                return (
+                  <div key={u.id} className="flex items-center justify-between gap-3 py-2 border-b border-slate-50 dark:border-slate-800/60 last:border-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{u.name || u.email}</p>
+                      <p className="text-xs text-slate-400">
+                        {lastActivity ? `Last activity: ${lastActivity.toLocaleDateString()}` : 'No activity yet'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0 text-xs">
+                      <span className={`flex items-center gap-1 font-semibold ${tours === totalTours && totalTours > 0 ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {tours === totalTours && totalTours > 0 && <Check size={11} />}
+                        {tours}/{totalTours} tours
+                      </span>
+                      <span className={`flex items-center gap-1 font-semibold ${scenarios === totalScenarios && totalScenarios > 0 ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'}`}>
+                        {scenarios === totalScenarios && totalScenarios > 0 && <Check size={11} />}
+                        {scenarios}/{totalScenarios} scenarios
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const EMPTY_FORM = { name: '', email: '', password: '', role: 'staff' }
 
@@ -117,12 +191,12 @@ export default function UsersPage() {
           <h1 className="page-title">Users</h1>
           <p className="text-sm text-gray-500 mt-0.5">{users.length} team member{users.length !== 1 ? 's' : ''}</p>
         </div>
-        <button onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
+        <button data-tour="users-new" onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
           <Plus size={16} /> New User
         </button>
       </div>
 
-      <div className="card overflow-hidden">
+      <div data-tour="users-table" className="card overflow-hidden">
         {loading ? (
           <div className="text-center py-16 text-gray-400 text-sm">Loading users...</div>
         ) : users.length === 0 ? (
@@ -202,6 +276,8 @@ export default function UsersPage() {
           <span className="font-semibold">Admins</span> also see Reports, Automations, and this Users page.
         </p>
       </div>
+
+      <TrainingProgressSection />
 
       {modal && (
         <UserModal

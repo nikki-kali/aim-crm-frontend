@@ -608,17 +608,17 @@ export default function Leads() {
           >
             <Archive size={13} /> {showArchived ? 'View Active' : 'View Archived'}
           </button>
-          <button onClick={() => setImportModal(true)} className="btn-secondary flex items-center gap-2">
+          <button data-tour="leads-import-csv" onClick={() => setImportModal(true)} className="btn-secondary flex items-center gap-2">
             <Upload size={14} /> Import CSV
           </button>
-          <button onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
+          <button data-tour="leads-new" onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
             <Plus size={16} /> New Lead
           </button>
         </div>
       </div>
 
       {/* View tabs */}
-      <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit mb-5">
+      <div data-tour="leads-view-tabs" className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit mb-5">
         {VIEW_TABS.map(tab => (
           <button
             key={tab.id}
@@ -630,7 +630,7 @@ export default function Leads() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div data-tour="leads-search-filters" className="flex flex-wrap gap-3 mb-5">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input

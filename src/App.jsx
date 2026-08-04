@@ -3,8 +3,10 @@ import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { ToastProvider } from './components/Toast'
 import { ThemeProvider } from './context/ThemeContext'
+import { TourProvider } from './context/TourContext'
 import Layout from './components/Layout'
 import PageTransition from './components/PageTransition'
+import TourOverlay from './components/TourOverlay'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Leads from './pages/Leads'
@@ -91,7 +93,10 @@ export default function App() {
       <AuthProvider>
         <ToastProvider>
           <BrowserRouter>
-            <AnimatedRoutes />
+            <TourProvider>
+              <AnimatedRoutes />
+              <TourOverlay />
+            </TourProvider>
           </BrowserRouter>
         </ToastProvider>
       </AuthProvider>

@@ -42,7 +42,7 @@ function StaffPicker({ value, onChange, placeholder }) {
 // inside CaseCard instead.
 function ProductionSteps({ caseRow, onStepClick }) {
   return (
-    <div className="flex items-center gap-1">
+    <div data-tour="cases-production-dots" className="flex items-center gap-1">
       {stepsForCase(caseRow).map(step => {
         const done = !!caseRow[step.atField]
         const title = done
@@ -524,6 +524,7 @@ export default function Cases() {
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <button
+            data-tour="cases-ready-to-ship"
             onClick={() => setView(v => v === 'ready-to-ship' ? 'all' : 'ready-to-ship')}
             className={`btn-secondary flex-1 sm:flex-none justify-center flex items-center gap-2 text-xs ${view === 'ready-to-ship' ? 'ring-1 ring-[#06babe]' : ''}`}
           >
@@ -531,14 +532,14 @@ export default function Cases() {
             {readyToShip.length > 0 && <span className="bg-[#06babe]/10 text-[#06babe] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{readyToShip.length}</span>}
           </button>
           <button onClick={fetchCases} className="btn-secondary w-10 h-10 flex-shrink-0 flex items-center justify-center p-0"><RefreshCw size={14} /></button>
-          <button onClick={() => setModal('new')} className="btn-primary flex-1 sm:flex-none justify-center flex items-center gap-2"><Plus size={16} /> New Case</button>
+          <button data-tour="cases-new" onClick={() => setModal('new')} className="btn-primary flex-1 sm:flex-none justify-center flex items-center gap-2"><Plus size={16} /> New Case</button>
         </div>
       </div>
 
       {view === 'all' ? (
         <>
           {/* Stage filter tabs — scrollable */}
-          <div className="overflow-x-auto pb-1 mb-5 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div data-tour="cases-stage-tabs" className="overflow-x-auto pb-1 mb-5 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
             <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-max">
               {['All', ...STAGES].map(stage => (
                 <button key={stage} onClick={() => setActiveStage(stage)}

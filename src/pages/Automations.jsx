@@ -142,13 +142,13 @@ export default function Automations() {
           <h1 className="page-title">Automations</h1>
           <p className="text-sm text-gray-500 mt-0.5">{enabledCount} of {automations.length} rules active</p>
         </div>
-        <button onClick={runAll} disabled={runningAll || enabledCount === 0} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+        <button data-tour="automations-run-all" onClick={runAll} disabled={runningAll || enabledCount === 0} className="btn-primary flex items-center gap-2 disabled:opacity-50">
           <Zap size={14} />
           {runningAll ? 'Running...' : 'Run All Now'}
         </button>
       </div>
 
-      <div className="grid gap-4">
+      <div data-tour="automations-list" className="grid gap-4">
         {automations.map(auto => {
           const meta = AUTOMATION_META[auto.key]
           if (!meta) return null

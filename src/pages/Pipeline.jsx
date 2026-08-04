@@ -55,7 +55,7 @@ export default function Pipeline() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="page-title">Sales Pipeline</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p data-tour="pipeline-value" className="text-sm text-gray-500 mt-0.5">
             {leads.length} active leads · ${totalValue.toLocaleString()} pipeline value
           </p>
         </div>
@@ -65,7 +65,7 @@ export default function Pipeline() {
         </button>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-6" style={{ minHeight: 520 }}>
+      <div data-tour="pipeline-board" className="flex gap-4 overflow-x-auto pb-6" style={{ minHeight: 520 }}>
         {COLUMNS.map(col => {
           const colLeads = leads.filter(l => l.status === col.id)
           const colVal = colLeads.reduce((s, l) => s + Number(l.estimated_value || 0), 0)
