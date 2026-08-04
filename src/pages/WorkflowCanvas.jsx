@@ -37,8 +37,11 @@ function handleOffsetX(node, handleId, index, total) {
 function AddPlaceholder({ onClick }) {
   return (
     <button
-      onClick={onClick}
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick() }}
+      onPointerDownCapture={(e) => e.stopPropagation()}
       className="w-7 h-7 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:border-[#06babe] hover:text-[#06babe] transition-colors"
+      style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}
       title="Add a step"
     >
       <Plus size={14} />
@@ -176,6 +179,10 @@ function CanvasInner() {
           data: {},
           draggable: false,
           selectable: false,
+          // Above the connecting edge so its (much larger) invisible
+          // click-catching stroke can never sit on top of and swallow
+          // clicks meant for this button.
+          zIndex: 10,
         })
         placeholderEdges.push({
           id: `${phId}__edge`,
@@ -185,6 +192,12 @@ function CanvasInner() {
           type: 'straight',
           style: { strokeDasharray: '4 4', stroke: '#cbd5e1' },
           selectable: false,
+          focusable: false,
+          // Default edges have an invisible ~20px-wide hit area for
+          // hover/click even when not selectable — zero it out since this
+          // dashed connector runs straight into the "+" button below and
+          // would otherwise intercept the click before it reaches it.
+          interactionWidth: 0,
         })
       })
     }
