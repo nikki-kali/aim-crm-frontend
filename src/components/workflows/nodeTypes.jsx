@@ -9,11 +9,21 @@ function summarize(type, data = {}) {
     case 'send_email': return data.subject || 'No subject set'
     case 'notify_rep': return data.title || 'No title set'
     case 'add_tag': return data.tag ? `Tag: "${data.tag}"` : 'No tag set'
+    case 'remove_tag': return data.tag ? `Tag: "${data.tag}"` : 'No tag set'
     case 'update_status': return data.status ? `Set to "${data.status}"` : 'No status set'
+    case 'update_field': return data.field ? `${data.field} → "${data.value ?? ''}"` : 'No field set'
     case 'create_task': return data.title || 'No task title set'
+    case 'create_note': return data.text || 'No note text set'
     case 'assign_rep': return data.assigned_to_name || 'No rep selected'
+    case 'round_robin_assign': return 'Least-busy rep'
+    case 'recalculate_score': return 'Re-scores the lead'
+    case 'convert_to_client': return 'Creates a client record'
+    case 'archive_lead': return 'Archives the lead'
+    case 'webhook': return data.url || 'No URL set'
     case 'filter': return data.field ? `${data.field} ${data.operator || ''} ${data.value ?? ''}` : 'No condition set'
-    case 'wait': return `${data.amount || 1} ${data.unit || 'days'}`
+    case 'wait': return data.mode === 'until_field'
+      ? (data.field ? `Until "${data.field}"` : 'No field set')
+      : `${data.amount || 1} ${data.unit || 'days'}`
     default: return ''
   }
 }
@@ -159,7 +169,11 @@ export function StickyNoteNode({ data, selected }) {
   )
 }
 
-const ACTION_TYPES = ['send_email', 'notify_rep', 'add_tag', 'update_status', 'create_task', 'assign_rep', 'filter']
+const ACTION_TYPES = [
+  'send_email', 'notify_rep', 'add_tag', 'remove_tag', 'update_status', 'update_field',
+  'create_task', 'create_note', 'assign_rep', 'round_robin_assign', 'recalculate_score',
+  'convert_to_client', 'archive_lead', 'webhook', 'filter',
+]
 const actionNodeEntries = ACTION_TYPES.map((type) => [type, (props) => <ActionNode {...props} type={type} />])
 
 export const nodeTypes = {

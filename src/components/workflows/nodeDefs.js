@@ -1,4 +1,7 @@
-import { Mail, Bell, Tag, RefreshCw, ClipboardList, UserPlus, GitBranch, Split, Filter, Clock } from 'lucide-react'
+import {
+  Mail, Bell, Tag, RefreshCw, ClipboardList, UserPlus, GitBranch, Split, Filter, Clock,
+  Pencil, Eraser, Archive, Gauge, Shuffle, UserCheck, FileText, Webhook,
+} from 'lucide-react'
 
 // Triggers reuse the CRM's existing automation-detection conditions (see
 // Backend/src/services/workflowEngine.js's TRIGGER_QUERIES) rather than a
@@ -53,35 +56,89 @@ export const CASE_STAGES = [
   'Dispatched', 'Completed',
 ]
 
+// Organized under the same category names as the team's requested node
+// list. Every node here is backed by a real column/table/service in this
+// CRM — categories like Opportunity Management, Calls/SMS/Chat, paid
+// integrations, AI writing, and raw code execution were deliberately left
+// out since nothing in this app backs them yet; adding them as pickable
+// steps would just be buttons that do nothing when a workflow runs.
 export const NODE_CATEGORIES = [
   {
-    key: 'actions',
-    label: 'Actions',
+    key: 'contact',
+    label: 'Contact Management',
+    nodes: [
+      { type: 'update_field', label: 'Update Field', icon: Pencil, color: '#0ea5e9', description: "Update a lead's phone, email, notes, or another field." },
+      { type: 'add_tag', label: 'Add Tag', icon: Tag, color: '#0ea5e9', description: 'Tag the lead.' },
+      { type: 'remove_tag', label: 'Remove Tag', icon: Eraser, color: '#0ea5e9', description: 'Remove a tag from the lead.' },
+    ],
+  },
+  {
+    key: 'lead',
+    label: 'Lead Management',
+    nodes: [
+      { type: 'assign_rep', label: 'Assign Rep', icon: UserPlus, color: '#f97316', description: 'Assign the lead to a specific rep.' },
+      { type: 'round_robin_assign', label: 'Round Robin Assign', icon: Shuffle, color: '#f97316', description: 'Assign to whichever rep currently has the fewest active leads.' },
+      { type: 'recalculate_score', label: 'Recalculate AI Score', icon: Gauge, color: '#a855f7', description: "Re-run the lead's AI score based on its current data." },
+      { type: 'convert_to_client', label: 'Convert to Client', icon: UserCheck, color: '#16a34a', description: 'Turn this lead into a client record (same as the manual Convert button).' },
+      { type: 'archive_lead', label: 'Archive Lead', icon: Archive, color: '#64748b', description: 'Archive the lead.' },
+    ],
+  },
+  {
+    key: 'pipeline',
+    label: 'Pipeline Management',
+    nodes: [
+      { type: 'update_status', label: 'Move Stage / Update Status', icon: RefreshCw, color: '#16a34a', description: 'Change the lead status or case stage.' },
+    ],
+  },
+  {
+    key: 'sales_activities',
+    label: 'Sales Activities',
+    nodes: [
+      { type: 'create_note', label: 'Create Note', icon: FileText, color: '#8b5cf6', description: "Log a note on the lead's or case's activity history." },
+    ],
+  },
+  {
+    key: 'communication',
+    label: 'Communication',
     nodes: [
       { type: 'send_email', label: 'Send Email', icon: Mail, color: '#06babe', description: 'Email the lead, or the assigned rep.' },
       { type: 'notify_rep', label: 'Notify Rep', icon: Bell, color: '#207290', description: 'Post an alert inside the CRM.' },
+    ],
+  },
+  {
+    key: 'tasks',
+    label: 'Tasks & Productivity',
+    nodes: [
       { type: 'create_task', label: 'Create Task', icon: ClipboardList, color: '#8b5cf6', description: 'Create a follow-up task.' },
-      { type: 'add_tag', label: 'Add Tag', icon: Tag, color: '#0ea5e9', description: 'Tag the lead.' },
-      { type: 'update_status', label: 'Update Status', icon: RefreshCw, color: '#16a34a', description: 'Change the lead or case status.' },
-      { type: 'assign_rep', label: 'Assign Rep', icon: UserPlus, color: '#f97316', description: 'Assign the lead to a rep.' },
     ],
   },
   {
     key: 'logic',
-    label: 'Logic',
+    label: 'Automation Utilities',
     nodes: [
-      { type: 'condition', label: 'Condition', icon: GitBranch, color: '#f59e0b', description: 'Branch Yes / No based on a field.' },
-      { type: 'router', label: 'Router', icon: Split, color: '#f59e0b', description: "Branch on a field's exact value." },
+      { type: 'condition', label: 'Condition (If / Else)', icon: GitBranch, color: '#f59e0b', description: 'Branch Yes / No based on a field.' },
+      { type: 'router', label: 'Router / Switch', icon: Split, color: '#f59e0b', description: "Branch on a field's exact value." },
       { type: 'filter', label: 'Filter', icon: Filter, color: '#f59e0b', description: 'Only continue if a condition is met.' },
+      { type: 'wait', label: 'Wait / Delay', icon: Clock, color: '#64748b', description: 'Pause for a set time, or until a date field is reached.' },
     ],
   },
   {
-    key: 'flow',
-    label: 'Flow',
+    key: 'integrations',
+    label: 'Integrations',
     nodes: [
-      { type: 'wait', label: 'Wait', icon: Clock, color: '#64748b', description: 'Pause before continuing.' },
+      { type: 'webhook', label: 'Webhook / HTTP Request', icon: Webhook, color: '#334155', description: 'Call any external URL (Slack, Zapier, Make, n8n, or anything else that accepts a webhook).' },
     ],
   },
+]
+
+export const UPDATABLE_LEAD_FIELDS = [
+  { field: 'phone', label: 'Phone' },
+  { field: 'email', label: 'Email' },
+  { field: 'clinic_name', label: 'Clinic Name' },
+  { field: 'notes', label: 'Notes' },
+  { field: 'estimated_value', label: 'Estimated Value' },
+  { field: 'referral_source', label: 'Referral Source' },
+  { field: 'intent_level', label: 'Intent Level' },
 ]
 
 export const ALL_NODE_DEFS = NODE_CATEGORIES.flatMap((c) => c.nodes)

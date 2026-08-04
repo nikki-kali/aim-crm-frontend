@@ -1,5 +1,5 @@
 import { X, Trash2, Plus } from 'lucide-react'
-import { getNodeDef, TRIGGER_DEFS, CASE_STAGES, CONDITION_FIELDS, CONDITION_OPERATORS, entityTypeForTrigger } from './nodeDefs'
+import { getNodeDef, TRIGGER_DEFS, CASE_STAGES, CONDITION_FIELDS, CONDITION_OPERATORS, entityTypeForTrigger, UPDATABLE_LEAD_FIELDS } from './nodeDefs'
 
 const LEAD_STATUSES = ['Lead', 'Contacted', 'Proposal', 'Won', 'Lost']
 
@@ -94,10 +94,24 @@ export default function NodeEditorPanel({ node, entityType, reps, onChange, onDe
           </>
         )}
 
-        {node.type === 'add_tag' && (
+        {(node.type === 'add_tag' || node.type === 'remove_tag') && (
           <Field label="Tag">
             <input className="input" value={data.tag || ''} onChange={(e) => update({ tag: e.target.value })} placeholder="e.g. hot-lead" />
           </Field>
+        )}
+
+        {node.type === 'update_field' && (
+          <>
+            <Field label="Field">
+              <select className="input" value={data.field || ''} onChange={(e) => update({ field: e.target.value })}>
+                <option value="" disabled>Select a field...</option>
+                {UPDATABLE_LEAD_FIELDS.map((f) => <option key={f.field} value={f.field}>{f.label}</option>)}
+              </select>
+            </Field>
+            <Field label="New value">
+              <input className="input" value={data.value ?? ''} onChange={(e) => update({ value: e.target.value })} />
+            </Field>
+          </>
         )}
 
         {node.type === 'update_status' && (
@@ -135,6 +149,43 @@ export default function NodeEditorPanel({ node, entityType, reps, onChange, onDe
           </Field>
         )}
 
+        {node.type === 'round_robin_assign' && (
+          <p className="text-xs text-slate-400 leading-relaxed">No setup needed — this looks at every staff rep's current active lead count and assigns to whoever has the fewest.</p>
+        )}
+
+        {node.type === 'recalculate_score' && (
+          <p className="text-xs text-slate-400 leading-relaxed">No setup needed — re-runs the same AI scoring formula used when leads are created or imported.</p>
+        )}
+
+        {node.type === 'convert_to_client' && (
+          <p className="text-xs text-slate-400 leading-relaxed">No setup needed — creates a client record from this lead's data, same as clicking "Convert" on the Leads page. Leads already converted are skipped.</p>
+        )}
+
+        {node.type === 'archive_lead' && (
+          <p className="text-xs text-slate-400 leading-relaxed">No setup needed — archives the lead so it drops out of active views.</p>
+        )}
+
+        {node.type === 'create_note' && (
+          <Field label="Note text">
+            <textarea className="input min-h-[90px]" value={data.text || ''} onChange={(e) => update({ text: e.target.value })} placeholder="e.g. Auto-logged by workflow..." />
+          </Field>
+        )}
+
+        {node.type === 'webhook' && (
+          <>
+            <Field label="URL">
+              <input className="input" value={data.url || ''} onChange={(e) => update({ url: e.target.value })} placeholder="https://hooks.slack.com/..." />
+            </Field>
+            <Field label="Method">
+              <select className="input" value={data.method || 'POST'} onChange={(e) => update({ method: e.target.value })}>
+                <option value="POST">POST</option>
+                <option value="GET">GET</option>
+              </select>
+            </Field>
+            <p className="text-xs text-slate-400 leading-relaxed">Sends the lead or case's data as JSON to this URL — works with Slack incoming webhooks, Zapier, Make, n8n, or any endpoint that accepts one.</p>
+          </>
+        )}
+
         {(node.type === 'condition' || node.type === 'filter') && (
           <ConditionFields data={data} entityType={entityType} onChange={update} />
         )}
@@ -145,15 +196,32 @@ export default function NodeEditorPanel({ node, entityType, reps, onChange, onDe
 
         {node.type === 'wait' && (
           <>
-            <Field label="Amount">
-              <input type="number" min="1" className="input" value={data.amount ?? 1} onChange={(e) => update({ amount: Number(e.target.value) })} />
-            </Field>
-            <Field label="Unit">
-              <select className="input" value={data.unit || 'days'} onChange={(e) => update({ unit: e.target.value })}>
-                <option value="hours">Hours</option>
-                <option value="days">Days</option>
+            <Field label="Wait for">
+              <select className="input" value={data.mode || 'relative'} onChange={(e) => update({ mode: e.target.value })}>
+                <option value="relative">A set amount of time</option>
+                <option value="until_field">Until a date field is reached</option>
               </select>
             </Field>
+            {data.mode === 'until_field' ? (
+              <Field label="Date field">
+                <select className="input" value={data.field || ''} onChange={(e) => update({ field: e.target.value })}>
+                  <option value="" disabled>Select a field...</option>
+                  {(entityType === 'case' ? ['due_date'] : ['last_contacted_at']).map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </Field>
+            ) : (
+              <>
+                <Field label="Amount">
+                  <input type="number" min="1" className="input" value={data.amount ?? 1} onChange={(e) => update({ amount: Number(e.target.value) })} />
+                </Field>
+                <Field label="Unit">
+                  <select className="input" value={data.unit || 'days'} onChange={(e) => update({ unit: e.target.value })}>
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                  </select>
+                </Field>
+              </>
+            )}
           </>
         )}
 
