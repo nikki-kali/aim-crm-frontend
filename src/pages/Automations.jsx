@@ -121,7 +121,7 @@ export default function Automations() {
         ))}
       </div>
 
-      <div className="mb-8">
+      <div className="mb-8" data-tour="automations-templates">
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Templates</p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {templates.map((tpl) => (
