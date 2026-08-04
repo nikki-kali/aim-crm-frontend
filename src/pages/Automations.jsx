@@ -1,206 +1,192 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Trash2, Users2, Activity, ArrowRight } from 'lucide-react'
 import api from '../lib/api'
-import { Clock, Calendar, RefreshCw, TrendingUp, Zap, Play, Check, AlertCircle } from 'lucide-react'
+import { useToast } from '../components/Toast'
+import EmptyState from '../components/EmptyState'
+import { SkeletonCards } from '../components/Skeleton'
+import { TRIGGER_DEFS, getNodeDef } from '../components/workflows/nodeDefs'
 
-const AUTOMATION_META = {
-  cold_lead: {
-    icon: Clock,
-    iconColor: 'text-amber-500',
-    iconBg: 'bg-amber-50',
-    description: 'Scans active leads and flags anyone with no contact in 14+ days so you can follow up before they go cold.',
-  },
-  case_due: {
-    icon: Calendar,
-    iconColor: 'text-red-500',
-    iconBg: 'bg-red-50',
-    description: 'Checks for lab cases with a due date within the next 2 days that haven\'t been delivered yet.',
-  },
-  lost_recovery: {
-    icon: RefreshCw,
-    iconColor: 'text-blue-500',
-    iconBg: 'bg-blue-50',
-    description: 'Finds leads marked Lost 30+ days ago that are worth re-approaching for a second chance.',
-  },
-  win_streak: {
-    icon: TrendingUp,
-    iconColor: 'text-green-500',
-    iconBg: 'bg-green-50',
-    description: 'Detects when 3 or more consecutive resolved leads are all wins and posts a streak alert to celebrate.',
-  },
-}
+const BRAND_COLORS = { 'Aim Dental': '#06babe', 'Kings Highway': '#207290', All: '#64748b' }
+const BRANDS = ['All', 'Aim Dental', 'Kings Highway']
 
-function Toggle({ enabled, onChange, disabled }) {
-  return (
-    <button
-      role="switch"
-      aria-checked={enabled}
-      onClick={() => !disabled && onChange(!enabled)}
-      disabled={disabled}
-      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
-        enabled ? 'bg-[#06babe]' : 'bg-gray-200'
-      }`}
-    >
-      <span className={`inline-block h-4 w-4 mt-0.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-        enabled ? 'translate-x-[18px]' : 'translate-x-0.5'
-      }`} />
-    </button>
-  )
+function summarizeWorkflow(wf) {
+  const steps = (wf.nodes || []).filter((n) => n.type !== 'trigger' && n.type !== 'sticky_note')
+  if (steps.length === 0) return 'No steps yet'
+  const first = getNodeDef(steps[0].type)?.label || steps[0].type
+  return steps.length > 1 ? `${first} +${steps.length - 1} more` : first
 }
 
 export default function Automations() {
-  const [automations, setAutomations] = useState([])
+  const navigate = useNavigate()
+  const toast = useToast()
+  const [templates, setTemplates] = useState([])
+  const [workflows, setWorkflows] = useState([])
   const [loading, setLoading] = useState(true)
-  const [migrationMissing, setMigrationMissing] = useState(false)
-  const [running, setRunning] = useState({})
-  const [runningAll, setRunningAll] = useState(false)
-  const [results, setResults] = useState({})
+  const [brandFilter, setBrandFilter] = useState('All')
+  const [creating, setCreating] = useState(false)
 
-  useEffect(() => { fetchAutomations() }, [])
+  useEffect(() => { load() }, [])
 
-  const fetchAutomations = async () => {
-    setMigrationMissing(false)
+  const load = async () => {
     try {
-      const data = await api.get('/api/automations')
-      setAutomations(data || [])
+      const [t, w] = await Promise.all([api.get('/api/workflows/templates'), api.get('/api/workflows')])
+      setTemplates(t || [])
+      setWorkflows(w || [])
     } catch {
-      setMigrationMissing(true)
-    }
-    setLoading(false)
-  }
-
-  const toggleAutomation = async (id, enabled) => {
-    setAutomations(prev => prev.map(a => a.id === id ? { ...a, enabled } : a))
-    await api.put(`/api/automations/${id}`, { enabled }).catch(console.error)
-  }
-
-  const runOne = async (auto) => {
-    setRunning(prev => ({ ...prev, [auto.key]: true }))
-    try {
-      const result = await api.post(`/api/automations/run/${auto.key}`)
-      const now = new Date().toISOString()
-      const newCount = (auto.run_count || 0) + 1
-      setAutomations(prev => prev.map(a =>
-        a.id === auto.id ? { ...a, last_run_at: now, run_count: newCount } : a
-      ))
-      setResults(prev => ({ ...prev, [auto.key]: result }))
-      setTimeout(() => setResults(prev => {
-        const n = { ...prev }; delete n[auto.key]; return n
-      }), 6000)
-    } catch (e) {
-      setResults(prev => ({ ...prev, [auto.key]: { message: 'Error: ' + e.message, found: false } }))
+      toast('Failed to load automations', 'error')
     } finally {
-      setRunning(prev => { const n = { ...prev }; delete n[auto.key]; return n })
+      setLoading(false)
     }
   }
 
-  const runAll = async () => {
-    setRunningAll(true)
+  const createFromTemplate = async (tpl) => {
+    setCreating(true)
     try {
-      const allResults = await api.post('/api/automations/run')
-      const now = new Date().toISOString()
-      setAutomations(prev => prev.map(a => a.enabled ? { ...a, last_run_at: now, run_count: (a.run_count || 0) + 1 } : a))
-      setResults(allResults)
-      setTimeout(() => setResults({}), 6000)
-    } catch (e) {
-      console.error('Run all error:', e)
+      const wf = await api.post('/api/workflows', {
+        name: tpl.name,
+        description: tpl.description,
+        trigger_type: tpl.trigger_type,
+        trigger_config: tpl.trigger_config,
+        nodes: tpl.nodes,
+        edges: tpl.edges,
+      })
+      navigate(`/automations/${wf.id}`)
+    } catch (err) {
+      toast(err.message || 'Failed to create workflow', 'error')
+      setCreating(false)
     }
-    setRunningAll(false)
   }
 
-  const timeAgo = (ts) => {
-    if (!ts) return 'Never'
-    const diff = Date.now() - new Date(ts).getTime()
-    const m = Math.floor(diff / 60000)
-    if (m < 1) return 'Just now'
-    if (m < 60) return `${m}m ago`
-    const h = Math.floor(m / 60)
-    if (h < 24) return `${h}h ago`
-    return `${Math.floor(h / 24)}d ago`
+  const createBlank = async () => {
+    setCreating(true)
+    try {
+      const wf = await api.post('/api/workflows', {
+        name: 'New Workflow',
+        trigger_type: 'new_lead_created',
+        trigger_config: {},
+        nodes: [{ id: 'trigger', type: 'trigger', position: { x: 300, y: 40 }, data: { triggerType: 'new_lead_created', config: {} } }],
+        edges: [],
+      })
+      navigate(`/automations/${wf.id}`)
+    } catch (err) {
+      toast(err.message || 'Failed to create workflow', 'error')
+      setCreating(false)
+    }
   }
 
-  if (loading) return <div className="flex items-center justify-center py-20 text-gray-400 text-sm">Loading...</div>
+  const deleteWorkflow = async (e, id) => {
+    e.stopPropagation()
+    if (!confirm('Delete this workflow? This cannot be undone.')) return
+    try {
+      await api.delete(`/api/workflows/${id}`)
+      setWorkflows((prev) => prev.filter((w) => w.id !== id))
+      toast('Workflow deleted', 'success')
+    } catch (err) {
+      toast(err.message || 'Failed to delete workflow', 'error')
+    }
+  }
 
-  if (migrationMissing) return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="card p-8 text-center">
-        <AlertCircle size={32} className="mx-auto text-amber-400 mb-3" />
-        <h2 className="font-semibold text-gray-900 mb-2">Setup Required</h2>
-        <p className="text-sm text-gray-500 leading-relaxed mb-4">
-          Run <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">automations-setup.sql</code> in your Supabase SQL Editor.
-        </p>
-        <button onClick={fetchAutomations} className="btn-secondary text-sm">Retry</button>
+  const filteredWorkflows = workflows.filter((w) => brandFilter === 'All' || w.brand === brandFilter || w.brand === 'All')
+
+  if (loading) {
+    return (
+      <div className="px-4 py-5 sm:p-6 max-w-5xl mx-auto">
+        <SkeletonCards rows={3} />
       </div>
-    </div>
-  )
-
-  const enabledCount = automations.filter(a => a.enabled).length
+    )
+  }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="px-4 py-5 sm:p-6 max-w-5xl mx-auto">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="page-title">Automations</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{enabledCount} of {automations.length} rules active</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Build multi-step workflows that trigger off leads and cases automatically.</p>
         </div>
-        <button data-tour="automations-run-all" onClick={runAll} disabled={runningAll || enabledCount === 0} className="btn-primary flex items-center gap-2 disabled:opacity-50">
-          <Zap size={14} />
-          {runningAll ? 'Running...' : 'Run All Now'}
+        <button data-tour="automations-new" onClick={createBlank} disabled={creating} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+          <Plus size={14} /> New Workflow
         </button>
       </div>
 
-      <div data-tour="automations-list" className="grid gap-4">
-        {automations.map(auto => {
-          const meta = AUTOMATION_META[auto.key]
-          if (!meta) return null
-          const Icon = meta.icon
-          const isRunning = !!running[auto.key]
-          const result = results[auto.key]
-          const busy = isRunning || runningAll
-
-          return (
-            <div key={auto.id} className="card p-5">
-              <div className="flex items-start gap-4">
-                <div className={`w-10 h-10 rounded-xl ${meta.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                  <Icon size={18} className={meta.iconColor} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <h3 className="font-semibold text-gray-900 text-sm">{auto.name}</h3>
-                    <Toggle enabled={auto.enabled} onChange={(v) => toggleAutomation(auto.id, v)} disabled={busy} />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">{meta.description}</p>
-                  {result && (
-                    <div className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${result.found ? 'text-amber-600' : 'text-green-600'}`}>
-                      <Check size={12} />
-                      {result.message}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50 gap-3 flex-wrap">
-                <p className="text-xs text-gray-400">
-                  Last run: <span className="text-gray-600 font-medium">{timeAgo(auto.last_run_at)}</span>
-                  {auto.run_count > 0 && <span className="ml-2 text-gray-300">· {auto.run_count} total run{auto.run_count > 1 ? 's' : ''}</span>}
-                </p>
-                <button onClick={() => runOne(auto)} disabled={busy || !auto.enabled} className="btn-secondary text-xs flex items-center gap-1.5 disabled:opacity-40">
-                  {isRunning ? (
-                    <><div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />Running...</>
-                  ) : (
-                    <><Play size={11} />Run Now</>
-                  )}
-                </button>
-              </div>
-            </div>
-          )
-        })}
+      <div className="mb-4 flex items-center bg-slate-100 dark:bg-slate-800 rounded-full p-0.5 text-xs font-medium w-fit">
+        {BRANDS.map((b) => (
+          <button
+            key={b}
+            onClick={() => setBrandFilter(b)}
+            className={`px-3 py-1.5 rounded-full transition-colors ${brandFilter === b ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-slate-100' : 'text-slate-500'}`}
+          >
+            {b}
+          </button>
+        ))}
       </div>
 
-      <div className="mt-6 card p-4">
-        <p className="text-xs text-gray-500 leading-relaxed">
-          <span className="font-semibold text-gray-700">How it works:</span>{' '}
-          Automations run automatically on the server every day at 8:00 AM and send email alerts. You can also trigger them manually with "Run All Now".
-        </p>
+      <div className="mb-8">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Templates</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {templates.map((tpl) => (
+            <button
+              key={tpl.key}
+              onClick={() => createFromTemplate(tpl)}
+              disabled={creating}
+              className="text-left card p-4 hover:border-[#06babe] transition-colors disabled:opacity-50"
+            >
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{tpl.name}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 leading-relaxed">{tpl.description}</p>
+              <p className="text-[11px] text-[#06babe] font-medium mt-3 flex items-center gap-1">
+                Use template <ArrowRight size={11} />
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Your Automations</p>
+        {filteredWorkflows.length === 0 ? (
+          <EmptyState
+            icon={Activity}
+            title="No automations yet"
+            description="Use a template above or start a new workflow from scratch."
+          />
+        ) : (
+          <div data-tour="automations-list" className="grid gap-3">
+            {filteredWorkflows.map((wf) => (
+              <div
+                key={wf.id}
+                onClick={() => navigate(`/automations/${wf.id}`)}
+                className="card p-4 sm:p-5 cursor-pointer flex items-center gap-4"
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${BRAND_COLORS[wf.brand] || '#06babe'}1A` }}>
+                  <Activity size={17} style={{ color: BRAND_COLORS[wf.brand] || '#06babe' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">{wf.name}</p>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${wf.active ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                      {wf.active ? 'Active' : 'Paused'}
+                    </span>
+                    {wf.brand !== 'All' && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: `${BRAND_COLORS[wf.brand]}1A`, color: BRAND_COLORS[wf.brand] }}>
+                        {wf.brand}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 truncate">
+                    {TRIGGER_DEFS[wf.trigger_type]?.label || wf.trigger_type} → {summarizeWorkflow(wf)}
+                  </p>
+                </div>
+                <div className="text-right flex-shrink-0 hidden sm:block">
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1 justify-end"><Users2 size={11} /> {wf.enrolled_count || 0}</p>
+                  <p className="text-[10px] text-slate-400">enrolled</p>
+                </div>
+                <button onClick={(e) => deleteWorkflow(e, wf.id)} className="text-slate-300 hover:text-red-500 flex-shrink-0 p-1.5">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
