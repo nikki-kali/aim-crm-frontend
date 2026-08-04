@@ -427,126 +427,42 @@ const SECTIONS = [
     ],
   },
   {
-    id: 'scheduler',
-    label: 'Scheduler',
+    id: 'pickup-schedule',
+    label: 'Case Pickup Schedules',
     icon: CalendarDays,
     color: 'text-[#06babe]',
     bg: 'bg-[#06babe]/10',
     adminOnly: false,
-    summary: 'A full booking system embedded in the CRM — create appointment types, set your availability, connect Google Calendar, and let clients self-book.',
-    subSections: [
+    summary: 'A calendar of every case pickup requested through the "Schedule Pickup" form on khdentallab.com and aimdentallab.com — no manual entry required.',
+    steps: [
       {
-        label: 'Overview (Dashboard)',
-        steps: [
-          {
-            title: 'What the Overview Shows',
-            desc: 'The Scheduler Overview lists all your Event Types (appointment templates). Each card shows the name, duration, color, and a shareable booking link.',
-          },
-          {
-            title: 'Copying Your Booking Link',
-            desc: 'Click the copy icon next to any event type to copy the public booking link. Share this link with clients via email or your website so they can self-schedule appointments.',
-          },
-          {
-            title: 'Creating a New Event Type',
-            desc: 'Click "New Event Type" (top-right). Fill in the Event Title, set a Duration (15, 30, 45, 60 min or custom), add a Description, choose a Location Type, pick a theme color, and toggle Is Active on/off. Click "Save Template".',
-          },
-          {
-            title: 'Editing an Event Type',
-            desc: 'Click the pencil icon on any event type card. Update fields as needed and save. After saving you can also add Custom Booking Questions that clients must answer before confirming.',
-          },
-          {
-            title: 'Deactivating an Event Type',
-            desc: 'Toggle "Is Event Active" to off in the edit form. Inactive events are hidden from your public booking page but remain in the system so you can reactivate them later.',
-          },
-        ],
+        title: 'Where the data comes from',
+        desc: 'Every pickup submitted through either marketing site\'s Schedule Pickup form is saved as a lead automatically, and shows up here the moment it comes in — it\'s the exact same record you\'d see on the Leads page, just viewed as a calendar.',
       },
       {
-        label: 'Calendar',
-        steps: [
-          {
-            title: 'Viewing Booked Appointments',
-            desc: 'The Calendar tab shows all confirmed bookings in a monthly/weekly grid. Each block is color-coded by event type. Click any block to see booking details.',
-          },
-          {
-            title: 'Navigating Dates',
-            desc: 'Use the arrow buttons to go to the previous or next month. Click "Today" to jump back to the current date.',
-          },
-        ],
+        title: 'Reading the calendar',
+        desc: 'A small teal badge on a day shows how many pickups are scheduled that day. Click any day to filter the list below to just that date; click it again to clear the filter.',
       },
       {
-        label: 'Appointments',
-        steps: [
-          {
-            title: 'Viewing All Bookings',
-            desc: 'The Appointments tab lists every booking in table format — client name, email, event type, date/time, status (Confirmed/Cancelled/Rescheduled), and notes.',
-          },
-          {
-            title: 'Cancelling a Booking',
-            desc: 'Click the three-dot menu or cancel icon on any appointment row. The client will receive a cancellation notification if email is configured.',
-          },
-        ],
+        title: 'The conflict flag',
+        desc: 'If two or more pickups on the same day share the same time window, the day\'s badge turns red with a warning icon. This is a heads-up for staff, not an automatic block — the website form has no way to know what\'s already scheduled, so a human needs to catch the clash here.',
       },
       {
-        label: 'Availability',
-        steps: [
-          {
-            title: 'Setting Your Working Hours',
-            desc: 'The Availability tab shows a weekly schedule grid. Toggle each day on/off and set start/end times for the days you accept bookings. Click "Save Availability" when done.',
-          },
-          {
-            title: 'Setting Your Timezone',
-            desc: 'Use the timezone dropdown at the top of the Availability page. All booking times shown to clients will automatically convert to their local time, but will be stored in your chosen timezone.',
-          },
-          {
-            title: 'Blocking Off Dates',
-            desc: 'Use the "Date Overrides" section to block specific dates (e.g., holidays or vacations) or set custom hours for a single day without changing your regular schedule.',
-          },
-        ],
+        title: 'Brand marking',
+        desc: 'Each pickup card shows a colored badge for which lab it\'s for — teal for Aim Dental, navy for Kings Highway. This is detected automatically from which website the request came from.',
       },
       {
-        label: 'Integrations',
-        steps: [
-          {
-            title: 'Connecting Google Calendar',
-            desc: 'Click "Connect Google Calendar" on the Integrations tab. You\'ll be redirected to Google to grant access. Once connected, new bookings automatically create Google Calendar events and can generate Google Meet links.',
-          },
-          {
-            title: 'Disconnecting an Integration',
-            desc: 'Click "Disconnect" next to an active integration to remove access. Existing bookings are not affected.',
-          },
-        ],
+        title: 'Spotting a missed pickup',
+        desc: 'If a pickup\'s scheduled date has already passed and it\'s still sitting on "Requested" (never marked Dispatched or Received), its card gets a red "Missed?" flag. Check with whoever runs pickups that day, then update its status from the Leads page.',
       },
       {
-        label: 'Analytics',
-        steps: [
-          {
-            title: 'Booking Analytics',
-            desc: 'The Analytics tab shows total bookings, completion rate, cancellation rate, and average booking lead time over the selected period. Use it to understand your scheduling patterns.',
-          },
-        ],
-      },
-      {
-        label: 'Workflows',
-        steps: [
-          {
-            title: 'What are Workflows?',
-            desc: 'Workflows send automated messages (email/SMS) to clients at defined trigger points — e.g., "Send confirmation email when booking is created" or "Send reminder 24 hours before appointment."',
-          },
-          {
-            title: 'Creating a Workflow',
-            desc: 'Click "New Workflow". Choose a trigger (Booking Created, 24h Before, 1h Before, After Booking), select the action (Send Email), write your message template, and activate it.',
-          },
-          {
-            title: 'Enabling/Disabling a Workflow',
-            desc: 'Toggle the switch on any workflow card to turn it on or off without deleting it.',
-          },
-        ],
+        title: 'Updating a pickup\'s status',
+        desc: 'This page is read-focused — to mark a pickup Dispatched or Received, go to the Leads page (or use the one-click links in the internal notification email) the same way you always have. Changes there are reflected here automatically.',
       },
     ],
     tips: [
-      'Share your booking links in email signatures so clients can always self-schedule.',
-      'Set your availability before sharing any booking links — clients can only book during your active hours.',
-      'Connect Google Calendar first to get the most out of the system.',
+      'Check this page each morning before pickups run — it\'s the fastest way to see the whole day\'s route at a glance.',
+      'A red conflict flag doesn\'t always mean a real problem — two pickups in the same neighborhood in the same window might be fine on one trip.',
     ],
   },
   {

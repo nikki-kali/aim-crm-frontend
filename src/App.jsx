@@ -19,14 +19,7 @@ import EOS from './pages/EOS'
 import Automations from './pages/Automations'
 import Users from './pages/Users'
 import Help from './pages/Help'
-import SchedulerDashboard from './pages/scheduler/Dashboard'
-import SchedulerCalendar from './pages/scheduler/Calendar'
-import SchedulerAppointments from './pages/scheduler/Appointments'
-import SchedulerAvailability from './pages/scheduler/Availability'
-import SchedulerIntegrations from './pages/scheduler/Integrations'
-import SchedulerAnalytics from './pages/scheduler/Analytics'
-import SchedulerWorkflows from './pages/scheduler/Workflows'
-import SchedulerEventEditor from './pages/scheduler/EventEditor'
+import CasePickupSchedule from './pages/CasePickupSchedule'
 
 const Spinner = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -70,16 +63,7 @@ function AnimatedRoutes() {
         <Route path="/automations" element={<AdminRoute><Automations /></AdminRoute>} />
         <Route path="/users"       element={<AdminRoute><Users /></AdminRoute>} />
 
-        {/* Scheduler — embedded in CRM */}
-        <Route path="/scheduler"                        element={<ProtectedRoute><SchedulerDashboard /></ProtectedRoute>} />
-        <Route path="/scheduler/calendar"               element={<ProtectedRoute><SchedulerCalendar /></ProtectedRoute>} />
-        <Route path="/scheduler/appointments"           element={<ProtectedRoute><SchedulerAppointments /></ProtectedRoute>} />
-        <Route path="/scheduler/availability"           element={<ProtectedRoute><SchedulerAvailability /></ProtectedRoute>} />
-        <Route path="/scheduler/integrations"           element={<ProtectedRoute><SchedulerIntegrations /></ProtectedRoute>} />
-        <Route path="/scheduler/analytics"              element={<ProtectedRoute><SchedulerAnalytics /></ProtectedRoute>} />
-        <Route path="/scheduler/workflows"              element={<ProtectedRoute><SchedulerWorkflows /></ProtectedRoute>} />
-        <Route path="/scheduler/event-types/new"        element={<ProtectedRoute><SchedulerEventEditor /></ProtectedRoute>} />
-        <Route path="/scheduler/event-types/edit/:id"   element={<ProtectedRoute><SchedulerEventEditor /></ProtectedRoute>} />
+        <Route path="/pickup-schedule" element={<ProtectedRoute><CasePickupSchedule /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

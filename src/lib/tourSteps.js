@@ -299,6 +299,31 @@ export const TOUR_MODULES = [
       },
     ],
   },
+  {
+    id: 'pickup-schedule',
+    label: 'Case Pickup Schedules',
+    route: '/pickup-schedule',
+    steps: [
+      {
+        target: '[data-tour="nav-pickup-schedule"]',
+        title: 'Case Pickup Schedules',
+        body: 'Every pickup request from the "Schedule Pickup" form on khdentallab.com and aimdentallab.com lands here automatically — no manual entry.',
+        placement: 'right',
+      },
+      {
+        target: '[data-tour="pickup-calendar"]',
+        title: 'The calendar',
+        body: 'Click any day to filter the list to just that date. A red badge with a warning icon means two or more pickups share the same timeframe that day — worth double-checking before the truck heads out.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="pickup-list"]',
+        title: 'Brand and status, at a glance',
+        body: 'Each card shows which lab it\'s for (teal = Aim Dental, navy = Kings Highway) and its status (Requested → Dispatched → Received). A red-flagged card means the pickup date has passed but it\'s still stuck on Requested — a likely missed pickup.',
+        placement: 'left',
+      },
+    ],
+  },
 ]
 
 export const FULL_TOUR_ORDER = TOUR_MODULES.map((m) => m.id)

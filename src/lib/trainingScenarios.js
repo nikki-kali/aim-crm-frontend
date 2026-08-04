@@ -227,4 +227,38 @@ export const TRAINING_MODULES = [
       },
     ],
   },
+  {
+    id: 'pickup-schedule',
+    label: 'Case Pickup Schedules',
+    scenarios: [
+      {
+        id: 'pickup-schedule-missed',
+        title: 'A pickup shows up flagged "Missed?"',
+        situation: 'You open Case Pickup Schedules and see a red-flagged card for a doctor whose pickup date was yesterday — it\'s still sitting on "Requested".',
+        goal: 'Figure out what actually happened and get the record accurate.',
+        steps: [
+          'Check with whoever runs pickups that day — did the truck actually go, and was it just never marked?',
+          'If it WAS picked up: go to that lead on the Leads page and click "Mark Received" (or use the one-click link in the internal notification email) — this also auto-creates the case.',
+          'If it was genuinely missed: reach out to the doctor to reschedule, and update the pickup date once you have a new one.',
+        ],
+        why: 'The flag only means "this needs a human to check" — it can\'t tell the difference between "we forgot to click a button" and "we actually missed the truck." That judgment call is exactly why this view exists.',
+        check: {
+          q: 'Why does this page pull its data from the Leads table instead of having its own separate pickup records?',
+          a: 'A pickup request already IS a lead (case_interest = "Schedule Pickup") with its own status lifecycle — duplicating that into a second system would just create two places that could drift out of sync.',
+        },
+      },
+      {
+        id: 'pickup-schedule-conflict',
+        title: 'The calendar flags a same-day conflict',
+        situation: 'Two pickups both show "9am–12pm" on the same Thursday, and the day\'s badge on the calendar has a warning icon.',
+        goal: 'Decide whether that\'s actually a problem before the truck runs that day.',
+        steps: [
+          'Click the flagged day to filter the list down to just those pickups.',
+          'Check both addresses — if they\'re in the same area, one trip may cover both fine.',
+          'If they\'re far apart or the timeframe is genuinely too tight, contact one doctor to confirm a different window.',
+        ],
+        why: 'This is a visual heads-up only, not a hard block — the website form has no way to know what\'s already scheduled internally, so this page is where a human catches the clash before it becomes a missed pickup.',
+      },
+    ],
+  },
 ]
