@@ -7,14 +7,15 @@ import { useAuth } from '../hooks/useAuth'
 import {
   Users, UserCheck, DollarSign, TrendingDown, AlertTriangle, RefreshCw,
   Globe, Linkedin, Facebook, Instagram, Twitter, Mail, CheckCircle, Archive,
-  ClipboardList, Trophy, FileText, Target, ListChecks, ArrowUpRight,
+  ClipboardList, Trophy, FileText, Target, ArrowUpRight,
   ArrowDownRight, Minus, GraduationCap,
 } from 'lucide-react'
-import { SkeletonCard, SkeletonKpiCards, Skeleton } from '../components/Skeleton'
+import { SkeletonCard, SkeletonKpiCards } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { normalizeSource } from '../lib/leadSource'
 import AnimatedModal from '../components/AnimatedModal'
 import { useTour } from '../context/TourContext'
+import GoalsBoard from '../components/GoalsBoard'
 
 const SOURCE_ICON = {
   'LinkedIn':                 { Icon: Linkedin,  cls: 'text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400' },
@@ -134,157 +135,6 @@ function KpiCard({ label, value, icon: Icon, color, bg, bgDark, delay = 0, trend
   )
 }
 
-function EOSSnapshot() {
-  const [rocks, setRocks] = useState([])
-  const [todos, setTodos] = useState([])
-  const [issues, setIssues] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    Promise.all([
-      api.get('/api/rocks').catch(() => []),
-      api.get('/api/todos').catch(() => []),
-      api.get('/api/issues').catch(() => []),
-    ]).then(([r, t, i]) => {
-      setRocks(r || [])
-      setTodos(t || [])
-      setIssues(i || [])
-      setLoading(false)
-    })
-  }, [])
-
-  const onTrack   = rocks.filter(r => r.status === 'On Track').length
-  const doneTodos = todos.filter(t => t.completed).length
-
-  return (
-    <motion.div
-      data-tour="dashboard-eos-snapshot"
-      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.35 }}
-      className="card p-5"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <ListChecks size={14} className="text-[#06babe]" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">EOS Snapshot</h2>
-        </div>
-        <Link to="/eos" className="text-xs text-[#06babe] hover:underline font-medium">Go to EOS →</Link>
-      </div>
-      {loading ? (
-        <div className="grid grid-cols-3 gap-4">
-          {[0,1,2].map(i => <Skeleton key={i} className="h-12 rounded-xl" />)}
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-3 text-center">
-          {[
-            { label: 'Rocks on track', value: onTrack, total: rocks.length, good: onTrack === rocks.length },
-            { label: 'To-Dos done', value: doneTodos, total: todos.length, good: doneTodos === todos.length },
-            { label: 'Open issues', value: issues.length, total: null, good: issues.length === 0 },
-          ].map(({ label, value, total, good }) => (
-            <div key={label} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl py-3 px-2">
-              <p className={`text-xl font-bold ${good ? 'text-emerald-600' : issues.length > 0 && label === 'Open issues' ? 'text-amber-500' : 'text-slate-900 dark:text-slate-100'}`}>
-                {value}{total !== null && <span className="text-sm font-normal text-slate-400">/{total}</span>}
-              </p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">{label}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </motion.div>
-  )
-}
-
-function EOSOverviewPanel() {
-  const [rocks, setRocks] = useState([])
-  const [issues, setIssues] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    Promise.all([
-      api.get('/api/rocks').catch(() => []),
-      api.get('/api/issues').catch(() => []),
-    ]).then(([r, i]) => {
-      setRocks(r || [])
-      setIssues(i || [])
-      setLoading(false)
-    })
-  }, [])
-
-  const companyRocks = rocks.filter(r => r.rock_type === 'company')
-  const offTrack     = rocks.filter(r => r.status === 'Off Track')
-  const topIssues    = issues.slice(0, 3)
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.4 }}
-      className="card p-5"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <ListChecks size={15} className="text-[#06babe]" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">EOS Overview</h2>
-          {!loading && offTrack.length > 0 && (
-            <span className="text-xs bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full font-semibold">
-              {offTrack.length} off track
-            </span>
-          )}
-        </div>
-        <Link to="/eos" className="btn-secondary text-xs py-1.5">Go to EOS</Link>
-      </div>
-
-      {loading ? (
-        <div className="space-y-2.5">
-          {[0,1,2,3].map(i => <Skeleton key={i} className="h-5 rounded-lg" style={{ width: `${75 + Math.random()*20}%` }} />)}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {companyRocks.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Company Rocks</p>
-              <div className="space-y-2">
-                {companyRocks.slice(0, 4).map(rock => (
-                  <div key={rock.id} className="flex items-center gap-2.5 text-sm">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${
-                      rock.status === 'On Track' ? 'bg-emerald-400' :
-                      rock.status === 'Off Track' ? 'bg-red-400' : 'bg-slate-300'
-                    }`} />
-                    <span className="text-slate-700 dark:text-slate-300 truncate flex-1">{rock.title}</span>
-                    <span className={`text-xs shrink-0 font-medium ${
-                      rock.status === 'On Track' ? 'text-emerald-600' :
-                      rock.status === 'Off Track' ? 'text-red-500' : 'text-slate-400'
-                    }`}>{rock.status}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {topIssues.length > 0 && (
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Issues Requiring Attention</p>
-              <div className="space-y-2">
-                {topIssues.map(issue => (
-                  <div key={issue.id} className="flex items-start gap-2 text-sm">
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-semibold shrink-0 mt-0.5 ${
-                      issue.priority === 'High' ? 'priority-high' :
-                      issue.priority === 'Medium' ? 'priority-medium' : 'priority-low'
-                    }`}>{issue.priority}</span>
-                    <span className="text-slate-700 dark:text-slate-300 truncate flex-1">{issue.title}</span>
-                    <span className="text-xs text-slate-400 shrink-0">{issue.status}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {companyRocks.length === 0 && issues.length === 0 && (
-            <EmptyState icon={ListChecks} title="No rocks or issues yet" description="Go to EOS to get started." size="sm" />
-          )}
-        </div>
-      )}
-    </motion.div>
-  )
-}
-
 // ── Rep Dashboard ──────────────────────────────────────────────────────────────
 
 function RepDashboard({ user }) {
@@ -379,8 +229,8 @@ function RepDashboard({ user }) {
         </div>
       )}
 
-      {/* EOS Snapshot */}
-      <EOSSnapshot />
+      {/* Goals */}
+      <GoalsBoard isAdmin={false} />
 
       {/* Recent Leads */}
       {!loading && summary?.recent_leads?.length > 0 && (
@@ -586,8 +436,8 @@ function AdminDashboard() {
         </motion.div>
       )}
 
-      {/* EOS Overview */}
-      <EOSOverviewPanel />
+      {/* Goals */}
+      <GoalsBoard isAdmin={true} />
 
       {/* Intake Feed */}
       {!loading && intakeLeads.length > 0 && (

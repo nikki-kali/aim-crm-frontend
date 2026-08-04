@@ -980,8 +980,7 @@ function MyReportTab() {
   if (loading) return <div className="text-center py-20 text-gray-400 text-sm">Loading your report...</div>
   if (!data) return <div className="text-center py-20 text-gray-400 text-sm">No data available</div>
 
-  const { week, month, allTime, eos, rep } = data
-  const totalRocks = (eos?.rocks?.on_track || 0) + (eos?.rocks?.off_track || 0) + (eos?.rocks?.done || 0)
+  const { week, month, allTime, rep } = data
 
   const StatCard = ({ label, value, sub, color = 'text-gray-900' }) => (
     <div className="card p-4">
@@ -1067,70 +1066,6 @@ function MyReportTab() {
           <StatCard label="Total Revenue" value={`$${Number(allTime.total_revenue).toLocaleString()}`} color="text-[#06babe]" />
         </div>
       </div>
-
-      {/* EOS Track */}
-      {eos && (
-        <div className="card p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">EOS Track</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            {/* Rocks */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Rocks (90-day)</p>
-              {totalRocks === 0 ? (
-                <p className="text-sm text-gray-400">No rocks assigned</p>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">On Track</span>
-                    <span className="text-sm font-bold text-green-600">{eos.rocks.on_track}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Off Track</span>
-                    <span className={`text-sm font-bold ${eos.rocks.off_track > 0 ? 'text-red-500' : 'text-gray-300'}`}>{eos.rocks.off_track}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Done</span>
-                    <span className="text-sm font-bold text-gray-400">{eos.rocks.done}</span>
-                  </div>
-                  <div className="mt-2 pt-2 border-t border-gray-200">
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-green-500 transition-all duration-700"
-                        style={{ width: `${Math.round(eos.rocks.on_track / totalRocks * 100)}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">{Math.round(eos.rocks.on_track / totalRocks * 100)}% on track</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* To-Dos */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Weekly To-Dos</p>
-              <p className="text-3xl font-bold text-gray-900">{eos.todos.done}<span className="text-base font-normal text-gray-400"> / {eos.todos.total}</span></p>
-              <p className="text-xs text-gray-400 mt-1">completed this week</p>
-              {eos.todos.total > 0 && (
-                <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ${eos.todos.done === eos.todos.total ? 'bg-green-500' : 'bg-[#06babe]'}`}
-                    style={{ width: `${Math.round(eos.todos.done / eos.todos.total * 100)}%` }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Issues */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Open Issues</p>
-              <p className={`text-3xl font-bold ${eos.open_issues > 0 ? 'text-amber-500' : 'text-green-600'}`}>{eos.open_issues}</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {eos.open_issues === 0 ? 'All issues resolved' : `issue${eos.open_issues !== 1 ? 's' : ''} need attention`}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Recent leads */}
       {data.recent_leads?.length > 0 && (

@@ -15,7 +15,6 @@ import Clinics from './pages/Clinics'
 import Cases from './pages/Cases'
 import Pipeline from './pages/Pipeline'
 import Reports from './pages/Reports'
-import EOS from './pages/EOS'
 import Automations from './pages/Automations'
 import Users from './pages/Users'
 import Help from './pages/Help'
@@ -58,7 +57,6 @@ function AnimatedRoutes() {
         <Route path="/cases"       element={<ProtectedRoute><Cases /></ProtectedRoute>} />
         <Route path="/pipeline"    element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
         <Route path="/reports"     element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-        <Route path="/eos"         element={<ProtectedRoute><EOS /></ProtectedRoute>} />
         <Route path="/help"        element={<ProtectedRoute><Help /></ProtectedRoute>} />
         <Route path="/automations" element={<AdminRoute><Automations /></AdminRoute>} />
         <Route path="/users"       element={<AdminRoute><Users /></AdminRoute>} />

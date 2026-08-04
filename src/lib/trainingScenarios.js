@@ -17,7 +17,7 @@ export const TRAINING_MODULES = [
         steps: [
           'Look at the four KPI cards — are Active Leads and Wins trending the direction you\'d expect?',
           'Scan My Recent Leads for anything that looks stale or forgotten.',
-          'Check the EOS Snapshot — any Rocks off track, or issues piling up?',
+          'Check the Goals board — is anyone close to (or already past) their target this period?',
         ],
         why: 'The Dashboard exists so you never have to dig through the Leads table just to answer "how are things going?" — it\'s the one page built for a glance, not a deep dive.',
         check: {
@@ -171,20 +171,24 @@ export const TRAINING_MODULES = [
     ],
   },
   {
-    id: 'eos',
-    label: 'EOS',
+    id: 'goals',
+    label: 'Goals',
     scenarios: [
       {
-        id: 'eos-l10-prep',
-        title: 'Five minutes before your L10 meeting',
-        situation: 'Your weekly Level 10 meeting starts in five minutes and you haven\'t prepped.',
-        goal: 'Walk in with real talking points instead of "so, how\'s everyone doing?"',
+        id: 'goals-assign-first',
+        title: 'Assigning a rep their first monthly goal',
+        situation: 'It\'s the start of the month and you want to give a rep something concrete to aim for, not just a general "sell more" expectation.',
+        goal: 'Set a specific, trackable target that updates itself as they work leads.',
         steps: [
-          'Open EOS and read the AI Suggestions panel first — it already found things worth discussing.',
-          'Check Rocks for anything marked Off Track.',
-          'Skim the Issues list (IDS) for anything that\'s been sitting as "Identified" without progress.',
+          'On the Dashboard, click "Assign Goal".',
+          'Pick the rep, give it a clear title (e.g. "Close 8 leads in August"), choose the "Leads Won" metric, set the target to 8, and set the period to the full month.',
+          'Save — it shows up on their Dashboard immediately with a 0/8 progress bar that fills in as they win leads.',
         ],
-        why: 'EOS/L10 meetings run better on specific, current data than on memory — the Suggestions panel exists specifically to shortcut this five-minute prep into one glance.',
+        why: 'Because progress is computed live from real lead data (not something the rep has to update by hand), the number is always trustworthy — nobody can "forget" to log progress or accidentally inflate it.',
+        check: {
+          q: 'A rep\'s goal is "Leads Won: 8" but they\'ve won 8 leads and the bar still shows 6/8. What\'s the most likely explanation?',
+          a: 'Check the goal\'s period dates — the progress calculation only counts leads with updated_at inside period_start/period_end, so a win just outside that window won\'t count yet.',
+        },
       },
     ],
   },

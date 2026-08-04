@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import api from '../lib/api'
 import {
   LayoutDashboard, Users, UserCheck, ClipboardList, BarChart3,
-  TrendingUp, ListChecks, CalendarDays, Zap, UserCog, Building2,
+  TrendingUp, Target, CalendarDays, Zap, UserCog, Building2,
   ChevronDown, ChevronRight, Star, Upload, Download, Search,
   AlertTriangle, Layers, Calendar, Clock, Globe, CheckCircle,
   BookOpen, HelpCircle, Shield, Info, Lightbulb, ArrowRight,
@@ -391,39 +391,34 @@ const SECTIONS = [
     ],
   },
   {
-    id: 'eos',
-    label: 'EOS',
-    icon: ListChecks,
+    id: 'goals',
+    label: 'Goals',
+    icon: Target,
     color: 'text-indigo-500',
     bg: 'bg-indigo-50',
     adminOnly: false,
-    summary: 'Entrepreneurial Operating System tracker — manage quarterly Rocks, weekly To-Dos, and Issues using the L10 meeting framework.',
+    summary: 'A goals board on the Dashboard tracking progress toward real targets — leads won, contacted, proposals sent, or conversion rate — computed live from your actual lead data.',
     steps: [
       {
-        title: 'What is EOS?',
-        desc: 'EOS (Entrepreneurial Operating System) is a business framework. In this CRM it has three tools: Rocks (big quarterly goals), To-Dos (weekly action items), and Issues (problems to solve). Use it to run your weekly L10 meeting.',
+        title: 'Reading a progress bar',
+        desc: 'Each goal shows its title, current value vs. target, and a progress bar that fills as you get closer. Progress is computed live from your leads — no manual updating needed.',
       },
       {
-        title: 'Managing Rocks',
-        desc: 'Click "Add Rock" to create a quarterly goal. Enter the Rock title and assign it to a team member. Mark a Rock complete (checkmark) when achieved. Delete rocks that are no longer relevant.',
+        title: 'Adding a personal goal (staff)',
+        desc: 'Click "Add Goal" on your Dashboard. Give it a title, pick a metric (Leads Won, Leads Contacted, Proposals Sent, or % Conversion Rate), a target number, and a period. It starts tracking immediately.',
       },
       {
-        title: 'To-Do List',
-        desc: 'Click "Add To-Do" to create a weekly action item. Assign it to yourself or a teammate, set a due date, and check it off when done. The system tracks on-time completion.',
+        title: 'Assigning a goal to a rep (admin)',
+        desc: 'Click "Assign Goal" on the Dashboard. Pick the rep, title, metric, target, and period, then save — they\'ll see it on their own Dashboard right away, alongside any personal goals they\'ve set for themselves.',
       },
       {
-        title: 'Issues List (IDS)',
-        desc: 'Add any problem, obstacle, or opportunity to the Issues list. During your L10 meeting, discuss each issue (Identify, Discuss, Solve) and click the checkmark when resolved.',
-      },
-      {
-        title: 'AI Suggestions Panel',
-        desc: 'The blue "Suggestions" card at the top analyzes your live CRM data and surfaces actionable insights — e.g., "3 leads haven\'t been contacted in 14 days." Suggestions are rated High/Medium/Low urgency.',
+        title: 'Team Goals view (admin)',
+        desc: 'Admins see every rep\'s goals grouped by name, so you can scan the whole team\'s progress at a glance without opening each person\'s Dashboard individually.',
       },
     ],
     tips: [
-      'Rocks should be 3–7 per quarter. Don\'t overload — focus on the most impactful goals.',
-      'Run through the Issues list every week — unresolved issues stall team progress.',
-      'Check the AI Suggestions panel at the start of every L10 meeting for data-driven talking points.',
+      'Keep targets realistic for the period — a goal that\'s already impossible by week two stops being motivating.',
+      'Conversion Rate goals are a percentage, not a count — a target of "40" means 40%.',
     ],
   },
   {
@@ -519,7 +514,7 @@ const SECTIONS = [
       },
       {
         title: 'Staff vs Admin Roles',
-        desc: 'Staff users can access: Dashboard, Leads, Clients, Cases, Pipeline, Reports, EOS, and Scheduler. Admin users additionally have access to: Clinics, Automations, and Users management, plus team-wide reporting.',
+        desc: 'Staff users can access: Dashboard, Leads, Clients, Cases, Pipeline, Reports, and Case Pickup Schedules. Admin users additionally have access to: Clinics, Automations, and Users management, plus team-wide reporting.',
       },
       {
         title: 'Editing a User',

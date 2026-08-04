@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useTheme } from '../context/ThemeContext'
 import {
   LayoutDashboard, Users, UserCheck, LogOut, ClipboardList,
-  BarChart3, TrendingUp, Zap, UserCog, Shield, Building2, ListChecks,
+  BarChart3, TrendingUp, Zap, UserCog, Shield, Building2,
   Camera, Sun, Moon, ChevronRight, CalendarDays, HelpCircle,
 } from 'lucide-react'
 import { useState, useRef } from 'react'
@@ -20,7 +20,6 @@ const STAFF_NAV = [
   { group: 'crm',  to: '/cases',     icon: ClipboardList,   label: 'Cases' },
   { group: 'crm',  to: '/pipeline',  icon: BarChart3,       label: 'Pipeline' },
   { group: 'tools',to: '/reports',   icon: TrendingUp,      label: 'My Reports' },
-  { group: 'tools',to: '/eos',       icon: ListChecks,      label: 'EOS' },
   { group: 'tools',to: '/pickup-schedule', icon: CalendarDays, label: 'Case Pickup Schedules' },
   { group: 'tools',to: '/help',      icon: HelpCircle,      label: 'Help' },
 ]
@@ -33,7 +32,6 @@ const ADMIN_NAV = [
   { group: 'crm',   to: '/cases',       icon: ClipboardList,   label: 'Cases' },
   { group: 'crm',   to: '/pipeline',    icon: BarChart3,       label: 'Pipeline' },
   { group: 'tools', to: '/reports',     icon: TrendingUp,      label: 'Reports' },
-  { group: 'tools', to: '/eos',         icon: ListChecks,      label: 'EOS' },
   { group: 'tools', to: '/pickup-schedule', icon: CalendarDays, label: 'Case Pickup Schedules' },
   { group: 'tools', to: '/help',        icon: HelpCircle,      label: 'Help' },
   { group: 'admin', to: '/automations', icon: Zap,             label: 'Automations' },

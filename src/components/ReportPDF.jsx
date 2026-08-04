@@ -145,8 +145,7 @@ export async function downloadReportPDF(data, dateLabel) {
 // ─── Rep Personal Report PDF ──────────────────────────────────────────────────
 
 function RepReportDocument({ data, month }) {
-  const { rep, week, month: m, allTime, eos } = data
-  const totalRocks = (eos?.rocks?.on_track || 0) + (eos?.rocks?.off_track || 0) + (eos?.rocks?.done || 0)
+  const { rep, week, month: m, allTime } = data
 
   const tableRows = (rows) => rows.map(([label, value]) => (
     <View key={label} style={styles.tableRow}>
@@ -213,38 +212,6 @@ function RepReportDocument({ data, month }) {
             ])}
           </View>
         </View>
-
-        {eos && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>EOS Track</Text>
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <Text style={styles.th}>Area</Text>
-                <Text style={{ ...styles.th, flex: 2 }}>Status</Text>
-              </View>
-              <View style={styles.tableRow}>
-                <Text style={styles.td}>Rocks (90-day)</Text>
-                <Text style={{ ...styles.tdBold, flex: 2 }}>
-                  {totalRocks === 0
-                    ? 'No rocks assigned'
-                    : `${eos.rocks.on_track} On Track · ${eos.rocks.off_track} Off Track · ${eos.rocks.done} Done`}
-                </Text>
-              </View>
-              <View style={styles.tableRow}>
-                <Text style={styles.td}>Weekly To-Dos</Text>
-                <Text style={{ ...styles.tdBold, flex: 2 }}>
-                  {eos.todos.done} / {eos.todos.total} completed this week
-                </Text>
-              </View>
-              <View style={styles.tableRow}>
-                <Text style={styles.td}>Open Issues</Text>
-                <Text style={{ ...(eos.open_issues > 0 ? { ...styles.tdBold, color: '#f59e0b' } : styles.tdBold), flex: 2 }}>
-                  {eos.open_issues} open issue{eos.open_issues !== 1 ? 's' : ''}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         <Text style={styles.footer}>
           Aim Dental Laboratory CRM · {rep?.name} · Generated {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
