@@ -4,7 +4,7 @@ import {
   ReactFlow, ReactFlowProvider, Background, Controls, useNodesState, useEdgesState, addEdge,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { ArrowLeft, Plus, StickyNote, Play, ListChecks, Workflow } from 'lucide-react'
+import { ArrowLeft, StickyNote, Play, ListChecks, Workflow } from 'lucide-react'
 import api from '../lib/api'
 import { useToast } from '../components/Toast'
 import { Skeleton } from '../components/Skeleton'
@@ -13,7 +13,6 @@ import NodeEditorPanel from '../components/workflows/NodeEditorPanel'
 import AddStepModal from '../components/workflows/AddStepModal'
 import { TRIGGER_DEFS, entityTypeForTrigger, newNodeId, getNodeDef } from '../components/workflows/nodeDefs'
 
-const PLACEHOLDER_PREFIX = 'add__'
 const NODE_WIDTH = 220
 
 function sourceHandlesFor(node) {
@@ -32,21 +31,6 @@ function handleOffsetX(node, handleId, index, total) {
   if (node.type === 'condition') return handleId === 'yes' ? NODE_WIDTH * 0.25 : -NODE_WIDTH * 0.25
   if (node.type === 'router') return ((index + 1) / (total + 1) - 0.5) * NODE_WIDTH
   return 0
-}
-
-function AddPlaceholder({ onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); onClick() }}
-      onPointerDownCapture={(e) => e.stopPropagation()}
-      className="w-7 h-7 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:border-[#06babe] hover:text-[#06babe] transition-colors"
-      style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}
-      title="Add a step"
-    >
-      <Plus size={14} />
-    </button>
-  )
 }
 
 function CanvasInner() {
@@ -103,12 +87,7 @@ function CanvasInner() {
   const triggerNode = nodes.find((n) => n.type === 'trigger')
   const entityType = entityTypeForTrigger(triggerNode?.data?.triggerType || workflow?.trigger_type)
 
-  const onNodesChange = useCallback((changes) => {
-    onNodesChangeRaw(changes.filter((c) => !c.id?.startsWith(PLACEHOLDER_PREFIX)))
-  }, [onNodesChangeRaw])
-
   const onConnect = useCallback((params) => {
-    if (params.target?.startsWith(PLACEHOLDER_PREFIX)) return
     setEdges((eds) => addEdge(params, eds))
   }, [setEdges])
 
@@ -158,58 +137,21 @@ function CanvasInner() {
     setSelectedNodeId(null)
   }
 
-  // Synthesize dashed "+" placeholders on every open (unconnected) source
-  // handle so adding the next step always happens in-context, the way
-  // n8n/Marketing OS's canvas works, rather than a single generic toolbar
-  // button with no sense of where the new step attaches.
-  const { displayNodes, displayEdges } = useMemo(() => {
-    const placeholderNodes = []
-    const placeholderEdges = []
-    for (const node of nodes) {
-      if (node.type === 'sticky_note') continue
+  // Injects a "+" button descriptor onto each real node's data for every
+  // open (unconnected) source handle, rendered by the node component itself
+  // (see nodeTypes.jsx's AddButtons) — a plain child button in the node's
+  // own DOM subtree, not a separate React Flow node/edge, so it's just a
+  // normal click with no dependency on edge hit-testing internals.
+  const displayNodes = useMemo(() => {
+    return nodes.map((node) => {
+      if (node.type === 'sticky_note') return node
       const handles = sourceHandlesFor(node)
-      handles.forEach((h, i) => {
-        const connected = edges.some((e) => e.source === node.id && (e.sourceHandle || null) === (h || null))
-        if (connected) return
-        const phId = `${PLACEHOLDER_PREFIX}${node.id}__${h || 'default'}`
-        placeholderNodes.push({
-          id: phId,
-          type: 'add_placeholder',
-          position: { x: node.position.x + NODE_WIDTH / 2 - 14 + handleOffsetX(node, h, i, handles.length), y: node.position.y + 110 },
-          data: {},
-          draggable: false,
-          selectable: false,
-          // Above the connecting edge so its (much larger) invisible
-          // click-catching stroke can never sit on top of and swallow
-          // clicks meant for this button.
-          zIndex: 10,
-        })
-        placeholderEdges.push({
-          id: `${phId}__edge`,
-          source: node.id,
-          sourceHandle: h || undefined,
-          target: phId,
-          type: 'straight',
-          style: { strokeDasharray: '4 4', stroke: '#cbd5e1' },
-          selectable: false,
-          focusable: false,
-          // Default edges have an invisible ~20px-wide hit area for
-          // hover/click even when not selectable — zero it out since this
-          // dashed connector runs straight into the "+" button below and
-          // would otherwise intercept the click before it reaches it.
-          interactionWidth: 0,
-        })
-      })
-    }
-    const withHandlers = [
-      ...nodes,
-      ...placeholderNodes.map((p) => ({ ...p, data: { onClick: () => { const [, src, h] = p.id.split('__'); openAddModal(src, h === 'default' ? null : h) } } })),
-    ]
-    return { displayNodes: withHandlers, displayEdges: [...edges, ...placeholderEdges] }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      const addStep = handles
+        .filter((h) => !edges.some((e) => e.source === node.id && (e.sourceHandle || null) === (h || null)))
+        .map((h) => ({ handleId: h, onClick: () => openAddModal(node.id, h) }))
+      return { ...node, data: { ...node.data, _addStep: addStep } }
+    })
   }, [nodes, edges])
-
-  const mergedNodeTypes = useMemo(() => ({ ...nodeTypes, add_placeholder: ({ data }) => <AddPlaceholder onClick={data.onClick} /> }), [])
 
   const save = async (overrides = {}) => {
     if (!triggerNode?.data?.triggerType) {
@@ -306,12 +248,12 @@ function CanvasInner() {
           <div className="flex-1 relative">
             <ReactFlow
               nodes={displayNodes}
-              edges={displayEdges}
-              nodeTypes={mergedNodeTypes}
-              onNodesChange={onNodesChange}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              onNodesChange={onNodesChangeRaw}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
-              onNodeClick={(_, node) => { if (!node.id.startsWith(PLACEHOLDER_PREFIX)) setSelectedNodeId(node.id) }}
+              onNodeClick={(_, node) => setSelectedNodeId(node.id)}
               onPaneClick={() => setSelectedNodeId(null)}
               fitView
               proOptions={{ hideAttribution: true }}
