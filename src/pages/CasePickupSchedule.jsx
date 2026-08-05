@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import api from '../lib/api'
 import {
   ChevronLeft, ChevronRight, RefreshCw, MapPin, Package, Phone, Mail,
-  AlertTriangle, CalendarClock, X,
+  AlertTriangle, CalendarClock, X, Trash2,
 } from 'lucide-react'
 import { SkeletonCard } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
@@ -42,7 +42,7 @@ function BrandBadge({ brand }) {
   )
 }
 
-function PickupCard({ pickup }) {
+function PickupCard({ pickup, onReject }) {
   const missed = pickup.pickup_date && pickup.pickup_date < todayStr() && pickup.pickup_status === 'requested'
   return (
     <div className={`card p-4 ${missed ? 'ring-1 ring-red-300 dark:ring-red-900' : ''}`}>
@@ -56,6 +56,13 @@ function PickupCard({ pickup }) {
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PICKUP_STATUS_CLASSES[pickup.pickup_status] || ''}`}>
             {PICKUP_STATUS_LABELS[pickup.pickup_status] || pickup.pickup_status || '—'}
           </span>
+          <button
+            onClick={() => onReject(pickup)}
+            className="p-1 -m-1 rounded-lg text-slate-300 dark:text-slate-600 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+            title="Not a real pickup request — reject and remove"
+          >
+            <Trash2 size={13} />
+          </button>
         </div>
       </div>
 
@@ -112,6 +119,16 @@ export default function CasePickupSchedule() {
   }
 
   useEffect(() => { fetchPickups() }, [])
+
+  const handleReject = async (pickup) => {
+    if (!confirm(`Reject this pickup request from ${pickup.doctor_name}? This permanently deletes it and can't be undone.`)) return
+    try {
+      await api.delete(`/api/leads/${pickup.id}/pickup`)
+      setPickups((prev) => prev.filter((p) => p.id !== pickup.id))
+    } catch (err) {
+      alert(err.message || 'Failed to reject pickup')
+    }
+  }
 
   // date string ('YYYY-MM-DD') -> pickups on that date
   const byDate = useMemo(() => {
@@ -238,7 +255,7 @@ export default function CasePickupSchedule() {
               ) : (
                 sortedVisible.map((p) => (
                   <motion.div key={p.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-                    <PickupCard pickup={p} />
+                    <PickupCard pickup={p} onReject={handleReject} />
                   </motion.div>
                 ))
               )}
