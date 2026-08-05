@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
-import { Plus, X, Shield, User, Trash2, Pencil, GraduationCap, ChevronDown, ChevronRight, Check } from 'lucide-react'
+import { Plus, X, Shield, User, Briefcase, Trash2, Pencil, GraduationCap, ChevronDown, ChevronRight, Check } from 'lucide-react'
 import { TOUR_MODULES } from '../lib/tourSteps'
 import { TRAINING_MODULES } from '../lib/trainingScenarios'
+import { ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, roleLabel } from '../lib/roles'
+
+const ROLE_ICONS = { admin: Shield, sales_rep: Briefcase, staff: User }
+const ROLE_BADGE_CLASS = {
+  admin: 'bg-[#06babe]/10 text-[#06babe]',
+  sales_rep: 'bg-amber-100 text-amber-700',
+  staff: 'bg-gray-100 text-gray-600',
+}
 
 function TrainingProgressSection() {
   const [team, setTeam] = useState([])
@@ -77,7 +85,7 @@ function TrainingProgressSection() {
   )
 }
 
-const EMPTY_FORM = { name: '', email: '', password: '', role: 'staff' }
+const EMPTY_FORM = { name: '', email: '', password: '', role: 'sales_rep' }
 
 function UserModal({ userData, onClose, onSave }) {
   const [form, setForm] = useState(
@@ -132,19 +140,22 @@ function UserModal({ userData, onClose, onSave }) {
           </div>
           <div>
             <label className="label">Role</label>
-            <div className="flex gap-3">
-              {['staff', 'admin'].map(r => (
-                <label key={r} className={`flex-1 flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
-                  form.role === r ? 'border-[#06babe] bg-[#06babe]/5' : 'border-gray-200 hover:border-gray-300'
-                }`}>
-                  <input type="radio" name="role" value={r} checked={form.role === r} onChange={() => set('role', r)} className="hidden" />
-                  {r === 'admin' ? <Shield size={15} className={form.role === r ? 'text-[#06babe]' : 'text-gray-400'} /> : <User size={15} className={form.role === r ? 'text-[#06babe]' : 'text-gray-400'} />}
-                  <div>
-                    <p className={`text-sm font-medium capitalize ${form.role === r ? 'text-[#06babe]' : 'text-gray-700'}`}>{r}</p>
-                    <p className="text-xs text-gray-400">{r === 'admin' ? 'Full access' : 'Leads & cases only'}</p>
-                  </div>
-                </label>
-              ))}
+            <div className="flex flex-col gap-2">
+              {ROLES.map(r => {
+                const Icon = ROLE_ICONS[r]
+                return (
+                  <label key={r} className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+                    form.role === r ? 'border-[#06babe] bg-[#06babe]/5' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                    <input type="radio" name="role" value={r} checked={form.role === r} onChange={() => set('role', r)} className="hidden" />
+                    <Icon size={15} className={form.role === r ? 'text-[#06babe]' : 'text-gray-400'} />
+                    <div>
+                      <p className={`text-sm font-medium ${form.role === r ? 'text-[#06babe]' : 'text-gray-700'}`}>{ROLE_LABELS[r]}</p>
+                      <p className="text-xs text-gray-400">{ROLE_DESCRIPTIONS[r]}</p>
+                    </div>
+                  </label>
+                )
+              })}
             </div>
           </div>
           {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
@@ -236,13 +247,9 @@ export default function UsersPage() {
                     </td>
                     <td className="px-5 py-3 text-gray-600">{u.email}</td>
                     <td className="px-5 py-3">
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${
-                        u.role === 'admin'
-                          ? 'bg-[#06babe]/10 text-[#06babe]'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {u.role === 'admin' ? <Shield size={10} /> : <User size={10} />}
-                        {u.role}
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${ROLE_BADGE_CLASS[u.role] || ROLE_BADGE_CLASS.staff}`}>
+                        {(() => { const Icon = ROLE_ICONS[u.role] || User; return <Icon size={10} /> })()}
+                        {roleLabel(u.role)}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-gray-400 text-xs">{formatDate(u.created_at)}</td>
@@ -272,8 +279,8 @@ export default function UsersPage() {
 
       <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
         <p className="text-xs text-amber-700 leading-relaxed">
-          <span className="font-semibold">Staff</span> can access Leads, Clients, Cases, and Pipeline.{' '}
-          <span className="font-semibold">Admins</span> also see Reports, Automations, and this Users page.
+          <span className="font-semibold">Sales Rep</span> and <span className="font-semibold">Staff</span> both access Leads, Clients, Cases, and Pipeline, scoped to their own records — only Sales Reps get notified (cold leads, win streaks, etc.) about the leads they're handling.{' '}
+          <span className="font-semibold">Admins</span> see everything, plus Reports, Automations, and this Users page.
         </p>
       </div>
 

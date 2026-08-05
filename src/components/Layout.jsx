@@ -12,6 +12,7 @@ import AlertsBell from './AlertsBell'
 import QuickLeadButton from './QuickLeadButton'
 import MobileTabBar from './MobileTabBar'
 import api from '../lib/api'
+import { roleLabel } from '../lib/roles'
 
 const STAFF_NAV = [
   { group: 'main', to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -191,7 +192,7 @@ function SidebarContent({ user, isAdmin, navItems, currentPath, onClose, onAvata
             <div className="flex items-center gap-1 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot flex-shrink-0" />
               <Shield size={9} className={`flex-shrink-0 ${isAdmin ? 'text-[#06babe]' : 'text-slate-300 dark:text-slate-600'}`} />
-              <p className="text-xs text-slate-400 capitalize whitespace-nowrap">{user?.role || 'staff'}</p>
+              <p className="text-xs text-slate-400 whitespace-nowrap">{roleLabel(user?.role || 'staff')}</p>
             </div>
           </div>
         </div>

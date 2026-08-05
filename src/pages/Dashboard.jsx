@@ -689,7 +689,7 @@ export default function Dashboard() {
   if (!user) return null
   return (
     <>
-      {user.role === 'staff' ? <RepDashboard user={user} /> : <AdminDashboard />}
+      {user.role !== 'admin' ? <RepDashboard user={user} /> : <AdminDashboard />}
       <WelcomeTourNudge />
     </>
   )

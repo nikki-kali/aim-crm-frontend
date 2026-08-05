@@ -5,6 +5,7 @@ import { MoreHorizontal, Sun, Moon, LogOut, Shield, ChevronRight } from 'lucide-
 import { useTheme } from '../context/ThemeContext'
 import AnimatedModal from './AnimatedModal'
 import { Avatar, GROUP_LABELS } from './Layout'
+import { roleLabel } from '../lib/roles'
 
 // Primary mobile destinations — Pipeline is deliberately excluded: its
 // drag-and-drop kanban is built on HTML5 draggable, which doesn't fire on
@@ -39,7 +40,7 @@ function MoreSheet({ navItems, isAdmin, user, onAvatarClick, uploading, onSignOu
             </p>
             <div className="flex items-center gap-1 mt-0.5">
               <Shield size={9} className={isAdmin ? 'text-[#06babe]' : 'text-slate-300 dark:text-slate-600'} />
-              <p className="text-xs text-slate-400 capitalize">{user?.role || 'staff'}</p>
+              <p className="text-xs text-slate-400">{roleLabel(user?.role || 'staff')}</p>
             </div>
           </div>
         </div>
