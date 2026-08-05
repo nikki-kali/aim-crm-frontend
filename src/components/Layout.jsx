@@ -85,19 +85,19 @@ function NavGroup({ items, groupKey, currentPath, onClose }) {
   return (
     <div>
       {label && (
-        <p className="px-3 mb-1 mt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-600 select-none">
+        <p className="px-3 max-h-0 opacity-0 mt-0 mb-0 group-hover:max-h-8 group-hover:opacity-100 group-hover:mt-3 group-hover:mb-1 overflow-hidden whitespace-nowrap text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-600 select-none transition-all duration-200">
           {label}
         </p>
       )}
       {items.map(({ to, icon: Icon, label: navLabel }, i) => {
         const isActive = currentPath === to || (to !== '/dashboard' && currentPath.startsWith(to))
         return (
-          <NavLink key={to} to={to} onClick={onClose} data-tour={`nav-${to.slice(1)}`}>
+          <NavLink key={to} to={to} onClick={onClose} data-tour={`nav-${to.slice(1)}`} title={navLabel}>
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.04, duration: 0.22, ease: 'easeOut' }}
-              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 cursor-pointer mb-0.5 ${
+              className={`relative flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 cursor-pointer mb-0.5 ${
                 isActive
                   ? 'text-[#06babe] dark:text-teal-400'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/70 dark:hover:bg-slate-800/60'
@@ -112,11 +112,13 @@ function NavGroup({ items, groupKey, currentPath, onClose }) {
                 />
               )}
               <Icon size={17} className="relative z-10 flex-shrink-0" />
-              <span className="relative z-10 flex-1">{navLabel}</span>
+              <span className="relative z-10 max-w-0 opacity-0 group-hover:max-w-[160px] group-hover:opacity-100 overflow-hidden whitespace-nowrap transition-all duration-200">
+                {navLabel}
+              </span>
               {isActive && (
                 <motion.div
                   layoutId="nav-dot"
-                  className="relative z-10 w-1.5 h-1.5 rounded-full bg-[#06babe] dark:bg-teal-400"
+                  className="relative z-10 w-1.5 h-1.5 rounded-full bg-[#06babe] dark:bg-teal-400 flex-shrink-0 opacity-0 group-hover:opacity-100 group-hover:ml-auto transition-all duration-200"
                   transition={{ type: 'spring', stiffness: 400, damping: 34 }}
                 />
               )}
@@ -143,10 +145,23 @@ function SidebarContent({ user, isAdmin, navItems, currentPath, onClose, onAvata
 
   return (
     <div className="flex flex-col h-full bg-white/20 dark:bg-slate-900/20 backdrop-blur-3xl backdrop-saturate-200 border-r border-white/40 dark:border-white/10 shadow-[4px_0_40px_-8px_rgba(6,186,190,0.25)]">
-      {/* Logo row */}
+      {/* Logo row — compact brand mark stays put as the icon rail's anchor;
+          full wordmark fades/slides in alongside it once hovered open. */}
       <div className="px-4 pt-5 pb-4 border-b border-white/40 dark:border-white/5">
-        <div className="flex items-center justify-between">
-          <img src="/logo.png" alt="Aim Dental" className="h-7 w-auto" />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+            <div
+              className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-xs"
+              style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}
+            >
+              A
+            </div>
+            <img
+              src="/logo.png"
+              alt="Aim Dental"
+              className="h-5 w-auto flex-shrink-0 max-w-0 opacity-0 group-hover:max-w-[140px] group-hover:opacity-100 transition-all duration-200"
+            />
+          </div>
           <AlertsBell />
         </div>
       </div>
@@ -169,14 +184,14 @@ function SidebarContent({ user, isAdmin, navItems, currentPath, onClose, onAvata
         {/* User info + avatar */}
         <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
           <Avatar user={user} size={36} onClick={onAvatarClick} uploading={uploading} />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">
+          <div className="min-w-0 flex-1 max-w-0 opacity-0 overflow-hidden group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-200">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight whitespace-nowrap">
               {user?.name || user?.email}
             </p>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot" />
-              <Shield size={9} className={isAdmin ? 'text-[#06babe]' : 'text-slate-300 dark:text-slate-600'} />
-              <p className="text-xs text-slate-400 capitalize">{user?.role || 'staff'}</p>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot flex-shrink-0" />
+              <Shield size={9} className={`flex-shrink-0 ${isAdmin ? 'text-[#06babe]' : 'text-slate-300 dark:text-slate-600'}`} />
+              <p className="text-xs text-slate-400 capitalize whitespace-nowrap">{user?.role || 'staff'}</p>
             </div>
           </div>
         </div>
@@ -186,16 +201,19 @@ function SidebarContent({ user, isAdmin, navItems, currentPath, onClose, onAvata
           <button
             onClick={toggleTheme}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             {isDark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <button
             onClick={onSignOut}
-            className="flex-1 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+            title="Sign out"
+            className="flex-1 flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-2.5 px-0 group-hover:px-3 py-2 rounded-xl text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
           >
-            <LogOut size={16} />
-            Sign out
+            <LogOut size={16} className="flex-shrink-0" />
+            <span className="max-w-0 opacity-0 group-hover:max-w-[100px] group-hover:opacity-100 overflow-hidden whitespace-nowrap transition-all duration-200">
+              Sign out
+            </span>
           </button>
         </div>
       </div>
@@ -272,9 +290,14 @@ export default function Layout({ children }) {
       {/* Hidden file input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
-      {/* Desktop sidebar */}
-      <aside className="relative z-10 hidden md:flex w-60 flex-col flex-shrink-0">
-        <SidebarContent {...sidebarProps} onClose={() => {}} />
+      {/* Desktop sidebar — collapsed to an icon rail by default; hovering
+          expands it to show labels. The rail reserves fixed layout width so
+          content never reflows, and the expanded panel is absolutely
+          positioned (higher z-index) so it overlays the page instead. */}
+      <aside className="group relative z-20 hidden md:flex w-[72px] flex-shrink-0">
+        <div className="absolute inset-y-0 left-0 w-[72px] group-hover:w-60 overflow-hidden transition-[width] duration-200 ease-out">
+          <SidebarContent {...sidebarProps} onClose={() => {}} />
+        </div>
       </aside>
 
       {/* Main content */}
