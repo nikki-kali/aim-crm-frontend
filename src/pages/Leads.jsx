@@ -3,144 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
+import AnimatedModal from '../components/AnimatedModal'
+import LeadCard from '../components/leads/LeadCard'
+import LeadActionsSheet from '../components/leads/LeadActionsSheet'
 import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check, Archive, ArchiveRestore, UserCheck } from 'lucide-react'
-import { SkeletonTable } from '../components/Skeleton'
+import { SkeletonTable, SkeletonCards } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { LEAD_SOURCES, normalizeSource } from '../lib/leadSource'
-
-const STATUS_OPTIONS = ['Lead', 'Contacted', 'Proposal', 'Won', 'Lost', 'Pending']
-const BRAND_OPTIONS = ['Aim Dental', 'Kings Highway']
-const CASE_TYPES = ['Crown & Bridge', 'Dentures', 'Implant', 'Ortho', 'Partial', 'Other']
-const INTENT_OPTIONS = ['High', 'Medium', 'Low']
-
-const STATUS_CLASSES = {
-  Lead: 'status-lead', Contacted: 'status-contacted', Proposal: 'status-proposal',
-  Won: 'status-won', Lost: 'status-lost', Pending: 'status-pending',
-}
-
-const INTENT_CLASSES = {
-  High: 'bg-green-100 text-green-700',
-  Medium: 'bg-amber-100 text-amber-700',
-  Low: 'bg-gray-100 text-gray-500',
-}
-
-// Pickup-request lifecycle (requested → dispatched → received) — separate
-// from the sales-pipeline STATUS_CLASSES above, only shown/used for leads
-// where case_interest === 'Schedule Pickup'. See PROJECT_NOTES-equivalent
-// note in the backend repo for the full stage-email flow.
-const PICKUP_STATUS_LABELS = { requested: 'Requested', dispatched: 'Dispatched', received: 'Received' }
-const PICKUP_STATUS_CLASSES = {
-  requested: 'bg-amber-100 text-amber-700',
-  dispatched: 'bg-blue-100 text-blue-700',
-  received: 'bg-green-100 text-green-700',
-}
-
-const EMPTY_FORM = {
-  doctor_name: '', clinic_name: '', brand: 'Aim Dental', case_interest: '', phone: '',
-  email: '', lead_source: '', estimated_value: '', status: 'Lead',
-  intent_level: 'Medium', notes: '', assigned_to: '',
-}
-
-const CSV_TEMPLATE = [
-  'Doctor Name,Clinic Name,Brand,Case Interest,Phone,Email,Lead Source,Estimated Value,Notes',
-  'Dr. Jane Smith,Smith Dental Group,Aim Dental,Implant,(718) 555-0100,dr.smith@example.com,Referral,8500,Interested in full arch implants',
-].join('\n')
-
-const SOURCE_SCORES = {
-  Referral: 25, LinkedIn: 20, 'Office Visit': 20, Google: 15,
-  'Website Form Submission': 15, Email: 10, 'Walk-in': 12, Facebook: 10,
-  Instagram: 10, X: 8, 'Email Marketing': 8,
-}
-const CASE_SCORES = { Implant: 15, 'Crown & Bridge': 12, Ortho: 10, Dentures: 8, Partial: 5 }
-const INTENT_SCORES = { High: 20, Medium: 10, Low: 0 }
-
-function scoreFromLead(lead) {
-  let s = 0
-  s += SOURCE_SCORES[normalizeSource(lead.lead_source || lead.referral_source)] || 0
-  const val = Number(lead.estimated_value) || 0
-  if (val >= 8000) s += 25
-  else if (val >= 4000) s += 15
-  else if (val >= 2000) s += 10
-  else s += 5
-  s += CASE_SCORES[lead.case_interest] || 0
-  s += INTENT_SCORES[lead.intent_level] || 0
-  if (lead.email) s += 5
-  if (lead.phone) s += 5
-  return Math.min(s, 100)
-}
-
-function scoreColor(s) {
-  if (s >= 80) return 'text-green-600 bg-green-50'
-  if (s >= 60) return 'text-amber-600 bg-amber-50'
-  return 'text-red-500 bg-red-50'
-}
-
-function parseCsvLine(line) {
-  const cells = []
-  let cur = ''
-  let inQ = false
-  for (const ch of line) {
-    if (ch === '"') inQ = !inQ
-    else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = '' }
-    else cur += ch
-  }
-  cells.push(cur.trim())
-  return cells
-}
-
-function parseCsv(text) {
-  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim().split('\n').filter(Boolean)
-  if (lines.length < 2) return []
-
-  const headers = parseCsvLine(lines[0]).map(h =>
-    h.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
-  )
-  const col = (...keys) => { for (const k of keys) { const i = headers.indexOf(k); if (i >= 0) return i } return -1 }
-  const map = {
-    doctor_name:     col('doctor_name', 'doctor', 'name', 'contact_person', 'person_name', 'full_name', 'title'),
-    first_name:      col('first_name'),
-    last_name:       col('last_name'),
-    clinic_name:     col('clinic_name', 'clinic', 'organization', 'company', 'org_name'),
-    brand:           col('brand'),
-    case_interest:   col('case_interest', 'case_type', 'case'),
-    phone:           col('phone', 'phone_mobile', 'phone_work', 'phone_number'),
-    email:           col('email', 'email_work', 'email_home', 'email_address'),
-    lead_source:     col('lead_source', 'referral_source', 'source', 'channel'),
-    estimated_value: col('estimated_value', 'value', 'deal_value', 'amount'),
-    notes:           col('notes', 'note', 'description', 'comment'),
-    status:          col('status', 'stage', 'deal_stage'),
-  }
-
-  const PIPEDRIVE_STATUS = { open: 'Lead', won: 'Won', lost: 'Lost', deleted: 'Lost' }
-
-  return lines.slice(1).map(line => {
-    const cells = parseCsvLine(line)
-    const g = (k) => map[k] >= 0 ? (cells[map[k]] || '').trim() : ''
-
-    let doctor_name = g('doctor_name')
-    if (!doctor_name && (map.first_name >= 0 || map.last_name >= 0)) {
-      doctor_name = [g('first_name'), g('last_name')].filter(Boolean).join(' ')
-    }
-    if (!doctor_name) return null
-
-    const rawStatus = g('status').toLowerCase()
-    const status = PIPEDRIVE_STATUS[rawStatus] || (STATUS_OPTIONS.includes(g('status')) ? g('status') : 'Lead')
-
-    return {
-      doctor_name,
-      clinic_name:     g('clinic_name'),
-      brand:           BRAND_OPTIONS.includes(g('brand')) ? g('brand') : 'Aim Dental',
-      case_interest:   CASE_TYPES.includes(g('case_interest')) ? g('case_interest') : '',
-      phone:           g('phone'),
-      email:           g('email'),
-      lead_source:     g('lead_source'),
-      estimated_value: g('estimated_value'),
-      notes:           g('notes'),
-      status,
-      intent_level:    'Medium',
-    }
-  }).filter(Boolean)
-}
+import {
+  STATUS_OPTIONS, BRAND_OPTIONS, CASE_TYPES, INTENT_OPTIONS,
+  STATUS_CLASSES, INTENT_CLASSES, PICKUP_STATUS_LABELS, PICKUP_STATUS_CLASSES,
+  EMPTY_FORM, CSV_TEMPLATE, scoreFromLead, scoreColor, parseCsv,
+} from '../lib/leads'
 
 // ── LeadModal ─────────────────────────────────────────────────────────────────
 
@@ -205,97 +79,102 @@ function LeadModal({ lead, onClose, onSave, isAdmin }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+    <AnimatedModal
+      onClose={onClose}
+      maxWidth="lg"
+      header={
+        <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <h2 className="font-semibold text-gray-900">{lead?.id ? 'Edit Lead' : 'New Lead'}</h2>
+            <h2 className="font-semibold text-slate-900 dark:text-slate-100">{lead?.id ? 'Edit Lead' : 'New Lead'}</h2>
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${scoreColor(liveScore)}`}>
               Score: {liveScore}
             </span>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X size={18} /></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"><X size={18} /></button>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="label">Doctor Name *</label>
-              <input className="input" value={form.doctor_name} onChange={e => set('doctor_name', e.target.value)} placeholder="Dr. Jane Smith" />
-            </div>
-            <div>
-              <label className="label">Clinic Name</label>
-              <input className="input" value={form.clinic_name} onChange={e => set('clinic_name', e.target.value)} placeholder="Smith Dental" />
-            </div>
-            <div>
-              <label className="label">Brand</label>
-              <select className="input" value={form.brand} onChange={e => set('brand', e.target.value)}>
-                {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Case Interest</label>
-              <select className="input" value={form.case_interest} onChange={e => set('case_interest', e.target.value)}>
-                <option value="">Select...</option>
-                {CASE_TYPES.map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Intent Level</label>
-              <select className="input" value={form.intent_level} onChange={e => set('intent_level', e.target.value)}>
-                {INTENT_OPTIONS.map(i => <option key={i}>{i}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Lead Source</label>
-              <select className="input" value={form.lead_source} onChange={e => set('lead_source', e.target.value)}>
-                <option value="">Select...</option>
-                {LEAD_SOURCES.map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Status</label>
-              <select className="input" value={form.status} onChange={e => set('status', e.target.value)}>
-                {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Phone</label>
-              <input className="input" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="(718) 555-0100" />
-            </div>
-            <div>
-              <label className="label">Email</label>
-              <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="dr@clinic.com" />
-            </div>
-            <div>
-              <label className="label">Estimated Value ($)</label>
-              <input className="input" type="number" value={form.estimated_value} onChange={e => set('estimated_value', e.target.value)} placeholder="0" />
-            </div>
-            {isAdmin && reps.length > 0 && (
-              <div className="col-span-2">
-                <label className="label">Assigned Rep</label>
-                <select className="input" value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)}>
-                  <option value="">— Unassigned —</option>
-                  {reps.map(u => (
-                    <option key={u.id} value={u.id}>{u.name || u.email}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div className="col-span-2">
-              <label className="label">Notes</label>
-              <textarea className="input resize-none" rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Any relevant notes..." />
-            </div>
-          </div>
-          {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-        </div>
-        <div className="flex gap-3 px-6 pb-5">
+      }
+      footer={
+        <div className="flex gap-3 px-6 py-4">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
           <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Lead'}
           </button>
         </div>
+      }
+    >
+      <div className="p-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="col-span-1 sm:col-span-2">
+            <label className="label">Doctor Name *</label>
+            <input className="input" value={form.doctor_name} onChange={e => set('doctor_name', e.target.value)} placeholder="Dr. Jane Smith" />
+          </div>
+          <div>
+            <label className="label">Clinic Name</label>
+            <input className="input" value={form.clinic_name} onChange={e => set('clinic_name', e.target.value)} placeholder="Smith Dental" />
+          </div>
+          <div>
+            <label className="label">Brand</label>
+            <select className="input" value={form.brand} onChange={e => set('brand', e.target.value)}>
+              {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Case Interest</label>
+            <select className="input" value={form.case_interest} onChange={e => set('case_interest', e.target.value)}>
+              <option value="">Select...</option>
+              {CASE_TYPES.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Intent Level</label>
+            <select className="input" value={form.intent_level} onChange={e => set('intent_level', e.target.value)}>
+              {INTENT_OPTIONS.map(i => <option key={i}>{i}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Lead Source</label>
+            <select className="input" value={form.lead_source} onChange={e => set('lead_source', e.target.value)}>
+              <option value="">Select...</option>
+              {LEAD_SOURCES.map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Status</label>
+            <select className="input" value={form.status} onChange={e => set('status', e.target.value)}>
+              {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Phone</label>
+            <input className="input" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="(718) 555-0100" />
+          </div>
+          <div>
+            <label className="label">Email</label>
+            <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="dr@clinic.com" />
+          </div>
+          <div>
+            <label className="label">Estimated Value ($)</label>
+            <input className="input" type="number" value={form.estimated_value} onChange={e => set('estimated_value', e.target.value)} placeholder="0" />
+          </div>
+          {isAdmin && reps.length > 0 && (
+            <div className="col-span-1 sm:col-span-2">
+              <label className="label">Assigned Rep</label>
+              <select className="input" value={form.assigned_to} onChange={e => set('assigned_to', e.target.value)}>
+                <option value="">— Unassigned —</option>
+                {reps.map(u => (
+                  <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="col-span-1 sm:col-span-2">
+            <label className="label">Notes</label>
+            <textarea className="input resize-none" rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Any relevant notes..." />
+          </div>
+        </div>
+        {error && <p className="text-sm text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg mt-4">{error}</p>}
       </div>
-    </div>
+    </AnimatedModal>
   )
 }
 
@@ -361,122 +240,144 @@ function CsvImportModal({ onClose, onImport, isAdmin }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-          <h2 className="font-semibold text-gray-900">Import Leads from CSV</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X size={18} /></button>
+    <AnimatedModal
+      onClose={onClose}
+      maxWidth="2xl"
+      header={
+        <div className="flex items-center justify-between px-6 py-4">
+          <h2 className="font-semibold text-slate-900 dark:text-slate-100">Import Leads from CSV</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"><X size={18} /></button>
         </div>
-
-        {step === 'pick' && (
-          <div className="p-6 flex-1 space-y-4">
-            <div
-              className="border-2 border-dashed border-gray-200 rounded-xl p-10 text-center hover:border-[#06babe]/50 transition-colors cursor-pointer"
-              onClick={() => fileRef.current?.click()}
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]) }}
-            >
-              <Upload size={28} className="mx-auto text-gray-300 mb-3" />
-              <p className="text-sm font-medium text-gray-700">Drop a CSV here or click to browse</p>
-              <p className="text-xs text-gray-400 mt-1">Standard CSV or Pipedrive export — Doctor Name or contact name required</p>
-              <input ref={fileRef} type="file" accept=".csv" className="hidden"
-                onChange={e => handleFile(e.target.files[0])} />
-            </div>
-            {parseError && <p className="text-sm text-red-600">{parseError}</p>}
-
-            {isAdmin && reps.length > 0 && (
-              <div>
-                <label className="label">Assign imported leads to</label>
-                <select className="input" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
-                  <option value="">— Self (you) —</option>
-                  {reps.map(u => (
-                    <option key={u.id} value={u.id}>{u.name || u.email}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div className="p-3 bg-gray-50 rounded-xl flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-medium text-gray-700 mb-1">Our columns (in any order):</p>
-                <p className="text-xs text-gray-500 font-mono">
-                  Doctor Name, Clinic Name, Brand, Case Interest, Phone, Email, Lead Source, Estimated Value, Notes
-                </p>
-                <p className="text-xs text-gray-400 mt-1">Pipedrive exports also accepted — Organization, Value, Status etc. auto-mapped.</p>
-              </div>
-              <button onClick={downloadTemplate} className="btn-secondary text-xs flex items-center gap-1.5 flex-shrink-0">
-                <Download size={12} /> Template
-              </button>
-            </div>
+      }
+      footer={
+        step === 'preview' ? (
+          <div className="flex gap-3 px-6 py-4">
+            <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={handleImport} disabled={importing}
+              className="btn-primary flex-1 disabled:opacity-50">
+              {importing ? 'Importing...' : `Import ${rows.length} Lead${rows.length !== 1 ? 's' : ''}`}
+            </button>
           </div>
-        )}
+        ) : null
+      }
+    >
+      {step === 'pick' && (
+        <div className="p-6 space-y-4">
+          <div
+            className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-8 sm:p-10 text-center hover:border-[#06babe]/50 transition-colors cursor-pointer"
+            onClick={() => fileRef.current?.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]) }}
+          >
+            <Upload size={28} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Drop a CSV here or click to browse</p>
+            <p className="text-xs text-slate-400 mt-1">Standard CSV or Pipedrive export — Doctor Name or contact name required</p>
+            <input ref={fileRef} type="file" accept=".csv" className="hidden"
+              onChange={e => handleFile(e.target.files[0])} />
+          </div>
+          {parseError && <p className="text-sm text-red-600">{parseError}</p>}
 
-        {step === 'preview' && (
-          <>
-            <div className="px-6 py-3 border-b border-gray-50 flex items-center justify-between flex-shrink-0">
-              <p className="text-sm text-gray-600">
-                <span className="font-semibold text-gray-900">{rows.length}</span>{' '}
-                lead{rows.length !== 1 ? 's' : ''} ready to import
+          {isAdmin && reps.length > 0 && (
+            <div>
+              <label className="label">Assign imported leads to</label>
+              <select className="input" value={assignedTo} onChange={e => setAssignedTo(e.target.value)}>
+                <option value="">— Self (you) —</option>
+                {reps.map(u => (
+                  <option key={u.id} value={u.id}>{u.name || u.email}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div>
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Our columns (in any order):</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                Doctor Name, Clinic Name, Brand, Case Interest, Phone, Email, Lead Source, Estimated Value, Notes
               </p>
-              <button onClick={() => { setStep('pick'); setRows([]); setCsvFile(null) }}
-                className="text-xs text-gray-500 hover:text-gray-900">← Change file</button>
+              <p className="text-xs text-slate-400 mt-1">Pipedrive exports also accepted — Organization, Value, Status etc. auto-mapped.</p>
             </div>
-            <div className="overflow-auto flex-1">
-              <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-gray-50 border-b border-gray-100">
-                  <tr>
-                    {['Doctor', 'Clinic', 'Brand', 'Case', 'Value', 'Source', 'Email'].map(h => (
-                      <th key={h} className="text-left px-3 py-2 font-medium text-gray-500">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {rows.map((row, i) => (
-                    <tr key={i} className="hover:bg-gray-50/60">
-                      <td className="px-3 py-2 font-medium text-gray-900">{row.doctor_name}</td>
-                      <td className="px-3 py-2 text-gray-500">{row.clinic_name || '—'}</td>
-                      <td className="px-3 py-2 text-gray-500">{row.brand}</td>
-                      <td className="px-3 py-2 text-gray-500">{row.case_interest || '—'}</td>
-                      <td className="px-3 py-2 text-gray-500">{row.estimated_value ? `$${Number(row.estimated_value).toLocaleString()}` : '—'}</td>
-                      <td className="px-3 py-2 text-gray-500">{row.lead_source || '—'}</td>
-                      <td className="px-3 py-2 text-gray-500">{row.email || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {parseError && <p className="px-6 pb-2 text-sm text-red-600">{parseError}</p>}
-            <div className="flex gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0">
-              <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-              <button onClick={handleImport} disabled={importing}
-                className="btn-primary flex-1 disabled:opacity-50">
-                {importing ? 'Importing...' : `Import ${rows.length} Lead${rows.length !== 1 ? 's' : ''}`}
-              </button>
-            </div>
-          </>
-        )}
+            <button onClick={downloadTemplate} className="btn-secondary text-xs flex items-center gap-1.5 flex-shrink-0 w-full sm:w-auto justify-center">
+              <Download size={12} /> Template
+            </button>
+          </div>
+        </div>
+      )}
 
-        {step === 'done' && result && (
-          <div className="p-8 text-center flex-1 flex flex-col items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-4">
-              <Check size={22} className="text-green-500" />
-            </div>
-            <h3 className="font-semibold text-gray-900 mb-3">Import complete</h3>
-            <p className="text-sm text-gray-700 mb-1">
-              <span className="font-semibold text-green-600">
-                {result.added} lead{result.added !== 1 ? 's' : ''}
-              </span>{' '}added successfully
+      {step === 'preview' && (
+        <>
+          <div className="px-6 py-3 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between gap-3">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{rows.length}</span>{' '}
+              lead{rows.length !== 1 ? 's' : ''} ready to import
             </p>
-            {result.skipped > 0 && (
-              <p className="text-sm text-gray-400">
-                {result.skipped} skipped — duplicate email{result.skipped > 1 ? 's' : ''} already in the system
-              </p>
-            )}
-            <button onClick={() => { onImport(); onClose() }} className="btn-primary mt-6">View Leads</button>
+            <button onClick={() => { setStep('pick'); setRows([]); setCsvFile(null) }}
+              className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex-shrink-0">← Change file</button>
           </div>
-        )}
-      </div>
-    </div>
+
+          {/* Desktop preview table */}
+          <div className="hidden md:block overflow-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+                <tr>
+                  {['Doctor', 'Clinic', 'Brand', 'Case', 'Value', 'Source', 'Email'].map(h => (
+                    <th key={h} className="text-left px-3 py-2 font-medium text-slate-500 dark:text-slate-400">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                {rows.map((row, i) => (
+                  <tr key={i} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50">
+                    <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{row.doctor_name}</td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{row.clinic_name || '—'}</td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{row.brand}</td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{row.case_interest || '—'}</td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{row.estimated_value ? `$${Number(row.estimated_value).toLocaleString()}` : '—'}</td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{row.lead_source || '—'}</td>
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{row.email || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile preview cards */}
+          <div className="md:hidden p-3 space-y-2">
+            {rows.map((row, i) => (
+              <div key={i} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs">
+                <p className="font-semibold text-slate-900 dark:text-slate-100">{row.doctor_name}</p>
+                <p className="text-slate-500 dark:text-slate-400 mt-0.5">{row.clinic_name || '—'} · {row.brand}</p>
+                <p className="text-slate-500 dark:text-slate-400">
+                  {row.case_interest || '—'}{row.estimated_value ? ` · $${Number(row.estimated_value).toLocaleString()}` : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {parseError && <p className="px-6 py-2 text-sm text-red-600">{parseError}</p>}
+        </>
+      )}
+
+      {step === 'done' && result && (
+        <div className="p-8 text-center flex flex-col items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-green-50 dark:bg-green-950/40 flex items-center justify-center mb-4">
+            <Check size={22} className="text-green-500" />
+          </div>
+          <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Import complete</h3>
+          <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
+            <span className="font-semibold text-green-600">
+              {result.added} lead{result.added !== 1 ? 's' : ''}
+            </span>{' '}added successfully
+          </p>
+          {result.skipped > 0 && (
+            <p className="text-sm text-slate-400">
+              {result.skipped} skipped — duplicate email{result.skipped > 1 ? 's' : ''} already in the system
+            </p>
+          )}
+          <button onClick={() => { onImport(); onClose() }} className="btn-primary mt-6">View Leads</button>
+        </div>
+      )}
+    </AnimatedModal>
   )
 }
 
@@ -502,6 +403,7 @@ export default function Leads() {
   const [modal,        setModal]       = useState(null)
   const [importModal,  setImportModal] = useState(false)
   const [converting,   setConverting]  = useState(null)
+  const [sheetLeadId,  setSheetLeadId] = useState(null)
   const toast = useToast()
 
   useEffect(() => {
@@ -592,46 +494,52 @@ export default function Leads() {
 
   const tableHeaders = ['Doctor / Clinic', 'Brand', 'Case', 'Source', 'Value', 'Intent', 'Score', 'Status', 'Assign', 'Contact', '']
 
+  // Store the id, not the lead object — several handlers above refetch and
+  // replace `leads`, so a sheet holding a captured object would go stale.
+  const sheetLead = sheetLeadId ? leads.find(l => l.id === sheetLeadId) : null
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
+    <div className="px-4 py-5 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
         <div>
           <h1 className="page-title">Leads</h1>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
             {leads.length} {showArchived ? 'archived' : 'active'} leads
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={() => setShowArchived(v => !v)}
-            className={`btn-secondary flex items-center gap-2 text-xs ${showArchived ? 'ring-1 ring-[#06babe]' : ''}`}
+            className={`btn-secondary flex-1 sm:flex-none justify-center flex items-center gap-2 text-xs ${showArchived ? 'ring-1 ring-[#06babe]' : ''}`}
           >
             <Archive size={13} /> {showArchived ? 'View Active' : 'View Archived'}
           </button>
-          <button data-tour="leads-import-csv" onClick={() => setImportModal(true)} className="btn-secondary flex items-center gap-2">
+          <button data-tour="leads-import-csv" onClick={() => setImportModal(true)} className="btn-secondary flex-1 sm:flex-none justify-center flex items-center gap-2">
             <Upload size={14} /> Import CSV
           </button>
-          <button data-tour="leads-new" onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
+          <button data-tour="leads-new" onClick={() => setModal('new')} className="btn-primary flex-1 sm:flex-none justify-center flex items-center gap-2">
             <Plus size={16} /> New Lead
           </button>
         </div>
       </div>
 
       {/* View tabs */}
-      <div data-tour="leads-view-tabs" className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-fit mb-5">
-        {VIEW_TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setViewTab(tab.id)}
-            className={`tab-item ${viewTab === tab.id ? 'tab-item-active' : ''}`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div data-tour="leads-view-tabs" className="overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 mb-5">
+        <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl w-max">
+          {VIEW_TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setViewTab(tab.id)}
+              className={`tab-item whitespace-nowrap ${viewTab === tab.id ? 'tab-item-active' : ''}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div data-tour="leads-search-filters" className="flex flex-wrap gap-3 mb-5">
-        <div className="relative flex-1 min-w-[200px]">
+      <div data-tour="leads-search-filters" className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mb-5">
+        <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             className="input pl-9"
@@ -640,20 +548,25 @@ export default function Leads() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <select className="input w-auto" value={filterBrand} onChange={e => setFilterBrand(e.target.value)}>
-          <option value="All">All Brands</option>
-          {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
-        </select>
-        <select className="input w-auto" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="All">All Statuses</option>
-          {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
-        </select>
+        <div className="flex gap-2">
+          <select className="input w-full sm:w-auto flex-1 sm:flex-none" value={filterBrand} onChange={e => setFilterBrand(e.target.value)}>
+            <option value="All">All Brands</option>
+            {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
+          </select>
+          <select className="input w-full sm:w-auto flex-1 sm:flex-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+            <option value="All">All Statuses</option>
+            {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
       </div>
 
-      <div className="card overflow-hidden">
-        {loading ? (
-          <SkeletonTable rows={6} cols={11} />
-        ) : filtered.length === 0 ? (
+      {loading ? (
+        <>
+          <div className="hidden md:block card overflow-hidden"><SkeletonTable rows={6} cols={11} /></div>
+          <div className="md:hidden"><SkeletonCards rows={6} /></div>
+        </>
+      ) : filtered.length === 0 ? (
+        <div className="card overflow-hidden">
           <EmptyState
             icon={viewTab === 'unassigned' ? UserCheck : Plus}
             title={viewTab === 'unassigned' ? 'No unassigned leads — great!' : 'No leads found'}
@@ -661,176 +574,215 @@ export default function Leads() {
             action={viewTab !== 'unassigned' && !search ? () => setModal('new') : undefined}
             actionLabel="Add Lead"
           />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
-                  {tableHeaders.map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((lead, i) => {
-                  const daysSince = lead.last_contacted_at
-                    ? Math.floor((Date.now() - new Date(lead.last_contacted_at)) / 86400000)
-                    : null
-                  const isCold = daysSince !== null && daysSince >= 14 && !['Won', 'Lost'].includes(lead.status)
+        </div>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30">
+                    {tableHeaders.map(h => (
+                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((lead, i) => {
+                    const daysSince = lead.last_contacted_at
+                      ? Math.floor((Date.now() - new Date(lead.last_contacted_at)) / 86400000)
+                      : null
+                    const isCold = daysSince !== null && daysSince >= 14 && !['Won', 'Lost'].includes(lead.status)
 
-                  return (
-                    <motion.tr
-                      key={lead.id}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2 }}
-                      className={`border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors ${isCold ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}`}
-                    >
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">{lead.doctor_name}</p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500">{lead.clinic_name}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={lead.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
-                          {lead.brand === 'Aim Dental' ? 'Aim' : 'KH'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-sm">{lead.case_interest || '—'}</td>
-                      <td className="px-4 py-3">
-                        {normalizeSource(lead.lead_source || lead.referral_source) ? (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 whitespace-nowrap">
-                            {normalizeSource(lead.lead_source || lead.referral_source)}
+                    return (
+                      <motion.tr
+                        key={lead.id}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.2 }}
+                        className={`border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors ${isCold ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}`}
+                      >
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-slate-900 dark:text-slate-100">{lead.doctor_name}</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500">{lead.clinic_name}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={lead.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
+                            {lead.brand === 'Aim Dental' ? 'Aim' : 'KH'}
                           </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 text-sm">
-                        {lead.estimated_value ? `$${Number(lead.estimated_value).toLocaleString()}` : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {lead.intent_level ? (
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${INTENT_CLASSES[lead.intent_level] || 'bg-slate-100 text-slate-500'}`}>
-                            {lead.intent_level}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-sm">{lead.case_interest || '—'}</td>
+                        <td className="px-4 py-3">
+                          {normalizeSource(lead.lead_source || lead.referral_source) ? (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 whitespace-nowrap">
+                              {normalizeSource(lead.lead_source || lead.referral_source)}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 text-sm">
+                          {lead.estimated_value ? `$${Number(lead.estimated_value).toLocaleString()}` : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {lead.intent_level ? (
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${INTENT_CLASSES[lead.intent_level] || 'bg-slate-100 text-slate-500'}`}>
+                              {lead.intent_level}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {lead.ai_score != null ? (
+                            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${scoreColor(lead.ai_score)}`}>
+                              <Star size={10} />
+                              {lead.ai_score}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${STATUS_CLASSES[lead.status] || ''}`}>
+                            {lead.status}
                           </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        {lead.ai_score != null ? (
-                          <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${scoreColor(lead.ai_score)}`}>
-                            <Star size={10} />
-                            {lead.ai_score}
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${STATUS_CLASSES[lead.status] || ''}`}>
-                          {lead.status}
-                        </span>
-                        {isCold && (
-                          <span className="ml-1.5 text-xs text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded">
-                            {daysSince}d cold
-                          </span>
-                        )}
-                        {lead.case_interest === 'Schedule Pickup' && lead.pickup_status && (
-                          <span className={`ml-1.5 text-xs px-2 py-0.5 rounded-full font-semibold ${PICKUP_STATUS_CLASSES[lead.pickup_status] || 'bg-slate-100 text-slate-600'}`}>
-                            {PICKUP_STATUS_LABELS[lead.pickup_status] || lead.pickup_status}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {viewTab === 'unassigned' ? (
-                          <button
-                            onClick={() => handleClaim(lead)}
-                            className="text-xs font-semibold text-[#06babe] hover:text-[#207290] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-colors"
-                          >
-                            Claim
-                          </button>
-                        ) : (
-                          <select
-                            value={lead.assigned_to || ''}
-                            onChange={e => handleAssign(lead, e.target.value || null)}
-                            className="text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-1 focus:ring-[#06babe] max-w-[110px]"
-                          >
-                            <option value="">— None —</option>
-                            {reps.map(r => (
-                              <option key={r.id} value={r.id}>{r.name || r.email}</option>
-                            ))}
-                          </select>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          {lead.phone && <a href={`tel:${lead.phone}`} className="text-slate-400 hover:text-[#06babe] transition-colors"><Phone size={14} /></a>}
-                          {lead.email && <a href={`mailto:${lead.email}`} className="text-slate-400 hover:text-[#06babe] transition-colors"><Mail size={14} /></a>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 justify-end flex-wrap">
-                          {!showArchived && (
-                            <button onClick={() => handleContactNow(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
-                              Contacted
-                            </button>
+                          {isCold && (
+                            <span className="ml-1.5 text-xs text-amber-600 dark:text-amber-400 font-semibold bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded">
+                              {daysSince}d cold
+                            </span>
                           )}
-                          {!showArchived && lead.case_interest === 'Schedule Pickup' && lead.pickup_status === 'requested' && (
-                            <button onClick={() => handleMarkDispatched(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
-                              Dispatch
-                            </button>
+                          {lead.case_interest === 'Schedule Pickup' && lead.pickup_status && (
+                            <span className={`ml-1.5 text-xs px-2 py-0.5 rounded-full font-semibold ${PICKUP_STATUS_CLASSES[lead.pickup_status] || 'bg-slate-100 text-slate-600'}`}>
+                              {PICKUP_STATUS_LABELS[lead.pickup_status] || lead.pickup_status}
+                            </span>
                           )}
-                          {!showArchived && lead.case_interest === 'Schedule Pickup' && lead.pickup_status === 'dispatched' && (
-                            <button onClick={() => handleMarkReceived(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
-                              Received
-                            </button>
-                          )}
-                          {lead.status === 'Won' && !lead.converted_to_client_id && !showArchived && (
+                        </td>
+                        <td className="px-4 py-3">
+                          {viewTab === 'unassigned' ? (
                             <button
-                              onClick={() => handleConvert(lead)}
-                              disabled={converting === lead.id}
-                              className="text-xs flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold disabled:opacity-50"
+                              onClick={() => handleClaim(lead)}
+                              className="text-xs font-semibold text-[#06babe] hover:text-[#207290] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-colors"
                             >
-                              <UserCheck size={11} />
-                              {converting === lead.id ? '…' : 'Convert'}
+                              Claim
                             </button>
+                          ) : (
+                            <select
+                              value={lead.assigned_to || ''}
+                              onChange={e => handleAssign(lead, e.target.value || null)}
+                              className="text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-1 focus:ring-[#06babe] max-w-[110px]"
+                            >
+                              <option value="">— None —</option>
+                              {reps.map(r => (
+                                <option key={r.id} value={r.id}>{r.name || r.email}</option>
+                              ))}
+                            </select>
                           )}
-                          {lead.converted_to_client_id && (
-                            <span className="text-xs text-slate-400 flex items-center gap-0.5"><UserCheck size={10} /> Client</span>
-                          )}
-                          {(isAdmin || !lead.assigned_to || lead.assigned_to === user.id) && (
-                            <button onClick={() => setModal(lead)} className="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 font-medium">Edit</button>
-                          )}
-                          <button onClick={() => handleArchive(lead)} className="text-xs text-slate-400 hover:text-amber-600 transition-colors" title={showArchived ? 'Restore' : 'Archive'}>
-                            {showArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
-                          </button>
-                          {isAdmin && (
-                            <button onClick={() => handleDelete(lead.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors font-medium">Del</button>
-                          )}
-                        </div>
-                      </td>
-                    </motion.tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {lead.phone && <a href={`tel:${lead.phone}`} className="text-slate-400 hover:text-[#06babe] transition-colors"><Phone size={14} /></a>}
+                            {lead.email && <a href={`mailto:${lead.email}`} className="text-slate-400 hover:text-[#06babe] transition-colors"><Mail size={14} /></a>}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2 justify-end flex-wrap">
+                            {!showArchived && (
+                              <button onClick={() => handleContactNow(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
+                                Contacted
+                              </button>
+                            )}
+                            {!showArchived && lead.case_interest === 'Schedule Pickup' && lead.pickup_status === 'requested' && (
+                              <button onClick={() => handleMarkDispatched(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
+                                Dispatch
+                              </button>
+                            )}
+                            {!showArchived && lead.case_interest === 'Schedule Pickup' && lead.pickup_status === 'dispatched' && (
+                              <button onClick={() => handleMarkReceived(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
+                                Received
+                              </button>
+                            )}
+                            {lead.status === 'Won' && !lead.converted_to_client_id && !showArchived && (
+                              <button
+                                onClick={() => handleConvert(lead)}
+                                disabled={converting === lead.id}
+                                className="text-xs flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold disabled:opacity-50"
+                              >
+                                <UserCheck size={11} />
+                                {converting === lead.id ? '…' : 'Convert'}
+                              </button>
+                            )}
+                            {lead.converted_to_client_id && (
+                              <span className="text-xs text-slate-400 flex items-center gap-0.5"><UserCheck size={10} /> Client</span>
+                            )}
+                            {(isAdmin || !lead.assigned_to || lead.assigned_to === user.id) && (
+                              <button onClick={() => setModal(lead)} className="text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 font-medium">Edit</button>
+                            )}
+                            <button onClick={() => handleArchive(lead)} className="text-xs text-slate-400 hover:text-amber-600 transition-colors" title={showArchived ? 'Restore' : 'Archive'}>
+                              {showArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
+                            </button>
+                            {isAdmin && (
+                              <button onClick={() => handleDelete(lead.id)} className="text-xs text-red-400 hover:text-red-600 transition-colors font-medium">Del</button>
+                            )}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-2.5">
+            {filtered.map(lead => (
+              <LeadCard
+                key={lead.id}
+                lead={lead}
+                showArchived={showArchived}
+                onContactNow={handleContactNow}
+                onOpenSheet={setSheetLeadId}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      <AnimatePresence>
+        {modal && (
+          <LeadModal
+            lead={modal === 'new' ? null : modal}
+            onClose={() => setModal(null)}
+            onSave={() => { setModal(null); fetchLeads() }}
+            isAdmin={isAdmin}
+          />
         )}
-      </div>
-
-      {modal && (
-        <LeadModal
-          lead={modal === 'new' ? null : modal}
-          onClose={() => setModal(null)}
-          onSave={() => { setModal(null); fetchLeads() }}
-          isAdmin={isAdmin}
-        />
-      )}
-
-      {importModal && (
-        <CsvImportModal
-          onClose={() => setImportModal(false)}
-          onImport={fetchLeads}
-          isAdmin={isAdmin}
-        />
-      )}
+        {importModal && (
+          <CsvImportModal
+            onClose={() => setImportModal(false)}
+            onImport={fetchLeads}
+            isAdmin={isAdmin}
+          />
+        )}
+        {sheetLead && (
+          <LeadActionsSheet
+            lead={sheetLead}
+            isAdmin={isAdmin}
+            currentUserId={user.id}
+            reps={reps}
+            viewTab={viewTab}
+            showArchived={showArchived}
+            converting={converting === sheetLead.id}
+            onClose={() => setSheetLeadId(null)}
+            onAssign={handleAssign}
+            onClaim={handleClaim}
+            onDispatch={handleMarkDispatched}
+            onReceived={handleMarkReceived}
+            onConvert={handleConvert}
+            onEdit={setModal}
+            onArchive={handleArchive}
+            onDelete={handleDelete}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

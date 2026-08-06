@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
+import AnimatedModal from '../components/AnimatedModal'
 import { Plus, Search, Phone, Mail, X, ChevronRight, ClipboardList, Activity, CheckSquare, Square } from 'lucide-react'
 
 const BRAND_OPTIONS = ['Aim Dental', 'Kings Highway']
@@ -39,76 +40,75 @@ function ClientModal({ client, onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]">
-      <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 12 }}
-        transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">{client?.id ? 'Edit Client' : 'New Client'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X size={18} /></button>
+    <AnimatedModal
+      onClose={onClose}
+      maxWidth="lg"
+      header={
+        <div className="flex items-center justify-between px-6 py-4">
+          <h2 className="font-semibold text-slate-900 dark:text-slate-100">{client?.id ? 'Edit Client' : 'New Client'}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"><X size={18} /></button>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="label">Doctor Name *</label>
-              <input className="input" value={form.doctor_name} onChange={e => set('doctor_name', e.target.value)} placeholder="Dr. Jane Smith" />
-            </div>
-            <div>
-              <label className="label">Clinic Name</label>
-              <input className="input" value={form.clinic_name} onChange={e => set('clinic_name', e.target.value)} placeholder="Smith Dental" />
-            </div>
-            <div>
-              <label className="label">Brand</label>
-              <select className="input" value={form.brand} onChange={e => set('brand', e.target.value)}>
-                {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Phone</label>
-              <input className="input" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="(718) 555-0100" />
-            </div>
-            <div>
-              <label className="label">Email</label>
-              <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="dr@clinic.com" />
-            </div>
-            <div className="col-span-2">
-              <label className="label">Address</label>
-              <input className="input" value={form.address} onChange={e => set('address', e.target.value)} placeholder="123 Main St, Brooklyn, NY" />
-            </div>
-            <div>
-              <label className="label">Referral Source</label>
-              <select className="input" value={form.referral_source} onChange={e => set('referral_source', e.target.value)}>
-                <option value="">Select...</option>
-                {REFERRAL_SOURCES.map(r => <option key={r}>{r}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">Total Revenue ($)</label>
-              <input className="input" type="number" value={form.total_revenue} onChange={e => set('total_revenue', e.target.value)} placeholder="0" />
-            </div>
-            <div>
-              <label className="label">Case Count</label>
-              <input className="input" type="number" value={form.case_count} onChange={e => set('case_count', e.target.value)} placeholder="0" />
-            </div>
-            <div className="col-span-2">
-              <label className="label">Notes</label>
-              <textarea className="input resize-none" rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} />
-            </div>
-          </div>
-          {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-        </div>
-        <div className="flex gap-3 px-6 pb-5">
+      }
+      footer={
+        <div className="flex gap-3 px-6 py-4">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
           <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Client'}
           </button>
         </div>
-      </motion.div>
-    </div>
+      }
+    >
+      <div className="p-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="col-span-1 sm:col-span-2">
+            <label className="label">Doctor Name *</label>
+            <input className="input" value={form.doctor_name} onChange={e => set('doctor_name', e.target.value)} placeholder="Dr. Jane Smith" />
+          </div>
+          <div>
+            <label className="label">Clinic Name</label>
+            <input className="input" value={form.clinic_name} onChange={e => set('clinic_name', e.target.value)} placeholder="Smith Dental" />
+          </div>
+          <div>
+            <label className="label">Brand</label>
+            <select className="input" value={form.brand} onChange={e => set('brand', e.target.value)}>
+              {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Phone</label>
+            <input className="input" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="(718) 555-0100" />
+          </div>
+          <div>
+            <label className="label">Email</label>
+            <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="dr@clinic.com" />
+          </div>
+          <div className="col-span-1 sm:col-span-2">
+            <label className="label">Address</label>
+            <input className="input" value={form.address} onChange={e => set('address', e.target.value)} placeholder="123 Main St, Brooklyn, NY" />
+          </div>
+          <div>
+            <label className="label">Referral Source</label>
+            <select className="input" value={form.referral_source} onChange={e => set('referral_source', e.target.value)}>
+              <option value="">Select...</option>
+              {REFERRAL_SOURCES.map(r => <option key={r}>{r}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label">Total Revenue ($)</label>
+            <input className="input" type="number" value={form.total_revenue} onChange={e => set('total_revenue', e.target.value)} placeholder="0" />
+          </div>
+          <div>
+            <label className="label">Case Count</label>
+            <input className="input" type="number" value={form.case_count} onChange={e => set('case_count', e.target.value)} placeholder="0" />
+          </div>
+          <div className="col-span-1 sm:col-span-2">
+            <label className="label">Notes</label>
+            <textarea className="input resize-none" rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} />
+          </div>
+        </div>
+        {error && <p className="text-sm text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg mt-4">{error}</p>}
+      </div>
+    </AnimatedModal>
   )
 }
 
@@ -363,23 +363,23 @@ export default function Clients() {
   const totalRevenue = filtered.reduce((s, c) => s + Number(c.total_revenue || 0), 0)
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="px-4 py-5 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5 sm:mb-6">
         <div>
           <h1 className="page-title">Clients</h1>
           <p className="text-sm text-gray-500 mt-0.5">{clients.length} total clients · ${totalRevenue.toLocaleString()} revenue</p>
         </div>
-        <button data-tour="clients-new" onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
+        <button data-tour="clients-new" onClick={() => setModal('new')} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
           <Plus size={16} /> New Client
         </button>
       </div>
 
-      <div data-tour="clients-search" className="flex gap-3 mb-5 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
+      <div data-tour="clients-search" className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-5">
+        <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input className="input pl-9" placeholder="Search doctor or clinic..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select className="input w-auto" value={filterBrand} onChange={e => setFilterBrand(e.target.value)}>
+        <select className="input w-full sm:w-auto" value={filterBrand} onChange={e => setFilterBrand(e.target.value)}>
           <option value="All">All Brands</option>
           {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
         </select>

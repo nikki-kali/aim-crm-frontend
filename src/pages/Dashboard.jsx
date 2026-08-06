@@ -181,11 +181,11 @@ function RepDashboard({ user }) {
   ] : []
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="px-4 py-5 sm:p-6 max-w-5xl mx-auto space-y-6">
       {/* Greeting */}
       <motion.div
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-        className="flex items-center justify-between"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">
@@ -193,7 +193,7 @@ function RepDashboard({ user }) {
           </h1>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5 italic">{motivational}</p>
         </div>
-        <button onClick={fetchAll} className="btn-secondary flex items-center gap-2">
+        <button onClick={fetchAll} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
           <RefreshCw size={14} /> Refresh
         </button>
       </motion.div>
@@ -339,17 +339,17 @@ function AdminDashboard() {
   const totalRev = brandRevenue.reduce((s, b) => s + b.revenue, 0)
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="px-4 py-5 sm:p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-        className="flex items-center justify-between"
+        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
           <h1 className="page-title">Command Center</h1>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">{monthLabel} overview · both brands</p>
         </div>
-        <button onClick={fetchData} className="btn-secondary flex items-center gap-2">
+        <button onClick={fetchData} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
         </button>
       </motion.div>
@@ -392,7 +392,8 @@ function AdminDashboard() {
               ))}
             </div>
           </div>
-          <div className="overflow-x-auto -mx-1">
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto -mx-1">
             <table className="data-table">
               <thead>
                 <tr>
@@ -432,6 +433,37 @@ function AdminDashboard() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-2">
+            {teamStats.map(({ rep, ...periods }) => {
+              const s = periods[teamPeriod] || {}
+              return (
+                <div key={rep.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60">
+                  <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {(rep.name || rep.email || '?')[0].toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm truncate">{rep.name || rep.email}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {s.leads_assigned ?? 0} leads · {s.proposals_sent ?? 0} proposals
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-bold text-emerald-600 text-sm">{s.leads_won ?? 0} wins</p>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span className={`text-xs font-bold ${(s.conversion_rate ?? 0) >= 30 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                        {s.conversion_rate ?? 0}%
+                      </span>
+                      {(s.conversion_rate ?? 0) >= 30
+                        ? <ArrowUpRight size={11} className="text-emerald-500" />
+                        : <ArrowDownRight size={11} className="text-red-400" />}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </motion.div>
       )}

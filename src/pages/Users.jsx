@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { Plus, X, Shield, User, Briefcase, Trash2, Pencil, GraduationCap, ChevronDown, ChevronRight, Check } from 'lucide-react'
+import AnimatedModal from '../components/AnimatedModal'
 import { TOUR_MODULES } from '../lib/tourSteps'
 import { TRAINING_MODULES } from '../lib/trainingScenarios'
 import { ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, roleLabel } from '../lib/roles'
@@ -9,8 +10,8 @@ import { ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, roleLabel } from '../lib/roles'
 const ROLE_ICONS = { admin: Shield, sales_rep: Briefcase, staff: User }
 const ROLE_BADGE_CLASS = {
   admin: 'bg-[#06babe]/10 text-[#06babe]',
-  sales_rep: 'bg-amber-100 text-amber-700',
-  staff: 'bg-gray-100 text-gray-600',
+  sales_rep: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400',
+  staff: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
 }
 
 function TrainingProgressSection() {
@@ -119,53 +120,99 @@ function UserModal({ userData, onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900">{isEdit ? 'Edit User' : 'New User'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1"><X size={18} /></button>
+    <AnimatedModal
+      onClose={onClose}
+      maxWidth="md"
+      header={
+        <div className="flex items-center justify-between px-6 py-4">
+          <h2 className="font-semibold text-slate-900 dark:text-slate-100">{isEdit ? 'Edit User' : 'New User'}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"><X size={18} /></button>
         </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="label">Full Name *</label>
-            <input className="input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Jane Smith" />
-          </div>
-          <div>
-            <label className="label">Email *</label>
-            <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="jane@aimdentallab.com" />
-          </div>
-          <div>
-            <label className="label">{isEdit ? 'New Password' : 'Password *'} <span className="text-gray-400 font-normal">{isEdit ? '(leave blank to keep current)' : ''}</span></label>
-            <input className="input" type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder="Min 8 characters" />
-          </div>
-          <div>
-            <label className="label">Role</label>
-            <div className="flex flex-col gap-2">
-              {ROLES.map(r => {
-                const Icon = ROLE_ICONS[r]
-                return (
-                  <label key={r} className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
-                    form.role === r ? 'border-[#06babe] bg-[#06babe]/5' : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                    <input type="radio" name="role" value={r} checked={form.role === r} onChange={() => set('role', r)} className="hidden" />
-                    <Icon size={15} className={form.role === r ? 'text-[#06babe]' : 'text-gray-400'} />
-                    <div>
-                      <p className={`text-sm font-medium ${form.role === r ? 'text-[#06babe]' : 'text-gray-700'}`}>{ROLE_LABELS[r]}</p>
-                      <p className="text-xs text-gray-400">{ROLE_DESCRIPTIONS[r]}</p>
-                    </div>
-                  </label>
-                )
-              })}
-            </div>
-          </div>
-          {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-        </div>
-        <div className="flex gap-3 px-6 pb-5">
+      }
+      footer={
+        <div className="flex gap-3 px-6 py-4">
           <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
           <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
             {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create User'}
           </button>
         </div>
+      }
+    >
+      <div className="p-6 space-y-4">
+        <div>
+          <label className="label">Full Name *</label>
+          <input className="input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="Jane Smith" />
+        </div>
+        <div>
+          <label className="label">Email *</label>
+          <input className="input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="jane@aimdentallab.com" />
+        </div>
+        <div>
+          <label className="label">{isEdit ? 'New Password' : 'Password *'} <span className="text-slate-400 font-normal">{isEdit ? '(leave blank to keep current)' : ''}</span></label>
+          <input className="input" type="password" value={form.password} onChange={e => set('password', e.target.value)} placeholder="Min 8 characters" />
+        </div>
+        <div>
+          <label className="label">Role</label>
+          <div className="flex flex-col gap-2">
+            {ROLES.map(r => {
+              const Icon = ROLE_ICONS[r]
+              return (
+                <label key={r} className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+                  form.role === r ? 'border-[#06babe] bg-[#06babe]/5' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                }`}>
+                  <input type="radio" name="role" value={r} checked={form.role === r} onChange={() => set('role', r)} className="hidden" />
+                  <Icon size={15} className={form.role === r ? 'text-[#06babe]' : 'text-slate-400'} />
+                  <div>
+                    <p className={`text-sm font-medium ${form.role === r ? 'text-[#06babe]' : 'text-slate-700 dark:text-slate-300'}`}>{ROLE_LABELS[r]}</p>
+                    <p className="text-xs text-slate-400">{ROLE_DESCRIPTIONS[r]}</p>
+                  </div>
+                </label>
+              )
+            })}
+          </div>
+        </div>
+        {error && <p className="text-sm text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg">{error}</p>}
+      </div>
+    </AnimatedModal>
+  )
+}
+
+function UserCard({ u, isSelf, formatDate, onEdit, onDelete }) {
+  return (
+    <div className={`card p-4 flex items-center gap-3 ${isSelf ? 'ring-1 ring-[#06babe]/30' : ''}`}>
+      {u.avatar ? (
+        <img src={u.avatar} alt={u.name} className="w-10 h-10 rounded-full object-cover ring-2 ring-[#06babe]/20 flex-shrink-0" />
+      ) : (
+        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}>
+          {(u.name || u.email)[0].toUpperCase()}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-medium text-slate-900 dark:text-slate-100 truncate">{u.name || '—'}</p>
+          {isSelf && <span className="text-[10px] font-semibold text-[#06babe]">You</span>}
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.email}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ${ROLE_BADGE_CLASS[u.role] || ROLE_BADGE_CLASS.staff}`}>
+            {(() => { const Icon = ROLE_ICONS[u.role] || User; return <Icon size={9} /> })()}
+            {roleLabel(u.role)}
+          </span>
+          <span className="text-[10px] text-slate-400">{formatDate(u.created_at)}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <button onClick={() => onEdit(u)} className="tap flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Edit">
+          <Pencil size={16} />
+        </button>
+        <button
+          onClick={() => onDelete(u.id, u.name || u.email)}
+          disabled={isSelf}
+          className="tap flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          title={isSelf ? "Can't delete yourself" : 'Delete user'}
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
     </div>
   )
@@ -196,89 +243,106 @@ export default function UsersPage() {
   const formatDate = (ts) => ts ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="px-4 py-5 sm:p-6 max-w-4xl mx-auto">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5 sm:mb-6">
         <div>
           <h1 className="page-title">Users</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{users.length} team member{users.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{users.length} team member{users.length !== 1 ? 's' : ''}</p>
         </div>
-        <button data-tour="users-new" onClick={() => setModal('new')} className="btn-primary flex items-center gap-2">
+        <button data-tour="users-new" onClick={() => setModal('new')} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
           <Plus size={16} /> New User
         </button>
       </div>
 
-      <div data-tour="users-table" className="card overflow-hidden">
-        {loading ? (
-          <div className="text-center py-16 text-gray-400 text-sm">Loading users...</div>
-        ) : users.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-400 text-sm mb-3">No users found</p>
-            <button onClick={() => setModal('new')} className="btn-primary">Add first user</button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/60">
-                {['Name', 'Email', 'Role', 'Created', ''].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {users.map(u => {
-                const isSelf = u.id === currentUser?.id
-                return (
-                  <tr key={u.id} className={`hover:bg-gray-50/60 transition-colors ${isSelf ? 'bg-[#06babe]/5' : ''}`}>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2.5">
-                        {u.avatar ? (
-                          <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover ring-2 ring-[#06babe]/20 flex-shrink-0" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}>
-                            {(u.name || u.email)[0].toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-medium text-gray-900">{u.name || '—'}</p>
-                          {isSelf && <p className="text-xs text-[#06babe]">You</p>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-gray-600">{u.email}</td>
-                    <td className="px-5 py-3">
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${ROLE_BADGE_CLASS[u.role] || ROLE_BADGE_CLASS.staff}`}>
-                        {(() => { const Icon = ROLE_ICONS[u.role] || User; return <Icon size={10} /> })()}
-                        {roleLabel(u.role)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-gray-400 text-xs">{formatDate(u.created_at)}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2 justify-end">
-                        <button onClick={() => setModal(u)} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(u.id, u.name || u.email)}
-                          disabled={isSelf}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          title={isSelf ? "Can't delete yourself" : 'Delete user'}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
+      {loading ? (
+        <div className="card overflow-hidden text-center py-16 text-slate-400 text-sm">Loading users...</div>
+      ) : users.length === 0 ? (
+        <div className="card overflow-hidden text-center py-16">
+          <p className="text-slate-400 text-sm mb-3">No users found</p>
+          <button onClick={() => setModal('new')} className="btn-primary">Add first user</button>
+        </div>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div data-tour="users-table" className="hidden md:block card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/60">
+                    {['Name', 'Email', 'Role', 'Created', ''].map(h => (
+                      <th key={h} className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
+                    ))}
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {users.map(u => {
+                    const isSelf = u.id === currentUser?.id
+                    return (
+                      <tr key={u.id} className={`hover:bg-gray-50/60 transition-colors ${isSelf ? 'bg-[#06babe]/5' : ''}`}>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2.5">
+                            {u.avatar ? (
+                              <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover ring-2 ring-[#06babe]/20 flex-shrink-0" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0" style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}>
+                                {(u.name || u.email)[0].toUpperCase()}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-gray-900">{u.name || '—'}</p>
+                              {isSelf && <p className="text-xs text-[#06babe]">You</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-gray-600">{u.email}</td>
+                        <td className="px-5 py-3">
+                          <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${ROLE_BADGE_CLASS[u.role] || ROLE_BADGE_CLASS.staff}`}>
+                            {(() => { const Icon = ROLE_ICONS[u.role] || User; return <Icon size={10} /> })()}
+                            {roleLabel(u.role)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-gray-400 text-xs">{formatDate(u.created_at)}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2 justify-end">
+                            <button onClick={() => setModal(u)} className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(u.id, u.name || u.email)}
+                              disabled={isSelf}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              title={isSelf ? "Can't delete yourself" : 'Delete user'}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-      </div>
 
-      <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-        <p className="text-xs text-amber-700 leading-relaxed">
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-2.5">
+            {users.map(u => (
+              <UserCard
+                key={u.id}
+                u={u}
+                isSelf={u.id === currentUser?.id}
+                formatDate={formatDate}
+                onEdit={setModal}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl">
+        <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
           <span className="font-semibold">Sales Rep</span> and <span className="font-semibold">Staff</span> both access Leads, Clients, Cases, and Pipeline, scoped to their own records — only Sales Reps get notified (cold leads, win streaks, etc.) about the leads they're handling.{' '}
           <span className="font-semibold">Admins</span> see everything, plus Reports, Automations, and this Users page.
         </p>

@@ -11,6 +11,7 @@ import { Send, X, Mail, FileDown, TrendingUp, Users, DollarSign, ArrowUpRight } 
 import { SkeletonTable } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { normalizeSource } from '../lib/leadSource'
+import AnimatedModal from '../components/AnimatedModal'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December']
@@ -147,37 +148,56 @@ function OverviewTab({ leads, clients }) {
       </div>
 
       <div className="card overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900">Top 5 Clients by Revenue</h3>
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Top 5 Clients by Revenue</h3>
         </div>
         {top5.length === 0 ? (
           <p className="text-center py-10 text-sm text-gray-400">No clients yet</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><TH cols={['#', 'Client', 'Brand', 'Revenue', 'Cases']} /></thead>
-              <tbody className="divide-y divide-gray-50">
-                {top5.map((c, i) => (
-                  <tr key={c.id} className="hover:bg-gray-50/60">
-                    <td className="px-5 py-3 text-xs font-medium text-gray-400">{i + 1}</td>
-                    <td className="px-5 py-3">
-                      <p className="font-medium text-gray-900">{c.doctor_name}</p>
-                      {c.clinic_name && <p className="text-xs text-gray-400">{c.clinic_name}</p>}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={c.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
-                        {c.brand === 'Aim Dental' ? 'Aim' : 'KH'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 font-semibold text-gray-900">
-                      ${Number(c.total_revenue || 0).toLocaleString()}
-                    </td>
-                    <td className="px-5 py-3 text-gray-500">{c.case_count || 0}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><TH cols={['#', 'Client', 'Brand', 'Revenue', 'Cases']} /></thead>
+                <tbody className="divide-y divide-gray-50">
+                  {top5.map((c, i) => (
+                    <tr key={c.id} className="hover:bg-gray-50/60">
+                      <td className="px-5 py-3 text-xs font-medium text-gray-400">{i + 1}</td>
+                      <td className="px-5 py-3">
+                        <p className="font-medium text-gray-900">{c.doctor_name}</p>
+                        {c.clinic_name && <p className="text-xs text-gray-400">{c.clinic_name}</p>}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={c.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
+                          {c.brand === 'Aim Dental' ? 'Aim' : 'KH'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 font-semibold text-gray-900">
+                        ${Number(c.total_revenue || 0).toLocaleString()}
+                      </td>
+                      <td className="px-5 py-3 text-gray-500">{c.case_count || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+              {top5.map((c, i) => (
+                <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+                  <span className="text-xs font-medium text-gray-400 flex-shrink-0 w-4">{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900 dark:text-slate-100 text-sm truncate">{c.doctor_name}</p>
+                    <p className="text-xs text-gray-400 truncate">{c.clinic_name || '—'} · {c.case_count || 0} cases</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-semibold text-gray-900 dark:text-slate-100 text-sm">${Number(c.total_revenue || 0).toLocaleString()}</p>
+                    <span className={c.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
+                      {c.brand === 'Aim Dental' ? 'Aim' : 'KH'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -405,29 +425,49 @@ function TrendsTab({ leads }) {
         {tableRows.length === 0 ? (
           <EmptyState icon={TrendingUp} title="No data available" size="sm" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead><TH cols={['Month', 'Leads', 'Won', 'Lost', 'Est. Revenue', 'Conv. Rate']} /></thead>
-              <tbody>
-                {tableRows.map((r, i) => (
-                  <tr key={i} className="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="px-5 py-3 font-semibold text-slate-900 dark:text-slate-100">{r.label}</td>
-                    <td className="px-5 py-3 text-slate-600 dark:text-slate-400">{r.leads}</td>
-                    <td className="px-5 py-3 font-semibold text-emerald-600">{r.won}</td>
-                    <td className="px-5 py-3 text-red-500">{r.lost}</td>
-                    <td className="px-5 py-3 font-semibold text-slate-700 dark:text-slate-300">
-                      {r.revenue > 0 ? `$${r.revenue.toLocaleString()}` : '—'}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={`font-bold text-xs ${r.pct >= 50 ? 'text-emerald-600' : r.pct > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
-                        {r.leads > 0 ? `${r.pct.toFixed(0)}%` : '—'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="data-table">
+                <thead><TH cols={['Month', 'Leads', 'Won', 'Lost', 'Est. Revenue', 'Conv. Rate']} /></thead>
+                <tbody>
+                  {tableRows.map((r, i) => (
+                    <tr key={i} className="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="px-5 py-3 font-semibold text-slate-900 dark:text-slate-100">{r.label}</td>
+                      <td className="px-5 py-3 text-slate-600 dark:text-slate-400">{r.leads}</td>
+                      <td className="px-5 py-3 font-semibold text-emerald-600">{r.won}</td>
+                      <td className="px-5 py-3 text-red-500">{r.lost}</td>
+                      <td className="px-5 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                        {r.revenue > 0 ? `$${r.revenue.toLocaleString()}` : '—'}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`font-bold text-xs ${r.pct >= 50 ? 'text-emerald-600' : r.pct > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                          {r.leads > 0 ? `${r.pct.toFixed(0)}%` : '—'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden divide-y divide-slate-50 dark:divide-slate-800">
+              {tableRows.map((r, i) => (
+                <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{r.label}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {r.leads} leads · <span className="text-emerald-600 font-medium">{r.won} won</span> · <span className="text-red-500">{r.lost} lost</span>
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{r.revenue > 0 ? `$${r.revenue.toLocaleString()}` : '—'}</p>
+                    <span className={`font-bold text-xs ${r.pct >= 50 ? 'text-emerald-600' : r.pct > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                      {r.leads > 0 ? `${r.pct.toFixed(0)}% conv.` : '—'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -488,30 +528,50 @@ function SourcesTab({ leads }) {
         {rows.length === 0 ? (
           <p className="text-center py-10 text-sm text-gray-400">No data available</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <TH cols={['Source', 'Total Leads', 'Won', 'Lost', 'Active', 'Conv. Rate', 'Share']} />
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {rows.map(r => (
-                  <tr key={r.src} className="hover:bg-gray-50/60">
-                    <td className="px-5 py-3 font-medium text-gray-900">{r.src}</td>
-                    <td className="px-5 py-3 text-gray-600">{r.total}</td>
-                    <td className="px-5 py-3 font-medium text-green-600">{r.won}</td>
-                    <td className="px-5 py-3 text-red-500">{r.lost}</td>
-                    <td className="px-5 py-3 text-gray-500">{r.total - r.won - r.lost}</td>
-                    <td className="px-5 py-3">
-                      <span className={`font-semibold ${r.conv >= 50 ? 'text-green-600' : r.conv > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
-                        {r.total > 0 ? `${r.conv.toFixed(0)}%` : '—'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-gray-400 text-xs">{r.pct.toFixed(0)}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <TH cols={['Source', 'Total Leads', 'Won', 'Lost', 'Active', 'Conv. Rate', 'Share']} />
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {rows.map(r => (
+                    <tr key={r.src} className="hover:bg-gray-50/60">
+                      <td className="px-5 py-3 font-medium text-gray-900">{r.src}</td>
+                      <td className="px-5 py-3 text-gray-600">{r.total}</td>
+                      <td className="px-5 py-3 font-medium text-green-600">{r.won}</td>
+                      <td className="px-5 py-3 text-red-500">{r.lost}</td>
+                      <td className="px-5 py-3 text-gray-500">{r.total - r.won - r.lost}</td>
+                      <td className="px-5 py-3">
+                        <span className={`font-semibold ${r.conv >= 50 ? 'text-green-600' : r.conv > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                          {r.total > 0 ? `${r.conv.toFixed(0)}%` : '—'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-gray-400 text-xs">{r.pct.toFixed(0)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+              {rows.map(r => (
+                <div key={r.src} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-slate-100 text-sm">{r.src}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      {r.total} leads · <span className="text-green-600 font-medium">{r.won} won</span> · <span className="text-red-500">{r.lost} lost</span>
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className={`font-semibold text-sm ${r.conv >= 50 ? 'text-green-600' : r.conv > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                      {r.total > 0 ? `${r.conv.toFixed(0)}%` : '—'}
+                    </span>
+                    <p className="text-gray-400 text-xs">{r.pct.toFixed(0)}% share</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -554,104 +614,165 @@ function PerformersTab({ leads, clients }) {
   return (
     <div className="space-y-5">
       <div className="card overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900">Top 10 Clients by Revenue</h3>
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Top 10 Clients by Revenue</h3>
         </div>
         {top10.length === 0 ? (
           <p className="text-center py-10 text-sm text-gray-400">No clients yet</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><TH cols={['#', 'Client', 'Brand', 'Revenue', 'Cases']} /></thead>
-              <tbody className="divide-y divide-gray-50">
-                {top10.map((c, i) => (
-                  <tr key={c.id} className="hover:bg-gray-50/60">
-                    <td className="px-5 py-3 text-xs font-medium text-gray-400">{i + 1}</td>
-                    <td className="px-5 py-3">
-                      <p className="font-medium text-gray-900">{c.doctor_name}</p>
-                      {c.clinic_name && <p className="text-xs text-gray-400">{c.clinic_name}</p>}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={c.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
-                        {c.brand === 'Aim Dental' ? 'Aim' : 'KH'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 font-semibold text-gray-900">
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><TH cols={['#', 'Client', 'Brand', 'Revenue', 'Cases']} /></thead>
+                <tbody className="divide-y divide-gray-50">
+                  {top10.map((c, i) => (
+                    <tr key={c.id} className="hover:bg-gray-50/60">
+                      <td className="px-5 py-3 text-xs font-medium text-gray-400">{i + 1}</td>
+                      <td className="px-5 py-3">
+                        <p className="font-medium text-gray-900">{c.doctor_name}</p>
+                        {c.clinic_name && <p className="text-xs text-gray-400">{c.clinic_name}</p>}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={c.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
+                          {c.brand === 'Aim Dental' ? 'Aim' : 'KH'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 font-semibold text-gray-900">
+                        ${Number(c.total_revenue || 0).toLocaleString()}
+                      </td>
+                      <td className="px-5 py-3 text-gray-500">{c.case_count || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+              {top10.map((c, i) => (
+                <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+                  <span className="text-xs font-medium text-gray-400 w-4 flex-shrink-0">{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900 dark:text-slate-100 text-sm truncate">{c.doctor_name}</p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500 truncate">
+                      {c.clinic_name || '—'} · {c.case_count || 0} cases
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-semibold text-gray-900 dark:text-slate-100 text-sm">
                       ${Number(c.total_revenue || 0).toLocaleString()}
-                    </td>
-                    <td className="px-5 py-3 text-gray-500">{c.case_count || 0}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </p>
+                    <span className={c.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
+                      {c.brand === 'Aim Dental' ? 'Aim' : 'KH'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-5">
         <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">Top Case Types</h3>
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Top Case Types</h3>
             <p className="text-xs text-gray-400 mt-0.5">By lead volume and estimated value</p>
           </div>
           {caseRows.length === 0 ? (
             <p className="text-center py-8 text-sm text-gray-400">No data</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><TH cols={['Case Type', 'Leads', 'Won', 'Value', 'Conv.']} /></thead>
-                <tbody className="divide-y divide-gray-50">
-                  {caseRows.map(r => (
-                    <tr key={r.type} className="hover:bg-gray-50/60">
-                      <td className="px-5 py-3 font-medium text-gray-900">{r.type}</td>
-                      <td className="px-5 py-3 text-gray-600">{r.count}</td>
-                      <td className="px-5 py-3 font-medium text-green-600">{r.wonCount}</td>
-                      <td className="px-5 py-3 font-medium text-gray-700">
-                        {r.value > 0 ? `$${r.value.toLocaleString()}` : '—'}
-                      </td>
-                      <td className="px-5 py-3">
-                        <span className={`font-semibold text-xs ${r.conv >= 50 ? 'text-green-600' : r.conv > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
-                          {r.count > 0 ? `${r.conv.toFixed(0)}%` : '—'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><TH cols={['Case Type', 'Leads', 'Won', 'Value', 'Conv.']} /></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {caseRows.map(r => (
+                      <tr key={r.type} className="hover:bg-gray-50/60">
+                        <td className="px-5 py-3 font-medium text-gray-900">{r.type}</td>
+                        <td className="px-5 py-3 text-gray-600">{r.count}</td>
+                        <td className="px-5 py-3 font-medium text-green-600">{r.wonCount}</td>
+                        <td className="px-5 py-3 font-medium text-gray-700">
+                          {r.value > 0 ? `$${r.value.toLocaleString()}` : '—'}
+                        </td>
+                        <td className="px-5 py-3">
+                          <span className={`font-semibold text-xs ${r.conv >= 50 ? 'text-green-600' : r.conv > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                            {r.count > 0 ? `${r.conv.toFixed(0)}%` : '—'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+                {caseRows.map(r => (
+                  <div key={r.type} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100 text-sm">{r.type}</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
+                        {r.count} leads · <span className="text-green-600 font-medium">{r.wonCount} won</span>
+                        {r.value > 0 && ` · $${r.value.toLocaleString()}`}
+                      </p>
+                    </div>
+                    <span className={`font-semibold text-xs flex-shrink-0 ${r.conv >= 50 ? 'text-green-600' : r.conv > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                      {r.count > 0 ? `${r.conv.toFixed(0)}%` : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
         <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">Best Sources by Conversion</h3>
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Best Sources by Conversion</h3>
             <p className="text-xs text-gray-400 mt-0.5">Minimum 2 leads per source</p>
           </div>
           {srcRows.length === 0 ? (
             <p className="text-center py-8 text-sm text-gray-400">Not enough data yet</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><TH cols={['Source', 'Leads', 'Won', 'Conv. Rate']} /></thead>
-                <tbody className="divide-y divide-gray-50">
-                  {srcRows.map((r, i) => (
-                    <tr key={r.src} className="hover:bg-gray-50/60">
-                      <td className="px-5 py-3 font-medium text-gray-900">
+            <>
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><TH cols={['Source', 'Leads', 'Won', 'Conv. Rate']} /></thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {srcRows.map((r, i) => (
+                      <tr key={r.src} className="hover:bg-gray-50/60">
+                        <td className="px-5 py-3 font-medium text-gray-900">
+                          {i === 0 && <span className="mr-1.5">🏆</span>}
+                          {r.src}
+                        </td>
+                        <td className="px-5 py-3 text-gray-600">{r.total}</td>
+                        <td className="px-5 py-3 font-medium text-green-600">{r.won}</td>
+                        <td className="px-5 py-3">
+                          <span className={`font-bold ${r.conv >= 50 ? 'text-green-600' : r.conv > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                            {r.conv.toFixed(0)}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+                {srcRows.map((r, i) => (
+                  <div key={r.src} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-slate-100 text-sm">
                         {i === 0 && <span className="mr-1.5">🏆</span>}
                         {r.src}
-                      </td>
-                      <td className="px-5 py-3 text-gray-600">{r.total}</td>
-                      <td className="px-5 py-3 font-medium text-green-600">{r.won}</td>
-                      <td className="px-5 py-3">
-                        <span className={`font-bold ${r.conv >= 50 ? 'text-green-600' : r.conv > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
-                          {r.conv.toFixed(0)}%
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
+                        {r.total} leads · <span className="text-green-600 font-medium">{r.won} won</span>
+                      </p>
+                    </div>
+                    <span className={`font-bold text-sm flex-shrink-0 ${r.conv >= 50 ? 'text-green-600' : r.conv > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                      {r.conv.toFixed(0)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -685,17 +806,17 @@ function OperationsTab() {
         ].map(k => (
           <div key={k.label} className="card p-4">
             <p className="label">{k.label}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{k.val}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-slate-100 mt-1">{k.val}</p>
           </div>
         ))}
       </div>
 
       <div className="grid md:grid-cols-2 gap-5">
         <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">Technician Performance</h3>
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Technician Performance</h3>
           </div>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="bg-gray-50/60 border-b border-gray-100">
                 {['Technician','Cases','Completed','Value'].map(h => (
@@ -714,13 +835,26 @@ function OperationsTab() {
               </tbody>
             </table>
           </div>
+          <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+            {technicians.map(t => (
+              <div key={t.technician} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-slate-100 text-sm">{t.technician}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    {t.total} cases · <span className="text-green-600 font-medium">{t.completed} completed</span>
+                  </p>
+                </div>
+                <p className="font-medium text-gray-700 dark:text-slate-300 text-sm flex-shrink-0">${Number(t.value).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">Case Types</h3>
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Case Types</h3>
           </div>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr className="bg-gray-50/60 border-b border-gray-100">
                 {['Type','Total','Completed','Avg Value'].map(h => (
@@ -739,14 +873,27 @@ function OperationsTab() {
               </tbody>
             </table>
           </div>
+          <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+            {case_types.map(c => (
+              <div key={c.case_type} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-slate-100 text-sm">{c.case_type}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    {c.total} total · <span className="text-green-600">{c.completed} completed</span>
+                  </p>
+                </div>
+                <p className="text-gray-700 dark:text-slate-300 text-sm flex-shrink-0">${Math.round(c.avg_value).toLocaleString()}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="card overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900">Pipeline by Stage</h3>
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Pipeline by Stage</h3>
         </div>
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="bg-gray-50/60 border-b border-gray-100">
               {['Stage','Cases','Value'].map(h => (
@@ -763,6 +910,17 @@ function OperationsTab() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+          {by_stage.map(s => (
+            <div key={s.status} className="flex items-center justify-between gap-3 px-4 py-3">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-slate-100 text-sm">{s.status}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">{s.count} cases</p>
+              </div>
+              <p className="font-medium text-gray-700 dark:text-slate-300 text-sm flex-shrink-0">{s.value > 0 ? `$${Number(s.value).toLocaleString()}` : '—'}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -785,32 +943,47 @@ function ImportHistoryTab() {
 
   return (
     <div className="card overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-900">CSV Import History</h3>
+      <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">CSV Import History</h3>
       </div>
       {rows.length === 0 ? (
         <p className="text-center py-10 text-sm text-gray-400">No imports yet</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="bg-gray-50/60 border-b border-gray-100">
-              {['File', 'Added', 'Skipped', 'Imported By', 'Date'].map(h => (
-                <th key={h} className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
-              ))}
-            </tr></thead>
-            <tbody className="divide-y divide-gray-50">
-              {rows.map(r => (
-                <tr key={r.id} className="hover:bg-gray-50/60">
-                  <td className="px-5 py-3 font-mono text-xs text-gray-700">{r.filename}</td>
-                  <td className="px-5 py-3 text-green-600 font-semibold">{r.added}</td>
-                  <td className="px-5 py-3 text-gray-400">{r.skipped}</td>
-                  <td className="px-5 py-3 text-gray-600">{r.imported_by_name || '—'}</td>
-                  <td className="px-5 py-3 text-gray-400 text-xs">{fmt(r.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-gray-50/60 border-b border-gray-100">
+                {['File', 'Added', 'Skipped', 'Imported By', 'Date'].map(h => (
+                  <th key={h} className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr></thead>
+              <tbody className="divide-y divide-gray-50">
+                {rows.map(r => (
+                  <tr key={r.id} className="hover:bg-gray-50/60">
+                    <td className="px-5 py-3 font-mono text-xs text-gray-700">{r.filename}</td>
+                    <td className="px-5 py-3 text-green-600 font-semibold">{r.added}</td>
+                    <td className="px-5 py-3 text-gray-400">{r.skipped}</td>
+                    <td className="px-5 py-3 text-gray-600">{r.imported_by_name || '—'}</td>
+                    <td className="px-5 py-3 text-gray-400 text-xs">{fmt(r.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+            {rows.map(r => (
+              <div key={r.id} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-mono text-xs text-gray-700 dark:text-slate-300 truncate">{r.filename}</p>
+                  <p className="text-gray-400 dark:text-slate-500 text-xs flex-shrink-0">{fmt(r.created_at)}</p>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                  <span className="text-green-600 font-semibold">{r.added} added</span> · {r.skipped} skipped · {r.imported_by_name || '—'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
@@ -860,9 +1033,9 @@ function ScheduleTab() {
 
   return (
     <div className="space-y-5">
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">New Scheduled Report</h3>
-        <div className="grid grid-cols-2 gap-3">
+      <div className="card p-4 sm:p-5">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-4">New Scheduled Report</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="label">Schedule Name</label>
             <input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Weekly Team Report" />
@@ -875,12 +1048,12 @@ function ScheduleTab() {
               <option value="monthly">Monthly (1st at 8:00 AM)</option>
             </select>
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <label className="label">Recipients <span className="text-gray-400 font-normal">(comma-separated emails)</span></label>
             <input className="input" value={form.recipients} onChange={e => setForm(f => ({ ...f, recipients: e.target.value }))} placeholder="admin@aimdentallab.com, manager@clinic.com" />
           </div>
         </div>
-        <button onClick={handleAdd} disabled={saving} className="btn-primary mt-3 disabled:opacity-50">
+        <button onClick={handleAdd} disabled={saving} className="btn-primary mt-3 w-full sm:w-auto disabled:opacity-50">
           {saving ? 'Saving...' : 'Create Schedule'}
         </button>
       </div>
@@ -894,15 +1067,15 @@ function ScheduleTab() {
           {schedules.map(s => (
             <div key={s.id} className="card p-4 flex items-center justify-between gap-4 flex-wrap">
               <div className="min-w-0">
-                <p className="font-medium text-gray-900 text-sm">{s.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5 capitalize">{s.frequency} · {s.recipients?.join(', ')}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Last sent: {fmtDate(s.last_sent_at)}</p>
+                <p className="font-medium text-gray-900 dark:text-slate-100 text-sm">{s.name}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 capitalize">{s.frequency} · {s.recipients?.join(', ')}</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Last sent: {fmtDate(s.last_sent_at)}</p>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <button
                   role="switch" aria-checked={s.enabled}
                   onClick={() => toggleSchedule(s)}
-                  className={`relative inline-flex h-5 w-9 rounded-full transition-colors duration-200 ${s.enabled ? 'bg-[#06babe]' : 'bg-gray-200'}`}
+                  className={`tap relative inline-flex h-5 w-9 rounded-full transition-colors duration-200 ${s.enabled ? 'bg-[#06babe]' : 'bg-gray-200 dark:bg-slate-700'}`}
                 >
                   <span className={`inline-block h-4 w-4 mt-0.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${s.enabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
                 </button>
@@ -993,32 +1166,32 @@ function MyReportTab() {
   return (
     <div className="space-y-6">
       {/* Header + actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-gray-900">{rep?.name}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{rep?.email}</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{rep?.name}</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{rep?.email}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <motion.button
             whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             onClick={handleDownloadCSV}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 shadow-sm"
           >
-            <FileDown size={14} /> Download CSV
+            <FileDown size={14} /> <span className="hidden sm:inline">Download</span> CSV
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             onClick={handleDownloadPDF}
             disabled={exportingPDF}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm disabled:opacity-50"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 shadow-sm disabled:opacity-50"
           >
-            <FileDown size={14} /> {exportingPDF ? 'Generating...' : 'Download PDF'}
+            <FileDown size={14} /> {exportingPDF ? 'Generating...' : <><span className="hidden sm:inline">Download</span> PDF</>}
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             onClick={handleEmailReport}
             disabled={sending}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-sm disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #06babe, #207290)' }}
           >
             {sending
@@ -1030,7 +1203,7 @@ function MyReportTab() {
 
       {/* This week */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">This Week</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">This Week</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Leads Created"  value={week.leads_created} />
           <StatCard label="Contacted"       value={week.contacted} />
@@ -1041,7 +1214,7 @@ function MyReportTab() {
 
       {/* This month */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
           This Month — {new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })}
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1058,7 +1231,7 @@ function MyReportTab() {
 
       {/* All-time */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">All-Time</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">All-Time</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Active Leads"  value={allTime.active_leads} />
           <StatCard label="Total Leads"   value={allTime.total_leads} />
@@ -1070,10 +1243,10 @@ function MyReportTab() {
       {/* Recent leads */}
       {data.recent_leads?.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">Recent Leads</h3>
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-slate-800">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Recent Leads</h3>
           </div>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead><TH cols={['Doctor', 'Clinic', 'Status', 'Value', 'Created']} /></thead>
               <tbody className="divide-y divide-gray-50">
@@ -1094,6 +1267,26 @@ function MyReportTab() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="md:hidden divide-y divide-gray-50 dark:divide-slate-800">
+            {data.recent_leads.map((l, i) => (
+              <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-900 dark:text-slate-100 text-sm truncate">{l.doctor_name}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                    {l.clinic_name || '—'} · {new Date(l.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    l.status === 'Won' ? 'bg-green-100 text-green-700'
+                    : l.status === 'Lost' ? 'bg-red-100 text-red-600'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300'
+                  }`}>{l.status}</span>
+                  <p className="text-gray-700 dark:text-slate-300 text-xs mt-1">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -1122,69 +1315,59 @@ function SendReportModal({ onClose }) {
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      >
-        <motion.div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
-        <motion.div
-          className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-          initial={{ opacity: 0, y: 32, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 16, scale: 0.97 }}
-          transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-        >
-          {/* Gradient header */}
-          <div className="bg-gradient-to-r from-[#06babe] to-[#207290] px-6 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Mail size={18} className="text-white" />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-white">Send Summary Report</h2>
-                  <p className="text-xs text-white/70 mt-0.5">Full CRM snapshot delivered to any inbox</p>
-                </div>
+    <AnimatedModal
+      onClose={onClose}
+      maxWidth="md"
+      header={
+        <div className="bg-gradient-to-r from-[#06babe] to-[#207290] px-6 py-5 rounded-t-2xl sm:rounded-t-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                <Mail size={18} className="text-white" />
               </div>
-              <button onClick={onClose} className="text-white/60 hover:text-white p-1"><X size={18} /></button>
+              <div className="min-w-0">
+                <h2 className="font-semibold text-white">Send Summary Report</h2>
+                <p className="text-xs text-white/70 mt-0.5">Full CRM snapshot delivered to any inbox</p>
+              </div>
             </div>
+            <button onClick={onClose} className="text-white/60 hover:text-white p-1 flex-shrink-0"><X size={18} /></button>
           </div>
-
-          <div className="p-6">
-            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-              The report includes KPIs, YTD performance, revenue by brand, top 5 clients, cold leads, and overdue cases.
-            </p>
-            <label className="label">Recipient Email</label>
-            <input
-              className="input mb-1"
-              type="email"
-              placeholder="team@aimdentallab.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSend()}
-              autoFocus
-            />
-            <p className="text-xs text-gray-400 mt-1.5">You can send to any email — team members, management, or yourself.</p>
-          </div>
-
-          <div className="flex gap-3 px-6 pb-6">
-            <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
-            <button
-              onClick={handleSend}
-              disabled={sending || !email}
-              className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {sending ? (
-                <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending...</>
-              ) : (
-                <><Send size={14} /> Send Report</>
-              )}
-            </button>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        </div>
+      }
+      footer={
+        <div className="flex gap-3 px-6 py-4">
+          <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+          <button
+            onClick={handleSend}
+            disabled={sending || !email}
+            className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {sending ? (
+              <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending...</>
+            ) : (
+              <><Send size={14} /> Send Report</>
+            )}
+          </button>
+        </div>
+      }
+    >
+      <div className="p-5 sm:p-6">
+        <p className="text-sm text-gray-500 dark:text-slate-400 mb-4 leading-relaxed">
+          The report includes KPIs, YTD performance, revenue by brand, top 5 clients, cold leads, and overdue cases.
+        </p>
+        <label className="label">Recipient Email</label>
+        <input
+          className="input mb-1"
+          type="email"
+          placeholder="team@aimdentallab.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSend()}
+          autoFocus
+        />
+        <p className="text-xs text-gray-400 mt-1.5">You can send to any email — team members, management, or yourself.</p>
+      </div>
+    </AnimatedModal>
   )
 }
 
@@ -1251,15 +1434,15 @@ export default function Reports() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+    <div className="px-4 py-5 sm:p-6 max-w-6xl mx-auto">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4 mb-6">
         <div>
           <h1 className="page-title">Reports</h1>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
             {activeRep ? `Viewing: ${activeRep.name || activeRep.email}` : 'Analytics and performance insights'}
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {isAdmin && tab !== 'my-report' && (
             <>
               <motion.button
