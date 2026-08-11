@@ -8,7 +8,7 @@ import {
   Users, UserCheck, DollarSign, TrendingDown, AlertTriangle, RefreshCw,
   Globe, Linkedin, Facebook, Instagram, Twitter, Mail, CheckCircle, Archive,
   ClipboardList, Trophy, FileText, Target, ArrowUpRight,
-  ArrowDownRight, Minus, GraduationCap,
+  ArrowDownRight, Minus, GraduationCap, Flame,
 } from 'lucide-react'
 import { SkeletonCard, SkeletonKpiCards } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
@@ -172,8 +172,10 @@ function RepDashboard({ user }) {
   const motivational = MOTIVATIONAL[new Date().getDay()]
   const monthLabel = new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
 
+  const w = summary?.week || {}
   const m = summary?.month || {}
   const kpiCards = summary ? [
+    { label: 'New Leads — This Week', value: w.leads_created || 0,        icon: Flame,        color: 'text-orange-600', bg: 'bg-orange-50', trend: (w.leads_created || 0) > 0 ? 'up' : 'flat' },
     { label: 'Active Leads',    value: summary.allTime?.active_leads ?? 0, icon: Users,        color: 'text-[#06babe]', bg: 'bg-teal-50', trend: 'flat' },
     { label: `Wins — ${monthLabel}`, value: m.wins || 0,                  icon: Trophy,       color: 'text-emerald-600', bg: 'bg-emerald-50', trend: (m.wins || 0) > 0 ? 'up' : 'flat' },
     { label: 'Proposals',       value: m.proposals || 0,                  icon: FileText,     color: 'text-blue-600', bg: 'bg-blue-50', trend: 'flat' },
@@ -222,7 +224,7 @@ function RepDashboard({ user }) {
       {loading ? (
         <SkeletonKpiCards count={4} />
       ) : (
-        <div data-tour="dashboard-kpi-cards" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div data-tour="dashboard-kpi-cards" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {kpiCards.map((card, i) => (
             <KpiCard key={card.label} {...card} delay={i * 0.08} />
           ))}

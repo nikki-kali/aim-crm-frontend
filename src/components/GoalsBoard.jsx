@@ -7,6 +7,7 @@ import { Target, Plus, X, User } from 'lucide-react'
 import EmptyState from './EmptyState'
 
 const METRIC_OPTIONS = [
+  { value: 'leads_created', label: 'Leads Added' },
   { value: 'leads_won', label: 'Leads Won' },
   { value: 'leads_contacted', label: 'Leads Contacted' },
   { value: 'proposals_sent', label: 'Proposals Sent' },
