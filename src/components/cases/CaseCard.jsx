@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Calendar, ChevronRight, MoreHorizontal } from 'lucide-react'
-import { STAGE_COLORS, PRIORITY_CLASSES, stepsForCase, daysUntil, nextStage } from '../../lib/cases'
+import { STAGE_COLORS, PRIORITY_CLASSES, PRODUCTION_STEPS, daysUntil, nextStage } from '../../lib/cases'
 
 export default function CaseCard({ caseRow: c, onStepClick, onOpenSheet, onAdvance }) {
   const [armed, setArmed] = useState(false)
@@ -74,7 +74,7 @@ export default function CaseCard({ caseRow: c, onStepClick, onOpenSheet, onAdvan
           hidden in a sheet): this is bench staff's highest-frequency action
           and the whole point is at-a-glance state. */}
       <div className="flex items-center gap-2 mb-3">
-        {stepsForCase(c).map(step => {
+        {PRODUCTION_STEPS.map(step => {
           const done = !!c[step.atField]
           return (
             <button

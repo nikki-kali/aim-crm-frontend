@@ -69,22 +69,17 @@ export const DATE_FIELDS = [
 // anyone not on the list can still be recorded.
 export const STAFF_OPTIONS = ['Frankie', 'Cecile', 'Anjali', 'Miguel', 'Victor']
 
-// The internal production checkpoints from AIM's real workflow. The last
-// three only apply to Removable cases (Dentures/Partial) — see
-// stepsForCase(). Kept fully separate from the doctor-facing STAGES above:
-// marking these never changes `status` and never sends a doctor email.
+// The internal production checkpoints from AIM's real workflow — all five
+// apply to every case type. Kept fully separate from the doctor-facing
+// STAGES above: marking these never changes `status` and never sends a
+// doctor email.
 export const PRODUCTION_STEPS = [
   { key: 'sterilized',      label: 'Sterilized',              byField: 'sterilized_by',      atField: 'sterilized_at',      badge: 'S' },
   { key: 'entered',         label: 'Entered Into Evident',    byField: 'entered_by',          atField: 'entered_at',         badge: 'E' },
-  { key: 'plaster_checked', label: 'Plaster Checked',         byField: 'plaster_checked_by',  atField: 'plaster_checked_at', badge: 'P', removableOnly: true },
-  { key: 'delivered',       label: 'Delivered to Shipping',   byField: 'delivered_by',        atField: 'delivered_at',       badge: 'D', removableOnly: true },
-  { key: 'packed',          label: 'Packed',                  byField: 'packed_by',           atField: 'packed_at',          badge: 'K', removableOnly: true },
+  { key: 'plaster_checked', label: 'Plaster Checked',         byField: 'plaster_checked_by',  atField: 'plaster_checked_at', badge: 'P' },
+  { key: 'delivered',       label: 'Delivered to Shipping',   byField: 'delivered_by',        atField: 'delivered_at',       badge: 'D' },
+  { key: 'packed',          label: 'Packed',                  byField: 'packed_by',           atField: 'packed_at',          badge: 'K' },
 ]
-
-export function stepsForCase(c) {
-  const removable = REMOVABLE_TYPES.includes(c.case_type)
-  return PRODUCTION_STEPS.filter(s => !s.removableOnly || removable)
-}
 
 // Next stage in the doctor-facing pipeline, or null if already at the end.
 export function nextStage(status) {

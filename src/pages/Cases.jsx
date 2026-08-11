@@ -12,7 +12,7 @@ import EmptyState from '../components/EmptyState'
 import {
   BRAND_OPTIONS, CASE_TYPES, PRIORITY_OPTIONS, REMOVABLE_TYPES, STAGES,
   STAGE_COLORS, PRIORITY_CLASSES, EMPTY_FORM, DATE_FIELDS, STAFF_OPTIONS,
-  PRODUCTION_STEPS, stepsForCase, daysUntil, toDateInput,
+  PRODUCTION_STEPS, daysUntil, toDateInput,
 } from '../lib/cases'
 
 function StaffPicker({ value, onChange, placeholder }) {
@@ -43,7 +43,7 @@ function StaffPicker({ value, onChange, placeholder }) {
 function ProductionSteps({ caseRow, onStepClick }) {
   return (
     <div data-tour="cases-production-dots" className="flex items-center gap-1">
-      {stepsForCase(caseRow).map(step => {
+      {PRODUCTION_STEPS.map(step => {
         const done = !!caseRow[step.atField]
         const title = done
           ? `${step.label} — ${caseRow[step.byField] || 'unknown'}, ${new Date(caseRow[step.atField]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`

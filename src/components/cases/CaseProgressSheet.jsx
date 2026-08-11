@@ -1,6 +1,6 @@
 import { CheckCircle2, Circle, Pencil, Mail, Trash2, Info, X } from 'lucide-react'
 import AnimatedModal from '../AnimatedModal'
-import { STAGES, STAGE_COLORS, stepsForCase } from '../../lib/cases'
+import { STAGES, STAGE_COLORS, PRODUCTION_STEPS } from '../../lib/cases'
 
 export default function CaseProgressSheet({ caseRow: c, isAdmin, onClose, onStageChange, onStepClick, onEdit, onResend, onDelete }) {
   const currentIdx = STAGES.indexOf(c.status)
@@ -52,7 +52,7 @@ export default function CaseProgressSheet({ caseRow: c, isAdmin, onClose, onStag
 
         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600 mb-2">Production Checklist</p>
         <div className="space-y-0.5 mb-5">
-          {stepsForCase(c).map(step => {
+          {PRODUCTION_STEPS.map(step => {
             const done = !!c[step.atField]
             return (
               <button
