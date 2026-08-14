@@ -30,7 +30,7 @@ export const PRIORITY_CLASSES = {
 }
 
 export const EMPTY_FORM = {
-  case_number: '', client_name: '', brand: 'Aim Dental',
+  case_number: '', client_name: '', lead_id: null, brand: 'Aim Dental',
   case_type: 'Crown & Bridge', patient: '', assigned_technician: '',
   tracking_number: '', due_date: '', est_completion_date: '', value: '',
   priority: 'Normal', status: 'Case Received', notes: '',

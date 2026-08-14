@@ -38,6 +38,97 @@ function StaffPicker({ value, onChange, placeholder }) {
   )
 }
 
+// Live search over existing leads + clients so a new case can link back to
+// the doctor's real record instead of a disconnected free-text name.
+// Picking a lead (vs. a client, vs. just typing) is what lets that lead
+// auto-convert into a client on save — see POST /api/cases.
+function ClientPicker({ value, onChange, onSelectLead }) {
+  const [query, setQuery] = useState(value || '')
+  const [results, setResults] = useState({ leads: [], clients: [] })
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => { setQuery(value || '') }, [value])
+
+  useEffect(() => {
+    const q = query.trim()
+    if (q.length < 2) { setResults({ leads: [], clients: [] }); return }
+    setLoading(true)
+    const timer = setTimeout(() => {
+      Promise.all([
+        api.get(`/api/leads?search=${encodeURIComponent(q)}&view=all`).catch(() => []),
+        api.get(`/api/clients?search=${encodeURIComponent(q)}`).catch(() => []),
+      ]).then(([leads, clients]) => {
+        setResults({
+          leads: leads.filter(l => !l.converted_to_client_id).slice(0, 6),
+          clients: clients.slice(0, 6),
+        })
+        setLoading(false)
+      })
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  const handleTextChange = (v) => {
+    setQuery(v)
+    onChange(v)
+    onSelectLead(null)
+    setOpen(true)
+  }
+
+  const pick = (name, leadId) => {
+    setQuery(name)
+    onChange(name)
+    onSelectLead(leadId || null)
+    setOpen(false)
+  }
+
+  const hasResults = results.leads.length > 0 || results.clients.length > 0
+
+  return (
+    <div className="relative">
+      <input
+        className="input"
+        value={query}
+        onChange={e => handleTextChange(e.target.value)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="Dr. Jane Smith"
+      />
+      {open && query.trim().length >= 2 && (loading || hasResults) && (
+        <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto text-sm">
+          {loading && <div className="px-3 py-2 text-slate-400">Searching…</div>}
+          {!loading && results.clients.length > 0 && (
+            <>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Existing Clients</div>
+              {results.clients.map(c => (
+                <button type="button" key={c.id} onMouseDown={() => pick(c.doctor_name, null)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700">
+                  {c.doctor_name} {c.clinic_name && <span className="text-slate-400">— {c.clinic_name}</span>}
+                </button>
+              ))}
+            </>
+          )}
+          {!loading && results.leads.length > 0 && (
+            <>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Leads (not yet a client)</div>
+              {results.leads.map(l => (
+                <button type="button" key={l.id} onMouseDown={() => pick(l.doctor_name, l.id)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700">
+                  {l.doctor_name} {l.clinic_name && <span className="text-slate-400">— {l.clinic_name}</span>}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+      <p className="text-xs text-slate-400 mt-1">
+        Pick an existing lead or client if they're already in the CRM — picking a lead automatically moves them into Clients.
+      </p>
+    </div>
+  )
+}
+
 // Desktop-only inline dots (table row). Mobile uses the enlarged tap targets
 // inside CaseCard instead.
 function ProductionSteps({ caseRow, onStepClick }) {
@@ -225,7 +316,15 @@ function CaseModal({ caseData, onClose, onSave, onResend }) {
           </div>
           <div className="col-span-1 sm:col-span-2">
             <label className="label">Client / Doctor Name *</label>
-            <input className="input" value={form.client_name} onChange={e => set('client_name', e.target.value)} placeholder="Dr. Jane Smith" />
+            {caseData?.id ? (
+              <input className="input" value={form.client_name} onChange={e => set('client_name', e.target.value)} placeholder="Dr. Jane Smith" />
+            ) : (
+              <ClientPicker
+                value={form.client_name}
+                onChange={v => set('client_name', v)}
+                onSelectLead={id => set('lead_id', id)}
+              />
+            )}
           </div>
           <div>
             <label className="label">Patient Name</label>
