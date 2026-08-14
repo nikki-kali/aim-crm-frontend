@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { ToastProvider } from './components/Toast'
+import PWAUpdatePrompt from './components/PWAUpdatePrompt'
 import { ThemeProvider } from './context/ThemeContext'
 import { TourProvider } from './context/TourContext'
 import Layout from './components/Layout'
@@ -82,6 +83,7 @@ export default function App() {
               <TourOverlay />
             </TourProvider>
           </BrowserRouter>
+          <PWAUpdatePrompt />
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
