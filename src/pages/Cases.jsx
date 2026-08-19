@@ -233,6 +233,94 @@ function QuickStepModal({ caseRow, step, zIndex, onClose, onSaved }) {
   )
 }
 
+function fmtTimelineDate(ts) {
+  return ts ? new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : null
+}
+
+function TimelineRow({ label, done, timestamp, sublabel }) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${done ? 'bg-[#06babe]' : 'bg-slate-300 dark:bg-slate-600'}`} />
+      <span className={done ? 'text-slate-700 dark:text-slate-300 font-medium' : 'text-slate-400'}>{label}</span>
+      {sublabel && <span className="text-slate-400 text-[10.5px]">({sublabel})</span>}
+      {timestamp && <span className="text-slate-400 ml-auto flex-shrink-0">{timestamp}</span>}
+      {!timestamp && done && <span className="text-slate-400 ml-auto flex-shrink-0 italic">not recorded</span>}
+    </div>
+  )
+}
+
+// Combines three real, already-separately-tracked data sources into one
+// read-only chronological view: the originating pickup lead's own
+// pickup_* columns (requested/dispatched/received — only present when
+// this case came from a Schedule Pickup lead, via GET /api/cases'
+// left join on original_lead_id), the doctor-facing STAGES pipeline
+// (stage_history), and the internal PRODUCTION_STEPS checklist. Nothing
+// here is editable — that already happens via the row-level status dots
+// (production steps) and the Stage dropdown above (doctor-facing stage);
+// this is purely "how did we get here, and when."
+function CaseTimeline({ caseData }) {
+  if (!caseData?.id) return null
+
+  const hasPickup = !!caseData.pickup_status
+  const PICKUP_ORDER = { requested: 0, dispatched: 1, received: 2 }
+  const currentPickupIdx = hasPickup ? PICKUP_ORDER[caseData.pickup_status] : -1
+  const pickupStages = [
+    { key: 'requested', label: 'Pickup Requested', at: caseData.pickup_requested_at },
+    { key: 'dispatched', label: 'Pickup Dispatched', at: caseData.pickup_dispatched_at },
+    { key: 'received', label: 'Pickup Received at Lab', at: caseData.pickup_received_at },
+  ]
+
+  const stageHistory = caseData.stage_history || []
+  const currentStageIdx = STAGES.indexOf(caseData.status)
+
+  return (
+    <div className="mb-5 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+      <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">Timeline</h3>
+
+      {hasPickup && (
+        <div className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Pickup</p>
+          <div className="flex flex-col gap-1.5">
+            {pickupStages.map((s, i) => (
+              <TimelineRow key={s.key} label={s.label} done={i <= currentPickupIdx} timestamp={fmtTimelineDate(s.at)} />
+            ))}
+            {caseData.pickup_date && (
+              <p className="text-[10.5px] text-slate-400 mt-1">Scheduled: {caseData.pickup_date} · {caseData.pickup_window}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="mb-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Doctor-Facing Stage</p>
+        <div className="flex flex-col gap-1.5">
+          {STAGES.map((stage, i) => {
+            const historyEntry = stageHistory.find(h => h.stage === stage)
+            return (
+              <TimelineRow key={stage} label={stage} done={i <= currentStageIdx} timestamp={fmtTimelineDate(historyEntry?.changed_at)} />
+            )
+          })}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Internal Production</p>
+        <div className="flex flex-col gap-1.5">
+          {PRODUCTION_STEPS.map(step => (
+            <TimelineRow
+              key={step.key}
+              label={step.label}
+              done={!!caseData[step.atField]}
+              timestamp={fmtTimelineDate(caseData[step.atField])}
+              sublabel={caseData[step.byField] || null}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Fields shown behind the "Production Detail" toggle — auto-expanded on
 // edit when a case already has any of this filled in.
 const PRODUCTION_DETAIL_FIELDS = [
@@ -303,6 +391,7 @@ function CaseModal({ caseData, onClose, onSave, onResend }) {
       }
     >
       <div className="p-6">
+        <CaseTimeline caseData={caseData} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Case # <span className="text-slate-400 font-normal">(auto if blank)</span></label>
