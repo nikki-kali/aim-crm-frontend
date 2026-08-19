@@ -391,7 +391,7 @@ function CaseModal({ caseData, onClose, onSave, onResend }) {
       }
     >
       <div className="p-6">
-        <CaseTimeline caseData={caseData} />
+        <CaseTimeline caseData={form} />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="label">Case # <span className="text-slate-400 font-normal">(auto if blank)</span></label>
