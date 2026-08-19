@@ -264,10 +264,13 @@ function CaseTimeline({ caseData }) {
   const hasPickup = !!caseData.pickup_status
   const PICKUP_ORDER = { requested: 0, dispatched: 1, received: 2 }
   const currentPickupIdx = hasPickup ? PICKUP_ORDER[caseData.pickup_status] : -1
+  // 'received' is deliberately not its own row here — a case only exists once
+  // its pickup has been received, so "Pickup Received at Lab" and the Doctor-
+  // Facing Stage list's own first entry ("Case Received") below are the same
+  // real-world event. Showing both read as a redundant duplicate.
   const pickupStages = [
     { key: 'requested', label: 'Pickup Requested', at: caseData.pickup_requested_at },
     { key: 'dispatched', label: 'Pickup Dispatched', at: caseData.pickup_dispatched_at },
-    { key: 'received', label: 'Pickup Received at Lab', at: caseData.pickup_received_at },
   ]
 
   const stageHistory = caseData.stage_history || []
