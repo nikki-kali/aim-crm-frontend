@@ -6,7 +6,8 @@ import { useToast } from '../components/Toast'
 import AnimatedModal from '../components/AnimatedModal'
 import CaseCard from '../components/cases/CaseCard'
 import CaseProgressSheet from '../components/cases/CaseProgressSheet'
-import { Plus, Search, X, AlertTriangle, Calendar, Mail, RefreshCw, Truck, Package } from 'lucide-react'
+import ImportEvidentModal from '../components/cases/ImportEvidentModal'
+import { Plus, Search, X, AlertTriangle, Calendar, Mail, RefreshCw, Truck, Package, Upload } from 'lucide-react'
 import { SkeletonTable, SkeletonCards } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import {
@@ -618,6 +619,7 @@ export default function Cases() {
   const [view, setView] = useState('all') // 'all' | 'ready-to-ship'
   const [selectedIds, setSelectedIds] = useState([])
   const [shipModal, setShipModal] = useState(false)
+  const [evidentModal, setEvidentModal] = useState(false)
   const [stepModal, setStepModal] = useState(null) // { caseId, stepKey } | null
   const [progressCaseId, setProgressCaseId] = useState(null)
   const toast = useToast()
@@ -723,6 +725,11 @@ export default function Cases() {
             {readyToShip.length > 0 && <span className="bg-[#06babe]/10 text-[#06babe] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{readyToShip.length}</span>}
           </button>
           <button onClick={fetchCases} className="btn-secondary w-10 h-10 flex-shrink-0 flex items-center justify-center p-0"><RefreshCw size={14} /></button>
+          {isAdmin && (
+            <button onClick={() => setEvidentModal(true)} className="btn-secondary flex-1 sm:flex-none justify-center flex items-center gap-2 text-xs">
+              <Upload size={13} /> Import from Evident
+            </button>
+          )}
           <button data-tour="cases-new" onClick={() => setModal('new')} className="btn-primary flex-1 sm:flex-none justify-center flex items-center gap-2"><Plus size={16} /> New Case</button>
         </div>
       </div>
@@ -981,6 +988,12 @@ export default function Cases() {
             cases={selectedCases}
             onClose={() => setShipModal(false)}
             onSent={() => { setShipModal(false); setSelectedIds([]); fetchCases() }}
+          />
+        )}
+        {evidentModal && (
+          <ImportEvidentModal
+            onClose={() => setEvidentModal(false)}
+            onImported={fetchCases}
           />
         )}
         {stepModalCase && stepModalStep && (

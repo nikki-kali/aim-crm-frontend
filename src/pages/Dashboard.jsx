@@ -8,7 +8,7 @@ import {
   Users, UserCheck, DollarSign, TrendingDown, AlertTriangle, RefreshCw,
   Globe, Linkedin, Facebook, Instagram, Twitter, Mail, CheckCircle, Archive,
   ClipboardList, Trophy, FileText, Target, ArrowUpRight,
-  ArrowDownRight, Minus, GraduationCap, Flame,
+  ArrowDownRight, Minus, GraduationCap, Flame, Lightbulb,
 } from 'lucide-react'
 import { SkeletonCard, SkeletonKpiCards } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
@@ -32,6 +32,12 @@ const BRAND_COLORS = { 'Aim Dental': '#06babe', 'Kings Highway': '#207290' }
 const STATUS_CLASSES = {
   Lead: 'status-lead', Contacted: 'status-contacted', Proposal: 'status-proposal',
   Won: 'status-won', Lost: 'status-lost', Pending: 'status-pending',
+}
+
+const TIER_META = {
+  green: { label: 'On track',          color: 'text-emerald-600', dot: 'bg-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
+  amber: { label: 'Keep pushing',      color: 'text-amber-600',   dot: 'bg-amber-500',   bg: 'bg-amber-50 dark:bg-amber-950/40' },
+  red:   { label: 'Time to reconnect', color: 'text-red-600',     dot: 'bg-red-500',     bg: 'bg-red-50 dark:bg-red-950/40' },
 }
 
 const MOTIVATIONAL = [
@@ -231,6 +237,33 @@ function RepDashboard({ user }) {
             <KpiCard key={card.label} {...card} delay={i * 0.08} />
           ))}
         </div>
+      )}
+
+      {/* Your 1% This Week */}
+      {!loading && summary?.suggestions?.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.35 }}
+          className="card p-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Lightbulb size={14} className="text-[#06babe]" />
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Your 1% This Week</h2>
+            {summary.tier && (
+              <span className={`ml-auto flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${TIER_META[summary.tier]?.bg} ${TIER_META[summary.tier]?.color}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${TIER_META[summary.tier]?.dot}`} />
+                {TIER_META[summary.tier]?.label}
+              </span>
+            )}
+          </div>
+          <ul className="space-y-2">
+            {summary.suggestions.map((tip, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIER_META[summary.tier]?.dot || 'bg-[#06babe]'}`} />
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
       )}
 
       {/* Goals */}
