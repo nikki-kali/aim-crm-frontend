@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast'
 import AnimatedModal from '../components/AnimatedModal'
 import LeadCard from '../components/leads/LeadCard'
 import LeadActionsSheet from '../components/leads/LeadActionsSheet'
-import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check, Archive, ArchiveRestore, UserCheck } from 'lucide-react'
+import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check, Archive, ArchiveRestore, UserCheck, Calendar } from 'lucide-react'
 import { SkeletonTable, SkeletonCards } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { LEAD_SOURCES, normalizeSource } from '../lib/leadSource'
@@ -14,6 +14,7 @@ import {
   STATUS_OPTIONS, BRAND_OPTIONS, CASE_TYPES, INTENT_OPTIONS,
   STATUS_CLASSES, INTENT_CLASSES, PICKUP_STATUS_LABELS, PICKUP_STATUS_CLASSES,
   EMPTY_FORM, CSV_TEMPLATE, scoreFromLead, scoreColor, parseCsv,
+  DATE_RANGE_OPTIONS, getDateRange, formatShortDate,
 } from '../lib/leads'
 
 // ── LeadModal ─────────────────────────────────────────────────────────────────
@@ -397,6 +398,9 @@ export default function Leads() {
   const [search,       setSearch]      = useState('')
   const [filterBrand,  setFilterBrand] = useState('All')
   const [filterStatus, setFilterStatus]= useState('All')
+  const [dateFilter,   setDateFilter]  = useState('all')
+  const [customFrom,   setCustomFrom]  = useState('')
+  const [customTo,     setCustomTo]    = useState('')
   const [showArchived, setShowArchived]= useState(false)
   const [viewTab,      setViewTab]     = useState(isAdmin ? 'all' : 'mine')
   const [reps,         setReps]        = useState([])
@@ -419,13 +423,16 @@ export default function Leads() {
 
   useEffect(() => { fetchLeads() }, [showArchived, viewTab])
 
+  const [dateStart, dateEnd] = getDateRange(dateFilter, customFrom, customTo)
   const filtered = leads.filter(l => {
     const q = search.toLowerCase()
     const matchSearch = !search ||
       l.doctor_name.toLowerCase().includes(q) ||
       (l.clinic_name || '').toLowerCase().includes(q) ||
       (l.case_interest || '').toLowerCase().includes(q)
-    return matchSearch &&
+    const createdAt = new Date(l.created_at)
+    const matchDate = (!dateStart || createdAt >= dateStart) && (!dateEnd || createdAt <= dateEnd)
+    return matchSearch && matchDate &&
       (filterBrand  === 'All' || l.brand  === filterBrand) &&
       (filterStatus === 'All' || l.status === filterStatus)
   })
@@ -492,7 +499,7 @@ export default function Leads() {
 
   const handleClaim = (lead) => handleAssign(lead, user.id)
 
-  const tableHeaders = ['Doctor / Clinic', 'Brand', 'Case', 'Source', 'Value', 'Intent', 'Score', 'Status', 'Assign', 'Contact', '']
+  const tableHeaders = ['Doctor / Clinic', 'Brand', 'Case', 'Source', 'Date Added', 'Value', 'Intent', 'Score', 'Status', 'Assign', 'Contact', '']
 
   // Store the id, not the lead object — several handlers above refetch and
   // replace `leads`, so a sheet holding a captured object would go stale.
@@ -504,7 +511,10 @@ export default function Leads() {
         <div>
           <h1 className="page-title">Leads</h1>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
-            {leads.length} {showArchived ? 'archived' : 'active'} leads
+            {filtered.length} {showArchived ? 'archived' : 'active'} lead{filtered.length === 1 ? '' : 's'}
+            {dateFilter !== 'all' && (
+              <> · {DATE_RANGE_OPTIONS.find(d => d.id === dateFilter)?.label.toLowerCase()}</>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
@@ -557,12 +567,35 @@ export default function Leads() {
             <option value="All">All Statuses</option>
             {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
           </select>
+          <select className="input w-full sm:w-auto flex-1 sm:flex-none" value={dateFilter} onChange={e => setDateFilter(e.target.value)}>
+            {DATE_RANGE_OPTIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+          </select>
         </div>
+        {dateFilter === 'custom' && (
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Calendar size={14} className="text-slate-400 flex-shrink-0" />
+            <input
+              type="date"
+              className="input w-full sm:w-auto"
+              value={customFrom}
+              onChange={e => setCustomFrom(e.target.value)}
+              max={customTo || undefined}
+            />
+            <span className="text-slate-400 text-xs">to</span>
+            <input
+              type="date"
+              className="input w-full sm:w-auto"
+              value={customTo}
+              onChange={e => setCustomTo(e.target.value)}
+              min={customFrom || undefined}
+            />
+          </div>
+        )}
       </div>
 
       {loading ? (
         <>
-          <div className="hidden md:block card overflow-hidden"><SkeletonTable rows={6} cols={11} /></div>
+          <div className="hidden md:block card overflow-hidden"><SkeletonTable rows={6} cols={12} /></div>
           <div className="md:hidden"><SkeletonCards rows={6} /></div>
         </>
       ) : filtered.length === 0 ? (
@@ -621,6 +654,9 @@ export default function Leads() {
                               {normalizeSource(lead.lead_source || lead.referral_source)}
                             </span>
                           ) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-sm whitespace-nowrap">
+                          {formatShortDate(lead.created_at)}
                         </td>
                         <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 text-sm">
                           {lead.estimated_value ? `$${Number(lead.estimated_value).toLocaleString()}` : '—'}

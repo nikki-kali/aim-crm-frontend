@@ -1,5 +1,5 @@
 import { Phone, Mail, MoreHorizontal, Star } from 'lucide-react'
-import { STATUS_CLASSES, INTENT_CLASSES, PICKUP_STATUS_LABELS, PICKUP_STATUS_CLASSES, scoreColor } from '../../lib/leads'
+import { STATUS_CLASSES, INTENT_CLASSES, PICKUP_STATUS_LABELS, PICKUP_STATUS_CLASSES, scoreColor, formatShortDate } from '../../lib/leads'
 import { normalizeSource } from '../../lib/leadSource'
 
 export default function LeadCard({ lead, showArchived, onContactNow, onOpenSheet }) {
@@ -25,6 +25,7 @@ export default function LeadCard({ lead, showArchived, onContactNow, onOpenSheet
         {lead.case_interest || '—'}
         {source && ` · ${source}`}
         {lead.estimated_value ? ` · $${Number(lead.estimated_value).toLocaleString()}` : ''}
+        {` · Added ${formatShortDate(lead.created_at)}`}
       </p>
 
       <div className="flex items-center gap-1.5 flex-wrap mb-3">

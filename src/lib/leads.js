@@ -32,6 +32,43 @@ export const EMPTY_FORM = {
   intent_level: 'Medium', notes: '', assigned_to: '',
 }
 
+export const DATE_RANGE_OPTIONS = [
+  { id: 'all',   label: 'All Time' },
+  { id: 'week',  label: 'This Week' },
+  { id: 'month', label: 'This Month' },
+  { id: 'year',  label: 'This Year' },
+  { id: 'custom', label: 'Custom Range' },
+]
+
+// Start of the current week/month/year in local time, so "This Week" etc.
+// line up with what the person filtering actually sees on a calendar.
+export function getDateRange(filter, customFrom, customTo) {
+  const now = new Date()
+  if (filter === 'week') {
+    const start = new Date(now)
+    start.setHours(0, 0, 0, 0)
+    start.setDate(start.getDate() - start.getDay())
+    return [start, null]
+  }
+  if (filter === 'month') {
+    return [new Date(now.getFullYear(), now.getMonth(), 1), null]
+  }
+  if (filter === 'year') {
+    return [new Date(now.getFullYear(), 0, 1), null]
+  }
+  if (filter === 'custom') {
+    const start = customFrom ? new Date(`${customFrom}T00:00:00`) : null
+    const end = customTo ? new Date(`${customTo}T23:59:59.999`) : null
+    return [start, end]
+  }
+  return [null, null]
+}
+
+export function formatShortDate(dateStr) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 export const CSV_TEMPLATE = [
   'Doctor Name,Clinic Name,Brand,Case Interest,Phone,Email,Lead Source,Estimated Value,Notes',
   'Dr. Jane Smith,Smith Dental Group,Aim Dental,Implant,(718) 555-0100,dr.smith@example.com,Referral,8500,Interested in full arch implants',
