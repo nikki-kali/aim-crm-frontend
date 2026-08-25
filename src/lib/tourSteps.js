@@ -34,6 +34,12 @@ export const TOUR_MODULES = [
         placement: 'top',
       },
       {
+        target: '[data-tour="dashboard-suggestions"]',
+        title: 'Your 1% This Week',
+        body: 'A few suggestions built from your own numbers — a cold lead worth a follow-up, a stuck proposal, whatever\'s actually worth doing next. The badge next to the title is a quick read on how your week is trending.',
+        placement: 'top',
+      },
+      {
         target: '[data-tour="dashboard-goals-board"]',
         title: 'Goals',
         body: "Progress toward real targets, computed live from your leads. We'll cover this in its own tour.",
@@ -73,7 +79,7 @@ export const TOUR_MODULES = [
       {
         target: '[data-tour="leads-search-filters"]',
         title: 'Finding a lead',
-        body: 'Search by doctor, clinic, or case type, or narrow by brand — this updates the list instantly as you type.',
+        body: 'Search by doctor, clinic, or case type, or narrow by brand and status. The date filter next to them tracks when leads came in — This Week, This Month, This Year, or a custom range — handy for spotting intake trends.',
         placement: 'bottom',
       },
     ],

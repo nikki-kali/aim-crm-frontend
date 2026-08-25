@@ -242,6 +242,7 @@ function RepDashboard({ user }) {
       {/* Your 1% This Week */}
       {!loading && summary?.suggestions?.length > 0 && (
         <motion.div
+          data-tour="dashboard-suggestions"
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.35 }}
           className="card p-4"
         >

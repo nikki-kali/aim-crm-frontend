@@ -60,6 +60,7 @@ function MoreSheet({ navItems, isAdmin, user, onAvatarClick, uploading, onSignOu
                 <NavLink
                   key={to}
                   to={to}
+                  data-tour={`nav-${to.slice(1)}`}
                   onClick={onClose}
                   className={`flex items-center gap-3 px-3 min-h-[48px] rounded-xl text-sm font-medium transition-colors ${
                     active
@@ -113,7 +114,7 @@ export default function MobileTabBar({ user, isAdmin, navItems, currentPath, onA
           {tabs.map(({ to, icon: Icon, label }) => {
             const active = isActivePath(currentPath, to)
             return (
-              <NavLink key={to} to={to} className="relative flex flex-col items-center justify-center gap-0.5 min-h-[52px] px-1">
+              <NavLink key={to} to={to} data-tour={`nav-${to.slice(1)}`} className="relative flex flex-col items-center justify-center gap-0.5 min-h-[52px] px-1">
                 {active && (
                   <motion.div
                     layoutId="mobile-tab-active"

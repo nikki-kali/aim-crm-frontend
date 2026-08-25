@@ -16,6 +16,13 @@ function useTargetRect(selector, ready) {
     const el = document.querySelector(selector)
     if (!el) { setRect(null); return }
     const r = el.getBoundingClientRect()
+    // A target that's in the DOM but CSS-hidden (e.g. the desktop sidebar's
+    // nav-* links, which carry display:none below the md breakpoint) still
+    // matches querySelector and returns a real element — but its rect comes
+    // back all-zero, which used to render as a nonsense 16x16 spotlight
+    // pinned to the viewport's top-left corner instead of the "not visible"
+    // fallback. Treat a zero-size rect the same as "not found".
+    if (r.width === 0 && r.height === 0) { setRect(null); return }
     setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
   }, [selector, ready])
 
