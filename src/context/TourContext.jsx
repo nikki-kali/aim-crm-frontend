@@ -108,7 +108,7 @@ export function TourProvider({ children }) {
   const startFullTour = useCallback(() => {
     const visible = FULL_TOUR_ORDER.filter((id) => {
       const mod = TOUR_MODULES.find((m) => m.id === id)
-      return mod && (!mod.adminOnly || user?.role === 'admin')
+      return mod && (!mod.adminOnly || user?.role === 'admin') && (!mod.staffOnly || user?.role !== 'admin')
     })
     advanceModule(visible)
   }, [advanceModule, user])

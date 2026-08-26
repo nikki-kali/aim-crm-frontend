@@ -153,7 +153,7 @@ export default function TrainingPanel({ isAdmin }) {
     0
   )
 
-  const fullTourModules = TOUR_MODULES.filter((m) => !m.adminOnly || isAdmin)
+  const fullTourModules = TOUR_MODULES.filter((m) => (!m.adminOnly || isAdmin) && (!m.staffOnly || !isAdmin))
   const completedTours = fullTourModules.filter((m) => tour.isComplete('tour', m.id)).length
 
   return (

@@ -757,7 +757,7 @@ export default function Cases() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-5">
+          <div data-tour="cases-search-filters" className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-5">
             <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input className="input pl-9" placeholder="Search case #, client, patient, type..." value={search} onChange={e => setSearch(e.target.value)} />

@@ -116,7 +116,7 @@ export default function Pipeline() {
             {leads.length} active leads · ${totalValue.toLocaleString()} pipeline value
           </p>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div data-tour="pipeline-controls" className="flex gap-2 w-full sm:w-auto">
           {isAdmin && (
             <select className="input w-full sm:w-auto" value={filterRep} onChange={e => setFilterRep(e.target.value)}>
               <option value="All">All Reps</option>

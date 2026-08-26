@@ -14,6 +14,11 @@ export const TOUR_MODULES = [
     id: 'dashboard',
     label: 'Dashboard',
     route: '/dashboard',
+    // Staff/sales_rep only — RepDashboard's layout (KPI cards, recent
+    // leads, suggestions) is what these steps actually target. Admins get
+    // the admin-dashboard module below instead, since AdminDashboard is a
+    // completely different component with none of these data-tour targets.
+    staffOnly: true,
     steps: [
       {
         target: '[data-tour="nav-dashboard"]',
@@ -43,6 +48,32 @@ export const TOUR_MODULES = [
         target: '[data-tour="dashboard-goals-board"]',
         title: 'Goals',
         body: "Progress toward real targets, computed live from your leads. We'll cover this in its own tour.",
+        placement: 'top',
+      },
+    ],
+  },
+  {
+    id: 'admin-dashboard',
+    label: 'Command Center',
+    route: '/dashboard',
+    adminOnly: true,
+    steps: [
+      {
+        target: '[data-tour="nav-dashboard"]',
+        title: 'Welcome to the Command Center',
+        body: 'This is admin home base — a real-time view of every rep\'s leads, clients, cases, and sales value across both brands, plus the tools only admins have.',
+        placement: 'right',
+      },
+      {
+        target: '[data-tour="admin-kpi-cards"]',
+        title: 'Company-wide numbers',
+        body: 'Active leads, total clients, total revenue, and lost leads — combined across every rep and both brands, updated live.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="rep-performance-table"]',
+        title: 'Rep Performance',
+        body: 'Each rep\'s leads, wins, conversion rate, existing clients, cases, and YTD sales value — switch between Week/Month/Quarter with the toggle above. Click any rep\'s row to open their full profile: every lead, client, case, and a merged activity feed in one place.',
         placement: 'top',
       },
     ],
@@ -79,7 +110,7 @@ export const TOUR_MODULES = [
       {
         target: '[data-tour="leads-search-filters"]',
         title: 'Finding a lead',
-        body: 'Search by doctor, clinic, or case type, or narrow by brand and status. The date filter next to them tracks when leads came in — This Week, This Month, This Year, or a custom range — handy for spotting intake trends.',
+        body: 'Search by doctor, clinic, or case type, or narrow by brand and status. The date filter next to them tracks when leads came in — This Week, This Month, This Year, or a custom range — handy for spotting intake trends. Admins also get a Rep filter here, to see one person\'s leads without switching accounts.',
         placement: 'bottom',
       },
     ],
@@ -104,7 +135,7 @@ export const TOUR_MODULES = [
       {
         target: '[data-tour="clients-search"]',
         title: 'Finding a client',
-        body: 'Search by doctor or clinic name, or filter by brand. Click any client card to open their full profile — activity log, revenue, and to-dos.',
+        body: 'Search by doctor or clinic name, or filter by brand (and, for admins, by rep). Click any client card to open their full profile — activity log, revenue, and to-dos.',
         placement: 'bottom',
       },
     ],
@@ -124,6 +155,12 @@ export const TOUR_MODULES = [
         target: '[data-tour="cases-new"]',
         title: 'Creating a case',
         body: 'Only Client/Doctor Name and Due Date are required. A case number auto-generates, and everything else can be filled in as details come in.',
+        placement: 'bottom',
+      },
+      {
+        target: '[data-tour="cases-search-filters"]',
+        title: 'Finding a case',
+        body: 'Search by case number, client, patient, or case type, or narrow by brand. Admins also get a Rep filter, to see one person\'s cases (derived from their clients, since a case itself isn\'t assigned to anyone directly).',
         placement: 'bottom',
       },
       {
@@ -169,6 +206,12 @@ export const TOUR_MODULES = [
         body: 'Drag a card from one column into the next to update its status instantly — no separate save step. On mobile, tap a card\'s menu for a "Move to stage" list instead of dragging.',
         placement: 'top',
       },
+      {
+        target: '[data-tour="pipeline-controls"]',
+        title: 'Viewing one rep\'s pipeline',
+        body: 'Admins can filter the whole board down to a single rep here — useful for a 1:1 without asking them to share their screen.',
+        placement: 'bottom',
+      },
     ],
   },
   {
@@ -192,7 +235,7 @@ export const TOUR_MODULES = [
       {
         target: '[data-tour="clinics-search"]',
         title: 'Finding a clinic',
-        body: 'Search by name, email, or address, or filter by brand.',
+        body: 'Search by name, email, or address, or filter by brand and rep — the Rep filter shows clinics with at least one lead assigned to that person.',
         placement: 'bottom',
       },
     ],

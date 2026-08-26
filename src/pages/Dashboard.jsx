@@ -397,7 +397,7 @@ function AdminDashboard() {
       {loading ? (
         <SkeletonKpiCards count={4} />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div data-tour="admin-kpi-cards" className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {kpiCards.map((card, i) => (
             <KpiCard key={card.label} {...card} delay={i * 0.08} />
           ))}
@@ -407,6 +407,7 @@ function AdminDashboard() {
       {/* Rep Performance */}
       {!loading && teamStats.length > 0 && (
         <motion.div
+          data-tour="rep-performance-table"
           initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28, duration: 0.4 }}
           className="card p-5"
         >
