@@ -403,6 +403,7 @@ export default function Leads() {
   const [customTo,     setCustomTo]    = useState('')
   const [showArchived, setShowArchived]= useState(false)
   const [viewTab,      setViewTab]     = useState(isAdmin ? 'all' : 'mine')
+  const [filterRep,    setFilterRep]   = useState('All')
   const [reps,         setReps]        = useState([])
   const [modal,        setModal]       = useState(null)
   const [importModal,  setImportModal] = useState(false)
@@ -416,12 +417,13 @@ export default function Leads() {
 
   const fetchLeads = async () => {
     setLoading(true)
-    const data = await api.get(`/api/leads?archived=${showArchived}&view=${viewTab}`).catch(() => [])
+    const repParam = isAdmin && viewTab === 'all' && filterRep !== 'All' ? `&rep=${filterRep}` : ''
+    const data = await api.get(`/api/leads?archived=${showArchived}&view=${viewTab}${repParam}`).catch(() => [])
     setLeads(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchLeads() }, [showArchived, viewTab])
+  useEffect(() => { fetchLeads() }, [showArchived, viewTab, filterRep])
 
   const [dateStart, dateEnd] = getDateRange(dateFilter, customFrom, customTo)
   const filtered = leads.filter(l => {
@@ -570,6 +572,12 @@ export default function Leads() {
           <select className="input w-full sm:w-auto flex-1 sm:flex-none" value={dateFilter} onChange={e => setDateFilter(e.target.value)}>
             {DATE_RANGE_OPTIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
           </select>
+          {isAdmin && viewTab === 'all' && (
+            <select className="input w-full sm:w-auto flex-1 sm:flex-none" value={filterRep} onChange={e => setFilterRep(e.target.value)}>
+              <option value="All">All Reps</option>
+              {reps.map(r => <option key={r.id} value={r.id}>{r.name || r.email}</option>)}
+            </select>
+          )}
         </div>
         {dateFilter === 'custom' && (
           <div className="flex items-center gap-2 w-full sm:w-auto">

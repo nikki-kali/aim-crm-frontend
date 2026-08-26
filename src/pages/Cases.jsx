@@ -614,6 +614,8 @@ export default function Cases() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterBrand, setFilterBrand] = useState('All')
+  const [filterRep, setFilterRep] = useState('All')
+  const [reps, setReps] = useState([])
   const [activeStage, setActiveStage] = useState('All')
   const [modal, setModal] = useState(null)
   const [view, setView] = useState('all') // 'all' | 'ready-to-ship'
@@ -624,14 +626,19 @@ export default function Cases() {
   const [progressCaseId, setProgressCaseId] = useState(null)
   const toast = useToast()
 
+  useEffect(() => {
+    if (isAdmin) api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
+  }, [isAdmin])
+
   const fetchCases = async () => {
     setLoading(true)
-    const data = await api.get('/api/cases').catch(() => [])
+    const repParam = isAdmin && filterRep !== 'All' ? `?rep=${filterRep}` : ''
+    const data = await api.get(`/api/cases${repParam}`).catch(() => [])
     setCases(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchCases() }, [])
+  useEffect(() => { fetchCases() }, [filterRep])
 
   const filtered = cases.filter(c => {
     const matchSearch = !search ||
@@ -759,6 +766,12 @@ export default function Cases() {
               <option value="All">All Brands</option>
               {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
             </select>
+            {isAdmin && (
+              <select className="input w-full sm:w-auto" value={filterRep} onChange={e => setFilterRep(e.target.value)}>
+                <option value="All">All Reps</option>
+                {reps.map(r => <option key={r.id} value={r.id}>{r.name || r.email}</option>)}
+              </select>
+            )}
           </div>
 
           {loading ? (

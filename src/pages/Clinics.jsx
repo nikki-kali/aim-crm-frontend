@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import AnimatedModal from '../components/AnimatedModal'
 import { Plus, Search, X, Phone, Mail, Globe, Building2, ChevronRight, Bell } from 'lucide-react'
@@ -269,22 +270,31 @@ function ClinicDetail({ id, onClose }) {
 }
 
 export default function Clinics() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [clinics, setClinics] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterBrand, setFilterBrand] = useState('All')
+  const [filterRep, setFilterRep] = useState('All')
+  const [reps, setReps] = useState([])
   const [modal, setModal] = useState(null)
   const [detailId, setDetailId] = useState(null)
   const toast = useToast()
 
+  useEffect(() => {
+    if (isAdmin) api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
+  }, [isAdmin])
+
   const fetchClinics = async () => {
     setLoading(true)
-    const data = await api.get('/api/clinics').catch(() => [])
+    const repParam = isAdmin && filterRep !== 'All' ? `?rep=${filterRep}` : ''
+    const data = await api.get(`/api/clinics${repParam}`).catch(() => [])
     setClinics(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchClinics() }, [])
+  useEffect(() => { fetchClinics() }, [filterRep])
 
   const filtered = clinics.filter(c =>
     (filterBrand === 'All' || c.brand === filterBrand) &&
@@ -319,6 +329,12 @@ export default function Clinics() {
           <option value="All">All Brands</option>
           {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
         </select>
+        {isAdmin && (
+          <select className="input w-full sm:w-auto" value={filterRep} onChange={e => setFilterRep(e.target.value)}>
+            <option value="All">All Reps</option>
+            {reps.map(r => <option key={r.id} value={r.id}>{r.name || r.email}</option>)}
+          </select>
+        )}
       </div>
 
       {loading ? (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 import { RefreshCw, DollarSign, MoreHorizontal, Check } from 'lucide-react'
 import AnimatedModal from '../components/AnimatedModal'
 
@@ -51,20 +52,29 @@ function MoveStageSheet({ lead, onClose, onMove }) {
 }
 
 export default function Pipeline() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [dragging, setDragging] = useState(null)
   const [dragOver, setDragOver] = useState(null)
   const [moveLeadId, setMoveLeadId] = useState(null)
+  const [filterRep, setFilterRep] = useState('All')
+  const [reps, setReps] = useState([])
+
+  useEffect(() => {
+    if (isAdmin) api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
+  }, [isAdmin])
 
   const fetchLeads = async () => {
     setLoading(true)
-    const data = await api.get('/api/leads').catch(() => [])
+    const repParam = isAdmin && filterRep !== 'All' ? `?view=all&rep=${filterRep}` : ''
+    const data = await api.get(`/api/leads${repParam}`).catch(() => [])
     setLeads((data || []).filter(l => l.status !== 'Lost'))
     setLoading(false)
   }
 
-  useEffect(() => { fetchLeads() }, [])
+  useEffect(() => { fetchLeads() }, [filterRep])
 
   const moveLeadToStage = async (lead, status) => {
     if (lead.status === status) return
@@ -106,10 +116,18 @@ export default function Pipeline() {
             {leads.length} active leads · ${totalValue.toLocaleString()} pipeline value
           </p>
         </div>
-        <button onClick={fetchLeads} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
-          <RefreshCw size={14} />
-          Refresh
-        </button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          {isAdmin && (
+            <select className="input w-full sm:w-auto" value={filterRep} onChange={e => setFilterRep(e.target.value)}>
+              <option value="All">All Reps</option>
+              {reps.map(r => <option key={r.id} value={r.id}>{r.name || r.email}</option>)}
+            </select>
+          )}
+          <button onClick={fetchLeads} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto flex-shrink-0">
+            <RefreshCw size={14} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div data-tour="pipeline-board" className="flex gap-4 overflow-x-auto pb-6 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ minHeight: 520 }}>
