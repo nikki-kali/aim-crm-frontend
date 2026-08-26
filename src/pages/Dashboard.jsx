@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts'
 import api from '../lib/api'
@@ -308,6 +308,7 @@ function RepDashboard({ user }) {
 // ── Admin Dashboard ────────────────────────────────────────────────────────────
 
 function AdminDashboard() {
+  const navigate = useNavigate()
   const [kpis,         setKpis]        = useState(null)
   const [coldLeads,    setColdLeads]   = useState([])
   const [recentLeads,  setRecentLeads] = useState([])
@@ -444,7 +445,7 @@ function AdminDashboard() {
                 {teamStats.map(({ rep, clients_count, cases_count, ...periods }) => {
                   const s = periods[teamPeriod] || {}
                   return (
-                    <tr key={rep.id}>
+                    <tr key={rep.id} onClick={() => navigate(`/reps/${rep.id}`)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                       <td>
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
@@ -480,7 +481,7 @@ function AdminDashboard() {
             {teamStats.map(({ rep, clients_count, cases_count, ...periods }) => {
               const s = periods[teamPeriod] || {}
               return (
-                <div key={rep.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60">
+                <div key={rep.id} onClick={() => navigate(`/reps/${rep.id}`)} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 cursor-pointer active:opacity-70 transition-opacity">
                   <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                     {(rep.name || rep.email || '?')[0].toUpperCase()}
                   </div>

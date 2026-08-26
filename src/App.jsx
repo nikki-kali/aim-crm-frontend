@@ -19,6 +19,7 @@ import Reports from './pages/Reports'
 import Automations from './pages/Automations'
 import WorkflowCanvas from './pages/WorkflowCanvas'
 import Users from './pages/Users'
+import RepDetail from './pages/RepDetail'
 import Help from './pages/Help'
 import CasePickupSchedule from './pages/CasePickupSchedule'
 
@@ -63,6 +64,7 @@ function AnimatedRoutes() {
         <Route path="/automations" element={<AdminRoute><Automations /></AdminRoute>} />
         <Route path="/automations/:id" element={<AdminRoute><WorkflowCanvas /></AdminRoute>} />
         <Route path="/users"       element={<AdminRoute><Users /></AdminRoute>} />
+        <Route path="/reps/:id"    element={<AdminRoute><RepDetail /></AdminRoute>} />
 
         <Route path="/pickup-schedule" element={<ProtectedRoute><CasePickupSchedule /></ProtectedRoute>} />
 
