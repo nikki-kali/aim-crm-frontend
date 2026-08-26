@@ -61,7 +61,7 @@ export default function RepDetail() {
       const entry = (team || []).find(t => t.rep.id === id)
       if (entry) {
         setRep(entry.rep)
-        setBook({ clients_count: entry.clients_count, cases_count: entry.cases_count })
+        setBook({ clients_count: entry.clients_count, cases_count: entry.cases_count, sales_value_ytd: entry.sales_value_ytd })
         setMonth(entry.month)
       }
       setLeads(leadsData || [])
@@ -110,16 +110,17 @@ export default function RepDetail() {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-4 sm:gap-6">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-4 sm:gap-6">
               {[
                 { label: 'Leads', value: month?.leads_assigned ?? 0, icon: ClipboardList },
                 { label: 'Wins', value: month?.leads_won ?? 0, icon: Trophy },
                 { label: 'Conv.', value: `${month?.conversion_rate ?? 0}%`, icon: TrendingUp },
                 { label: 'Clients', value: book?.clients_count ?? 0, icon: Users },
                 { label: 'Cases', value: book?.cases_count ?? 0, icon: UserCheck },
+                { label: 'Sales YTD', value: `$${Number(book?.sales_value_ytd ?? 0).toLocaleString()}`, icon: TrendingUp, emphasize: true },
               ].map(s => (
                 <div key={s.label} className="text-center">
-                  <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{s.value}</p>
+                  <p className={`text-lg font-bold ${s.emphasize ? 'text-emerald-600' : 'text-slate-800 dark:text-slate-100'}`}>{s.value}</p>
                   <p className="text-[10px] uppercase tracking-wide text-slate-400">{s.label}</p>
                 </div>
               ))}
