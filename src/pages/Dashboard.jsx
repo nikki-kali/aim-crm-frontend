@@ -435,13 +435,13 @@ function AdminDashboard() {
             <table className="data-table">
               <thead>
                 <tr>
-                  {['Rep', 'Leads', 'Wins', 'Proposals', 'Conv. Rate'].map(h => (
+                  {['Rep', 'Leads', 'Wins', 'Proposals', 'Conv. Rate', 'Clients', 'Cases'].map(h => (
                     <th key={h}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {teamStats.map(({ rep, ...periods }) => {
+                {teamStats.map(({ rep, clients_count, cases_count, ...periods }) => {
                   const s = periods[teamPeriod] || {}
                   return (
                     <tr key={rep.id}>
@@ -466,6 +466,8 @@ function AdminDashboard() {
                             : <ArrowDownRight size={12} className="text-red-400" />}
                         </div>
                       </td>
+                      <td className="text-slate-600 dark:text-slate-400">{clients_count ?? 0}</td>
+                      <td className="text-slate-600 dark:text-slate-400">{cases_count ?? 0}</td>
                     </tr>
                   )
                 })}
@@ -475,7 +477,7 @@ function AdminDashboard() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
-            {teamStats.map(({ rep, ...periods }) => {
+            {teamStats.map(({ rep, clients_count, cases_count, ...periods }) => {
               const s = periods[teamPeriod] || {}
               return (
                 <div key={rep.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60">
@@ -485,7 +487,7 @@ function AdminDashboard() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm truncate">{rep.name || rep.email}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {s.leads_assigned ?? 0} leads · {s.proposals_sent ?? 0} proposals
+                      {s.leads_assigned ?? 0} leads · {s.proposals_sent ?? 0} proposals · {clients_count ?? 0} clients · {cases_count ?? 0} cases
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
