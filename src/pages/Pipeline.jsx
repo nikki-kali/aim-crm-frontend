@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
+import { useToast } from '../components/Toast'
 import { RefreshCw, DollarSign, MoreHorizontal, Check } from 'lucide-react'
 import AnimatedModal from '../components/AnimatedModal'
+import { LeadModal } from './Leads'
+import LeadActionsSheet from '../components/leads/LeadActionsSheet'
 
 const COLUMNS = [
   { id: 'Lead',      label: 'New Leads',     color: '#6b7280' },
@@ -54,6 +57,7 @@ function MoveStageSheet({ lead, onClose, onMove }) {
 export default function Pipeline() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
+  const toast = useToast()
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [dragging, setDragging] = useState(null)
@@ -61,10 +65,17 @@ export default function Pipeline() {
   const [moveLeadId, setMoveLeadId] = useState(null)
   const [filterRep, setFilterRep] = useState('All')
   const [reps, setReps] = useState([])
+  const [sheetLeadId, setSheetLeadId] = useState(null)
+  const [editLead, setEditLead] = useState(null)
+  const [converting, setConverting] = useState(null)
 
+  // Fetched for everyone, not just admins — the card actions sheet's
+  // "Assign to" dropdown is available to any authenticated user (matches
+  // Leads.jsx / the backend's /:id/assign route), not just the admin-only
+  // rep filter above the board.
   useEffect(() => {
-    if (isAdmin) api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
-  }, [isAdmin])
+    api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
+  }, [])
 
   const fetchLeads = async () => {
     setLoading(true)
@@ -82,6 +93,58 @@ export default function Pipeline() {
     await api.put(`/api/leads/${lead.id}`, { ...lead, status }).catch(console.error)
   }
 
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this lead?')) return
+    await api.delete(`/api/leads/${id}`).catch(console.error)
+    toast('Lead deleted', 'success')
+    fetchLeads()
+  }
+
+  const handleArchive = async (lead) => {
+    await api.post(`/api/leads/${lead.id}/archive`).catch(console.error)
+    toast('Lead archived', 'success')
+    fetchLeads()
+  }
+
+  const handleConvert = async (lead) => {
+    if (lead.converted_to_client_id) return toast('Already converted to client', 'info')
+    if (!confirm(`Convert "${lead.doctor_name}" to a client? This will create a new client record.`)) return
+    setConverting(lead.id)
+    try {
+      await api.post(`/api/leads/${lead.id}/convert`)
+      toast(`${lead.doctor_name} converted to client!`, 'success')
+      fetchLeads()
+    } catch (err) {
+      toast(err.message, 'error')
+    }
+    setConverting(null)
+  }
+
+  const handleAssign = async (lead, assigned_to) => {
+    try {
+      await api.put(`/api/leads/${lead.id}/assign`, { assigned_to: assigned_to || null })
+      const rep = reps.find(r => r.id === assigned_to)
+      toast(assigned_to ? `Assigned to ${rep?.name || 'rep'}` : 'Unassigned', 'success')
+      fetchLeads()
+    } catch (err) {
+      toast('Assignment failed', 'error')
+    }
+  }
+
+  const handleClaim = (lead) => handleAssign(lead, user.id)
+
+  const handleMarkDispatched = async (lead) => {
+    await api.post(`/api/leads/${lead.id}/dispatch`).catch(console.error)
+    toast('Marked as dispatched — requester notified', 'success')
+    fetchLeads()
+  }
+
+  const handleMarkReceived = async (lead) => {
+    await api.post(`/api/leads/${lead.id}/receive`).catch(console.error)
+    toast('Marked as received — requester notified', 'success')
+    fetchLeads()
+  }
+
   const handleDrop = async (e, colId) => {
     e.preventDefault()
     if (!dragging || dragging.status === colId) {
@@ -97,6 +160,9 @@ export default function Pipeline() {
 
   const totalValue = leads.reduce((s, l) => s + Number(l.estimated_value || 0), 0)
   const moveLead = moveLeadId ? leads.find(l => l.id === moveLeadId) : null
+  // Store the id, not the lead object — several handlers above refetch and
+  // replace `leads`, so a sheet holding a captured object would go stale.
+  const sheetLead = sheetLeadId ? leads.find(l => l.id === sheetLeadId) : null
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-96">
@@ -166,7 +232,8 @@ export default function Pipeline() {
                     draggable
                     onDragStart={() => setDragging(lead)}
                     onDragEnd={() => { setDragging(null); setDragOver(null) }}
-                    className={`bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all select-none ${
+                    onClick={() => setSheetLeadId(lead.id)}
+                    className={`bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-3 cursor-pointer active:cursor-grabbing shadow-sm hover:shadow-md hover:border-[#06babe]/40 transition-all select-none ${
                       dragging?.id === lead.id ? 'opacity-40 ring-2 ring-[#06babe]/40' : ''
                     }`}
                   >
@@ -179,9 +246,9 @@ export default function Pipeline() {
                         <span className={lead.brand === 'Aim Dental' ? 'badge-aim' : 'badge-kh'}>
                           {lead.brand === 'Aim Dental' ? 'Aim' : 'KH'}
                         </span>
-                        {/* Mobile-only: drag doesn't work on touch, so tap opens a move-to-stage sheet */}
+                        {/* Mobile-only: drag doesn't work on touch, so tap opens a quick move-to-stage sheet (tapping the card body opens full edit/delete instead) */}
                         <button
-                          onClick={() => setMoveLeadId(lead.id)}
+                          onClick={e => { e.stopPropagation(); setMoveLeadId(lead.id) }}
                           className="md:hidden tap w-7 h-7 flex items-center justify-center text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-200 rounded-lg -mr-1"
                           title="Move to stage"
                         >
@@ -229,6 +296,36 @@ export default function Pipeline() {
           lead={moveLead}
           onClose={() => setMoveLeadId(null)}
           onMove={moveLeadToStage}
+        />
+      )}
+
+      {sheetLead && (
+        <LeadActionsSheet
+          lead={sheetLead}
+          isAdmin={isAdmin}
+          currentUserId={user.id}
+          reps={reps}
+          viewTab="all"
+          showArchived={false}
+          converting={converting === sheetLead.id}
+          onClose={() => setSheetLeadId(null)}
+          onAssign={handleAssign}
+          onClaim={handleClaim}
+          onDispatch={handleMarkDispatched}
+          onReceived={handleMarkReceived}
+          onConvert={handleConvert}
+          onEdit={setEditLead}
+          onArchive={handleArchive}
+          onDelete={handleDelete}
+        />
+      )}
+
+      {editLead && (
+        <LeadModal
+          lead={editLead}
+          isAdmin={isAdmin}
+          onClose={() => setEditLead(null)}
+          onSave={() => { setEditLead(null); fetchLeads() }}
         />
       )}
     </div>

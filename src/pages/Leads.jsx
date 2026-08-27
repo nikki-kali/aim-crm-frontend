@@ -36,7 +36,7 @@ const ACTIVITY_TYPE_LABELS = {
 
 // ── LeadModal ─────────────────────────────────────────────────────────────────
 
-function LeadModal({ lead, onClose, onSave, isAdmin }) {
+export function LeadModal({ lead, onClose, onSave, isAdmin }) {
   const [form, setForm] = useState(lead ? {
     ...EMPTY_FORM,
     doctor_name:     lead.doctor_name    || '',
