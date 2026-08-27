@@ -417,7 +417,7 @@ function AdminDashboard() {
               <h2 className="section-title">Rep Performance</h2>
             </div>
             <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
-              {['week', 'month', 'quarter'].map(p => (
+              {['week', 'month', 'quarter', 'year'].map(p => (
                 <button
                   key={p}
                   onClick={() => setTeamPeriod(p)}
