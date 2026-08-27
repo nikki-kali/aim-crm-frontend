@@ -6,7 +6,7 @@ import { useToast } from '../components/Toast'
 import AnimatedModal from '../components/AnimatedModal'
 import LeadCard from '../components/leads/LeadCard'
 import LeadActionsSheet from '../components/leads/LeadActionsSheet'
-import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check, Archive, ArchiveRestore, UserCheck, Calendar } from 'lucide-react'
+import { Plus, Search, X, Phone, Mail, Star, Upload, Download, Check, Archive, ArchiveRestore, UserCheck, Calendar, Send, Clock } from 'lucide-react'
 import { SkeletonTable, SkeletonCards } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { LEAD_SOURCES, normalizeSource } from '../lib/leadSource'
@@ -16,6 +16,23 @@ import {
   EMPTY_FORM, CSV_TEMPLATE, scoreFromLead, scoreColor, parseCsv,
   DATE_RANGE_OPTIONS, getDateRange, formatShortDate,
 } from '../lib/leads'
+
+function timeAgo(ts) {
+  const diff = Date.now() - new Date(ts).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  if (d < 30) return `${d}d ago`
+  return formatShortDate(ts)
+}
+
+const ACTIVITY_TYPE_LABELS = {
+  note: 'Note', status_change: 'Status', contacted: 'Contacted',
+  assigned: 'Assigned', archived: 'Archived',
+}
 
 // ── LeadModal ─────────────────────────────────────────────────────────────────
 
@@ -39,13 +56,36 @@ function LeadModal({ lead, onClose, onSave, isAdmin }) {
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
   const [reps,   setReps]   = useState([])
+  const [activities,  setActivities]  = useState([])
+  const [newNote,     setNewNote]     = useState('')
+  const [addingNote,  setAddingNote]  = useState(false)
 
   useEffect(() => {
     api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
   }, [])
 
+  useEffect(() => {
+    if (lead?.id) {
+      api.get(`/api/leads/${lead.id}/activities`).then(data => setActivities(data || [])).catch(() => {})
+    }
+  }, [lead?.id])
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const liveScore = scoreFromLead({ ...form, estimated_value: Number(form.estimated_value) || 0 })
+
+  const handleAddNote = async () => {
+    const text = newNote.trim()
+    if (!text || !lead?.id) return
+    setAddingNote(true)
+    try {
+      const entry = await api.post(`/api/leads/${lead.id}/notes`, { text })
+      setActivities(prev => [entry, ...prev])
+      setNewNote('')
+    } catch (err) {
+      setError(err.message || 'Failed to add note')
+    }
+    setAddingNote(false)
+  }
 
   const handleSave = async () => {
     if (!form.doctor_name?.trim()) return setError('Doctor name is required')
@@ -173,6 +213,51 @@ function LeadModal({ lead, onClose, onSave, isAdmin }) {
             <textarea className="input resize-none" rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Any relevant notes..." />
           </div>
         </div>
+
+        {lead?.id && (
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <label className="label flex items-center gap-1.5"><Clock size={12} /> Activity &amp; Notes History</label>
+            <div className="flex gap-2 mb-3">
+              <input
+                className="input flex-1"
+                placeholder="Log an update — e.g. talked to him, follow up next week..."
+                value={newNote}
+                onChange={e => setNewNote(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddNote()}
+              />
+              <button
+                onClick={handleAddNote}
+                disabled={addingNote || !newNote.trim()}
+                className="btn-secondary px-3 flex items-center justify-center disabled:opacity-40"
+                title="Add note"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+            {activities.length === 0 ? (
+              <p className="text-xs text-slate-400">No activity logged yet — add the first note above.</p>
+            ) : (
+              <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                {activities.map(a => (
+                  <div key={a.id} className="flex gap-2.5 text-sm">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#06babe] mt-1.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                          {ACTIVITY_TYPE_LABELS[a.type] || a.type}
+                        </span>
+                        <span className="text-[10px] text-slate-400">{timeAgo(a.created_at)}</span>
+                      </div>
+                      <p className="text-slate-700 dark:text-slate-300">{a.description}</p>
+                      {a.created_by_name && <p className="text-[10px] text-slate-400 mt-0.5">by {a.created_by_name}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {error && <p className="text-sm text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg mt-4">{error}</p>}
       </div>
     </AnimatedModal>
