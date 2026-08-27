@@ -9,6 +9,7 @@ import Layout from './components/Layout'
 import PageTransition from './components/PageTransition'
 import TourOverlay from './components/TourOverlay'
 import Login from './pages/Login'
+import InstallApp from './pages/InstallApp'
 import Dashboard from './pages/Dashboard'
 import Leads from './pages/Leads'
 import Clients from './pages/Clients'
@@ -53,6 +54,7 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/login"       element={<PageTransition><Login /></PageTransition>} />
+        <Route path="/install"     element={<PageTransition><InstallApp /></PageTransition>} />
         <Route path="/dashboard"   element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/leads"       element={<ProtectedRoute><Leads /></ProtectedRoute>} />
         <Route path="/clients"     element={<ProtectedRoute><Clients /></ProtectedRoute>} />
