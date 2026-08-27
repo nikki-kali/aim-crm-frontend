@@ -443,7 +443,7 @@ function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {teamStats.map(({ rep, clients_count, cases_count, sales_value_ytd, ...periods }) => {
+                {teamStats.map(({ rep, clients_count, ...periods }) => {
                   const s = periods[teamPeriod] || {}
                   return (
                     <tr key={rep.id} onClick={() => navigate(`/reps/${rep.id}`)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
@@ -469,8 +469,8 @@ function AdminDashboard() {
                         </div>
                       </td>
                       <td className="text-slate-600 dark:text-slate-400">{clients_count ?? 0}</td>
-                      <td className="text-slate-600 dark:text-slate-400">{cases_count ?? 0}</td>
-                      <td className="font-bold text-emerald-600">${Number(sales_value_ytd ?? 0).toLocaleString()}</td>
+                      <td className="text-slate-600 dark:text-slate-400">{s.cases_count ?? 0}</td>
+                      <td className="font-bold text-emerald-600">${Number(s.sales_value ?? 0).toLocaleString()}</td>
                     </tr>
                   )
                 })}
@@ -480,7 +480,7 @@ function AdminDashboard() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-2">
-            {teamStats.map(({ rep, clients_count, cases_count, sales_value_ytd, ...periods }) => {
+            {teamStats.map(({ rep, clients_count, ...periods }) => {
               const s = periods[teamPeriod] || {}
               return (
                 <div key={rep.id} onClick={() => navigate(`/reps/${rep.id}`)} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 cursor-pointer active:opacity-70 transition-opacity">
@@ -490,9 +490,9 @@ function AdminDashboard() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm truncate">{rep.name || rep.email}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {s.leads_assigned ?? 0} leads · {clients_count ?? 0} clients · {cases_count ?? 0} cases
+                      {s.leads_assigned ?? 0} leads · {clients_count ?? 0} clients · {s.cases_count ?? 0} cases
                     </p>
-                    <p className="text-xs font-semibold text-emerald-600 mt-0.5">${Number(sales_value_ytd ?? 0).toLocaleString()} YTD</p>
+                    <p className="text-xs font-semibold text-emerald-600 mt-0.5">${Number(s.sales_value ?? 0).toLocaleString()} this {teamPeriod}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="font-bold text-emerald-600 text-sm">{s.leads_won ?? 0} wins</p>

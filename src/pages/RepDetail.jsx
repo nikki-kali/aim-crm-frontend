@@ -39,7 +39,6 @@ export default function RepDetail() {
   const toast = useToast()
 
   const [rep, setRep] = useState(null)
-  const [book, setBook] = useState(null)
   const [month, setMonth] = useState(null)
   const [leads, setLeads] = useState([])
   const [clients, setClients] = useState([])
@@ -61,7 +60,6 @@ export default function RepDetail() {
       const entry = (team || []).find(t => t.rep.id === id)
       if (entry) {
         setRep(entry.rep)
-        setBook({ clients_count: entry.clients_count, cases_count: entry.cases_count, sales_value_ytd: entry.sales_value_ytd })
         setMonth(entry.month)
       }
       setLeads(leadsData || [])
@@ -115,9 +113,9 @@ export default function RepDetail() {
                 { label: 'Leads', value: month?.leads_assigned ?? 0, icon: ClipboardList },
                 { label: 'Wins', value: month?.leads_won ?? 0, icon: Trophy },
                 { label: 'Conv.', value: `${month?.conversion_rate ?? 0}%`, icon: TrendingUp },
-                { label: 'Clients', value: book?.clients_count ?? 0, icon: Users },
-                { label: 'Cases', value: book?.cases_count ?? 0, icon: UserCheck },
-                { label: 'Sales YTD', value: `$${Number(book?.sales_value_ytd ?? 0).toLocaleString()}`, icon: TrendingUp, emphasize: true },
+                { label: 'Clients', value: clients.length, icon: Users },
+                { label: 'Cases', value: cases.length, icon: UserCheck },
+                { label: 'Sales', value: `$${cases.reduce((sum, c) => sum + Number(c.value || 0), 0).toLocaleString()}`, icon: TrendingUp, emphasize: true },
               ].map(s => (
                 <div key={s.label} className="text-center">
                   <p className={`text-lg font-bold ${s.emphasize ? 'text-emerald-600' : 'text-slate-800 dark:text-slate-100'}`}>{s.value}</p>
