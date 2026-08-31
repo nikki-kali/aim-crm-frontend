@@ -356,15 +356,25 @@ function PeriodCharts({ leads }) {
 
 // ─── Tab: Trends ──────────────────────────────────────────────────────────────
 
-function TrendsTab({ leads }) {
+function TrendsTab({ leads, cases }) {
   const byMonth = {}
   leads.forEach(l => {
     const d = new Date(l.created_at)
     const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     if (!byMonth[k]) byMonth[k] = { leads: 0, won: 0, lost: 0, revenue: 0 }
     byMonth[k].leads++
-    if (l.status === 'Won') { byMonth[k].won++; byMonth[k].revenue += Number(l.estimated_value || 0) }
+    if (l.status === 'Won') byMonth[k].won++
     if (l.status === 'Lost') byMonth[k].lost++
+  })
+  // Revenue comes from real case value, not leads.estimated_value — reps
+  // don't mark leads Won in practice (most real business is repeat cases
+  // from existing clients, not new-lead conversions), so estimated_value is
+  // almost never filled in and would show $0 nearly every month.
+  cases.forEach(c => {
+    const d = new Date(c.created_at)
+    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    if (!byMonth[k]) byMonth[k] = { leads: 0, won: 0, lost: 0, revenue: 0 }
+    byMonth[k].revenue += Number(c.value || 0)
   })
 
   const rows = Object.entries(byMonth)
@@ -428,7 +438,7 @@ function TrendsTab({ leads }) {
           <>
             <div className="hidden md:block overflow-x-auto">
               <table className="data-table">
-                <thead><TH cols={['Month', 'Leads', 'Won', 'Lost', 'Est. Revenue', 'Conv. Rate']} /></thead>
+                <thead><TH cols={['Month', 'Leads', 'Won', 'Lost', 'Revenue', 'Conv. Rate']} /></thead>
                 <tbody>
                   {tableRows.map((r, i) => (
                     <tr key={i} className="border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
@@ -1378,6 +1388,7 @@ export default function Reports() {
   const [brand, setBrand] = useState('All')
   const [leads, setLeads] = useState([])
   const [clients, setClients] = useState([])
+  const [cases, setCases] = useState([])
   const [loading, setLoading] = useState(true)
   const [showSendModal, setShowSendModal] = useState(false)
   const [exportingPDF, setExportingPDF] = useState(false)
@@ -1396,12 +1407,14 @@ export default function Reports() {
     async function load() {
       setLoading(true)
       const repParam = isAdmin && repFilter !== 'all' ? `&rep=${repFilter}` : ''
-      const [leadsData, clientsData] = await Promise.all([
+      const [leadsData, clientsData, casesData] = await Promise.all([
         api.get(`/api/leads?archived=false${repParam}`).catch(() => []),
         api.get(`/api/clients${repParam ? `?rep=${repFilter}` : ''}`).catch(() => []),
+        api.get(`/api/cases${repParam ? `?rep=${repFilter}` : ''}`).catch(() => []),
       ])
       setLeads(leadsData || [])
       setClients(clientsData || [])
+      setCases(casesData || [])
       setLoading(false)
     }
     load()
@@ -1415,6 +1428,14 @@ export default function Reports() {
     return list
   }, [leads, brand, dateRange])
   const fc = brand === 'All' ? clients : clients.filter(c => c.brand === brand)
+
+  const fcs = useMemo(() => {
+    const { from: drFrom, to: drTo } = dateRangeBounds(dateRange)
+    let list = brand === 'All' ? cases : cases.filter(c => c.brand === brand)
+    if (drFrom) list = list.filter(c => c.created_at >= drFrom)
+    if (drTo)   list = list.filter(c => c.created_at <= drTo)
+    return list
+  }, [cases, brand, dateRange])
 
   const activeRep = repFilter !== 'all' ? users.find(u => u.id === repFilter) : null
 
@@ -1455,8 +1476,12 @@ export default function Reports() {
                     const lost   = fl.filter(l => l.status === 'Lost')
                     const active = fl.filter(l => !['Won', 'Lost'].includes(l.status))
                     const cold14 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+                    // Real client revenue by brand, not leads.estimated_value
+                    // (almost never filled in — see clients.total_revenue,
+                    // which is kept in sync with actual case value) — keeps
+                    // this table consistent with the Total Revenue KPI above it.
                     const brandMap = {}
-                    won.forEach(l => { brandMap[l.brand] = (brandMap[l.brand] || 0) + Number(l.estimated_value || 0) })
+                    fc.forEach(c => { brandMap[c.brand] = (brandMap[c.brand] || 0) + Number(c.total_revenue || 0) })
                     await downloadReportPDF({
                       kpis: {
                         active_leads:  active.length,
@@ -1586,7 +1611,7 @@ export default function Reports() {
       ) : (
         <>
           {tab === 'overview'   && <OverviewTab leads={fl} clients={fc} />}
-          {tab === 'trends'     && <TrendsTab leads={fl} />}
+          {tab === 'trends'     && <TrendsTab leads={fl} cases={fcs} />}
           {tab === 'sources'    && <SourcesTab leads={fl} />}
           {tab === 'performers' && <PerformersTab leads={fl} clients={fc} />}
           {tab === 'operations' && <OperationsTab />}
