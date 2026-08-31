@@ -176,13 +176,17 @@ function RepDashboard({ user }) {
   const h = new Date().getHours()
   const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
   const motivational = MOTIVATIONAL[new Date().getDay()]
-  const monthLabel = new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
+  // summary.week/summary.month are the most recently *completed* week/month
+  // (see Backend's computeRepSummary), not week/month-to-date — so these
+  // labels name the period the numbers actually cover, not the current one.
+  const now = new Date()
+  const monthLabel = new Date(now.getFullYear(), now.getMonth() - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' })
 
   const w = summary?.week || {}
   const m = summary?.month || {}
   const s = summary?.sales || {}
   const kpiCards = summary ? [
-    { label: 'New Leads — This Week', value: w.leads_created || 0,        icon: Flame,        color: 'text-orange-600', bg: 'bg-orange-50', trend: (w.leads_created || 0) > 0 ? 'up' : 'flat' },
+    { label: 'New Leads — Last Week', value: w.leads_created || 0,        icon: Flame,        color: 'text-orange-600', bg: 'bg-orange-50', trend: (w.leads_created || 0) > 0 ? 'up' : 'flat' },
     { label: 'Active Leads',    value: summary.allTime?.active_leads ?? 0, icon: Users,        color: 'text-[#06babe]', bg: 'bg-teal-50', trend: 'flat' },
     { label: `Wins — ${monthLabel}`, value: m.wins || 0,                  icon: Trophy,       color: 'text-emerald-600', bg: 'bg-emerald-50', trend: (m.wins || 0) > 0 ? 'up' : 'flat' },
     { label: 'Proposals',       value: m.proposals || 0,                  icon: FileText,     color: 'text-blue-600', bg: 'bg-blue-50', trend: 'flat' },
