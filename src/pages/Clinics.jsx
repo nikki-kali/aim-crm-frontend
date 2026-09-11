@@ -208,7 +208,7 @@ function ClinicDetail({ id, onClose }) {
           <div className="flex border-b border-slate-100 dark:border-slate-800">
             {[{ id: 'overview', label: 'Overview' }, { id: 'notifications', label: 'Notifications', icon: Bell }].map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${activeTab === t.id ? 'text-[#06babe] border-b-2 border-[#06babe]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
+                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${activeTab === t.id ? 'text-[#057a7e] border-b-2 border-[#06babe]' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>
                 {t.icon && <Bell size={12} />}{t.label}
               </button>
             ))}
@@ -220,9 +220,9 @@ function ClinicDetail({ id, onClose }) {
         {activeTab === 'overview' && (
           <>
             <div className="flex gap-4 flex-wrap text-sm">
-              {clinic.phone && <a href={`tel:${clinic.phone}`} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-[#06babe]"><Phone size={14} />{clinic.phone}</a>}
-              {clinic.email && <a href={`mailto:${clinic.email}`} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-[#06babe]"><Mail size={14} />{clinic.email}</a>}
-              {clinic.website && <a href={clinic.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-[#06babe]"><Globe size={14} />{clinic.website}</a>}
+              {clinic.phone && <a href={`tel:${clinic.phone}`} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-[#057a7e]"><Phone size={14} />{clinic.phone}</a>}
+              {clinic.email && <a href={`mailto:${clinic.email}`} className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-[#057a7e]"><Mail size={14} />{clinic.email}</a>}
+              {clinic.website && <a href={clinic.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-[#057a7e]"><Globe size={14} />{clinic.website}</a>}
             </div>
 
             {clinic.cases?.length > 0 && (
@@ -380,7 +380,7 @@ export default function Clinics() {
                   {clinic.website && <a href={clinic.website} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-[#06babe] tap flex items-center justify-center -m-2"><Globe size={14} /></a>}
                 </div>
                 <div className="flex gap-3 items-center flex-shrink-0">
-                  <button onClick={() => setDetailId(clinic.id)} className="text-xs text-[#06babe] hover:underline flex items-center gap-0.5">View <ChevronRight size={11} /></button>
+                  <button onClick={() => setDetailId(clinic.id)} className="text-xs text-[#057a7e] hover:underline flex items-center gap-0.5">View <ChevronRight size={11} /></button>
                   <button onClick={() => setModal(clinic)} className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">Edit</button>
                   <button onClick={() => handleDelete(clinic.id)} className="text-xs text-red-400 hover:text-red-600">Del</button>
                 </div>

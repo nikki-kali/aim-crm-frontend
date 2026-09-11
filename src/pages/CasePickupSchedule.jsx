@@ -195,7 +195,7 @@ export default function CasePickupSchedule() {
               <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500"><ChevronLeft size={18} /></button>
               <div className="flex items-center gap-3">
                 <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">{MONTHS[current.month]} {current.year}</h2>
-                <button onClick={goToday} className="text-xs font-semibold text-[#06babe] hover:underline">Today</button>
+                <button onClick={goToday} className="text-xs font-semibold text-[#057a7e] hover:underline">Today</button>
               </div>
               <button onClick={nextMonth} className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500"><ChevronRight size={18} /></button>
             </div>
@@ -244,7 +244,7 @@ export default function CasePickupSchedule() {
                 {selectedDate ? `Pickups — ${selectedDate}` : 'All Scheduled Pickups'}
               </p>
               {selectedDate && (
-                <button onClick={() => setSelectedDate(null)} className="text-xs font-semibold text-[#06babe] hover:underline flex items-center gap-1">
+                <button onClick={() => setSelectedDate(null)} className="text-xs font-semibold text-[#057a7e] hover:underline flex items-center gap-1">
                   <X size={11} /> Clear
                 </button>
               )}

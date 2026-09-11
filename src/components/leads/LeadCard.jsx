@@ -66,7 +66,7 @@ export default function LeadCard({ lead, showArchived, onContactNow, onOpenSheet
         {!showArchived && (
           <button
             onClick={() => onContactNow(lead)}
-            className="flex-1 tap text-xs font-semibold rounded-xl bg-[#06babe]/10 text-[#06babe] dark:bg-teal-400/10 dark:text-teal-400"
+            className="flex-1 tap text-xs font-semibold rounded-xl bg-[#06babe]/10 text-[#057a7e] dark:bg-teal-400/10 dark:text-teal-400"
           >
             Mark Contacted
           </button>

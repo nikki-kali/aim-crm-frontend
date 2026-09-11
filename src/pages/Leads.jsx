@@ -645,20 +645,25 @@ export default function Leads() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
-          <select className="input w-full sm:w-auto flex-1 sm:flex-none" value={filterBrand} onChange={e => setFilterBrand(e.target.value)}>
+        {/* flex-wrap + a min-width per select (rather than w-full in a
+            single unwrapped row) — four selects squeezed edge-to-edge on a
+            phone-width viewport were truncating to unreadable labels like
+            "All Br" (found in the 2026-09-12 UI/UX review); wrapping to a
+            second row keeps each one wide enough to read its full label. */}
+        <div className="flex flex-wrap gap-2">
+          <select className="input flex-1 min-w-[130px] sm:w-auto sm:flex-none" value={filterBrand} onChange={e => setFilterBrand(e.target.value)}>
             <option value="All">All Brands</option>
             {BRAND_OPTIONS.map(b => <option key={b}>{b}</option>)}
           </select>
-          <select className="input w-full sm:w-auto flex-1 sm:flex-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <select className="input flex-1 min-w-[130px] sm:w-auto sm:flex-none" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
             <option value="All">All Statuses</option>
             {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
           </select>
-          <select className="input w-full sm:w-auto flex-1 sm:flex-none" value={dateFilter} onChange={e => setDateFilter(e.target.value)}>
+          <select className="input flex-1 min-w-[130px] sm:w-auto sm:flex-none" value={dateFilter} onChange={e => setDateFilter(e.target.value)}>
             {DATE_RANGE_OPTIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
           </select>
           {isAdmin && viewTab === 'all' && (
-            <select className="input w-full sm:w-auto flex-1 sm:flex-none" value={filterRep} onChange={e => setFilterRep(e.target.value)}>
+            <select className="input flex-1 min-w-[130px] sm:w-auto sm:flex-none" value={filterRep} onChange={e => setFilterRep(e.target.value)}>
               <option value="All">All Reps</option>
               {reps.map(r => <option key={r.id} value={r.id}>{r.name || r.email}</option>)}
             </select>
@@ -704,7 +709,15 @@ export default function Leads() {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block card overflow-hidden">
+          <div className="hidden md:block card overflow-hidden relative">
+            {/* Right-edge fade — this table already scrolls horizontally
+                (overflow-x-auto below), but with this many columns the
+                rightmost ones (Assign) end up past the fold at common
+                laptop widths with nothing to signal that; the 6px
+                scrollbar from index.css alone was too easy to miss (found
+                in the 2026-09-12 UI/UX review). Static rather than
+                scroll-position-aware to keep this a CSS-only fix. */}
+            <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-slate-900 to-transparent z-10" />
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
@@ -788,7 +801,7 @@ export default function Leads() {
                           {viewTab === 'unassigned' ? (
                             <button
                               onClick={() => handleClaim(lead)}
-                              className="text-xs font-semibold text-[#06babe] hover:text-[#207290] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-colors"
+                              className="text-xs font-semibold text-[#057a7e] hover:text-[#207290] bg-teal-50 dark:bg-teal-950/40 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-colors"
                             >
                               Claim
                             </button>
@@ -814,17 +827,17 @@ export default function Leads() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 justify-end flex-wrap">
                             {!showArchived && (
-                              <button onClick={() => handleContactNow(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
+                              <button onClick={() => handleContactNow(lead)} className="text-xs text-[#057a7e] hover:underline font-medium">
                                 Contacted
                               </button>
                             )}
                             {!showArchived && lead.case_interest === 'Schedule Pickup' && lead.pickup_status === 'requested' && (
-                              <button onClick={() => handleMarkDispatched(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
+                              <button onClick={() => handleMarkDispatched(lead)} className="text-xs text-[#057a7e] hover:underline font-medium">
                                 Dispatch
                               </button>
                             )}
                             {!showArchived && lead.case_interest === 'Schedule Pickup' && lead.pickup_status === 'dispatched' && (
-                              <button onClick={() => handleMarkReceived(lead)} className="text-xs text-[#06babe] hover:underline font-medium">
+                              <button onClick={() => handleMarkReceived(lead)} className="text-xs text-[#057a7e] hover:underline font-medium">
                                 Received
                               </button>
                             )}

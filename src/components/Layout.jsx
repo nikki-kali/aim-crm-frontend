@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext'
 import {
   LayoutDashboard, Users, UserCheck, LogOut, ClipboardList,
   BarChart3, TrendingUp, Zap, UserCog, Shield, Building2,
-  Camera, Sun, Moon, ChevronRight, CalendarDays, HelpCircle,
+  Camera, Sun, Moon, ChevronRight, CalendarDays, HelpCircle, ListChecks,
 } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
@@ -20,6 +20,7 @@ const STAFF_NAV = [
   { group: 'crm',  to: '/clients',   icon: UserCheck,       label: 'Clients' },
   { group: 'crm',  to: '/cases',     icon: ClipboardList,   label: 'Cases' },
   { group: 'crm',  to: '/pipeline',  icon: BarChart3,       label: 'Pipeline' },
+  { group: 'tools',to: '/tasks',     icon: ListChecks,      label: 'My Tasks' },
   { group: 'tools',to: '/reports',   icon: TrendingUp,      label: 'My Reports' },
   { group: 'tools',to: '/pickup-schedule', icon: CalendarDays, label: 'Case Pickup Schedules' },
   { group: 'tools',to: '/help',      icon: HelpCircle,      label: 'Help' },
@@ -32,6 +33,7 @@ const ADMIN_NAV = [
   { group: 'crm',   to: '/clinics',     icon: Building2,       label: 'Clinics' },
   { group: 'crm',   to: '/cases',       icon: ClipboardList,   label: 'Cases' },
   { group: 'crm',   to: '/pipeline',    icon: BarChart3,       label: 'Pipeline' },
+  { group: 'tools', to: '/tasks',       icon: ListChecks,      label: 'My Tasks' },
   { group: 'tools', to: '/reports',     icon: TrendingUp,      label: 'Reports' },
   { group: 'tools', to: '/pickup-schedule', icon: CalendarDays, label: 'Case Pickup Schedules' },
   { group: 'tools', to: '/help',        icon: HelpCircle,      label: 'Help' },
@@ -100,7 +102,7 @@ function NavGroup({ items, groupKey, currentPath, onClose }) {
               transition={{ delay: i * 0.04, duration: 0.22, ease: 'easeOut' }}
               className={`relative flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150 cursor-pointer mb-0.5 ${
                 isActive
-                  ? 'text-[#06babe] dark:text-teal-400'
+                  ? 'text-[#057a7e] dark:text-teal-400'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/70 dark:hover:bg-slate-800/60'
               }`}
             >

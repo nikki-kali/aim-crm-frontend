@@ -107,7 +107,7 @@ export default function ImportEvidentModal({ onClose, onImported }) {
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 <span className="font-semibold text-slate-900 dark:text-slate-100">{rows.length}</span>{' '}
-                case{rows.length !== 1 ? 's' : ''} · <span className="font-semibold text-[#06babe]">${totalValue.toLocaleString()}</span> total
+                case{rows.length !== 1 ? 's' : ''} · <span className="font-semibold text-[#057a7e]">${totalValue.toLocaleString()}</span> total
               </p>
               <button onClick={() => { setStep('pick'); setRows([]); setCsvFile(null) }}
                 className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 flex-shrink-0">← Change file</button>
@@ -171,7 +171,7 @@ export default function ImportEvidentModal({ onClose, onImported }) {
           <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Import complete</h3>
           <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
             <span className="font-semibold text-green-600">{result.createdCases} case{result.createdCases !== 1 ? 's' : ''} added</span>
-            {result.updatedCases > 0 && <>, <span className="font-semibold text-[#06babe]">{result.updatedCases} updated</span></>}
+            {result.updatedCases > 0 && <>, <span className="font-semibold text-[#057a7e]">{result.updatedCases} updated</span></>}
           </p>
           {result.createdClients > 0 && (
             <p className="text-sm text-slate-400">{result.createdClients} new client{result.createdClients !== 1 ? 's' : ''} created</p>

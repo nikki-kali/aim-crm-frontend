@@ -892,7 +892,7 @@ export default function Help() {
                     onClick={() => setActiveId(section.id)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
                       isActive
-                        ? 'bg-[#06babe]/8 text-[#06babe] dark:text-teal-400'
+                        ? 'bg-[#06babe]/8 text-[#057a7e] dark:text-teal-400'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                   >
@@ -914,8 +914,8 @@ export default function Help() {
             onClick={() => setActiveId('training')}
             className={`w-full mt-3 flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all text-left border ${
               activeId === 'training'
-                ? 'bg-[#06babe]/8 text-[#06babe] dark:text-teal-400 border-[#06babe]/20'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-[#06babe]/30 hover:text-[#06babe] dark:hover:text-teal-400'
+                ? 'bg-[#06babe]/8 text-[#057a7e] dark:text-teal-400 border-[#06babe]/20'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-[#06babe]/30 hover:text-[#057a7e] dark:hover:text-teal-400'
             }`}
           >
             <GraduationCap size={15} className="flex-shrink-0" />
@@ -926,8 +926,8 @@ export default function Help() {
             onClick={() => setActiveId('feedback')}
             className={`w-full mt-2 flex items-center gap-2.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all text-left border ${
               activeId === 'feedback'
-                ? 'bg-[#06babe]/8 text-[#06babe] dark:text-teal-400 border-[#06babe]/20'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-[#06babe]/30 hover:text-[#06babe] dark:hover:text-teal-400'
+                ? 'bg-[#06babe]/8 text-[#057a7e] dark:text-teal-400 border-[#06babe]/20'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-[#06babe]/30 hover:text-[#057a7e] dark:hover:text-teal-400'
             }`}
           >
             <MessageSquare size={15} className="flex-shrink-0" />
@@ -938,7 +938,7 @@ export default function Help() {
           <div className="mt-4 rounded-2xl bg-gradient-to-br from-[#06babe]/10 to-[#207290]/10 border border-[#06babe]/20 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Info size={13} className="text-[#06babe]" />
-              <span className="text-xs font-bold text-[#06babe]">Quick Start</span>
+              <span className="text-xs font-bold text-[#057a7e]">Quick Start</span>
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               New to the CRM? Start with <strong>Leads</strong>, then move to <strong>Clients</strong> once you close a deal. Use the <strong>Pipeline</strong> to track progress daily.

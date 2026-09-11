@@ -133,7 +133,7 @@ export default function Automations() {
             >
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{tpl.name}</p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 leading-relaxed">{tpl.description}</p>
-              <p className="text-[11px] text-[#06babe] font-medium mt-3 flex items-center gap-1">
+              <p className="text-[11px] text-[#057a7e] font-medium mt-3 flex items-center gap-1">
                 Use template <ArrowRight size={11} />
               </p>
             </button>

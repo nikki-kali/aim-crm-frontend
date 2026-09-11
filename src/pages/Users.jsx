@@ -163,7 +163,7 @@ function UserModal({ userData, onClose, onSave }) {
                   <input type="radio" name="role" value={r} checked={form.role === r} onChange={() => set('role', r)} className="hidden" />
                   <Icon size={15} className={form.role === r ? 'text-[#06babe]' : 'text-slate-400'} />
                   <div>
-                    <p className={`text-sm font-medium ${form.role === r ? 'text-[#06babe]' : 'text-slate-700 dark:text-slate-300'}`}>{ROLE_LABELS[r]}</p>
+                    <p className={`text-sm font-medium ${form.role === r ? 'text-[#057a7e]' : 'text-slate-700 dark:text-slate-300'}`}>{ROLE_LABELS[r]}</p>
                     <p className="text-xs text-slate-400">{ROLE_DESCRIPTIONS[r]}</p>
                   </div>
                 </label>
@@ -190,7 +190,7 @@ function UserCard({ u, isSelf, formatDate, onEdit, onDelete }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="font-medium text-slate-900 dark:text-slate-100 truncate">{u.name || '—'}</p>
-          {isSelf && <span className="text-[10px] font-semibold text-[#06babe]">You</span>}
+          {isSelf && <span className="text-[10px] font-semibold text-[#057a7e]">You</span>}
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.email}</p>
         <div className="flex items-center gap-2 mt-1">
@@ -290,7 +290,7 @@ export default function UsersPage() {
                             )}
                             <div>
                               <p className="font-medium text-gray-900">{u.name || '—'}</p>
-                              {isSelf && <p className="text-xs text-[#06babe]">You</p>}
+                              {isSelf && <p className="text-xs text-[#057a7e]">You</p>}
                             </div>
                           </div>
                         </td>

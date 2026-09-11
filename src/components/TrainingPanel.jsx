@@ -94,7 +94,7 @@ function ScenarioCard({ scenario, complete, onToggleComplete }) {
               {scenario.check && <SelfCheck check={scenario.check} />}
               <button
                 onClick={onToggleComplete}
-                className={`text-xs font-semibold flex items-center gap-1.5 ${complete ? 'text-emerald-600' : 'text-[#06babe] hover:underline'}`}
+                className={`text-xs font-semibold flex items-center gap-1.5 ${complete ? 'text-emerald-600' : 'text-[#057a7e] hover:underline'}`}
               >
                 <Check size={13} /> {complete ? 'Marked complete' : 'Mark as complete'}
               </button>
@@ -121,7 +121,7 @@ function ModuleSection({ mod, tour, hasTourModule }) {
         {hasTourModule && (
           <button
             onClick={() => tour.startTour(mod.id)}
-            className="text-xs font-semibold text-[#06babe] hover:underline flex items-center gap-1 flex-shrink-0"
+            className="text-xs font-semibold text-[#057a7e] hover:underline flex items-center gap-1 flex-shrink-0"
           >
             <Play size={11} /> Take the tour
           </button>

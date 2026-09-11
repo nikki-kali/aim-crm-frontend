@@ -64,7 +64,7 @@ function MoreSheet({ navItems, isAdmin, user, onAvatarClick, uploading, onSignOu
                   onClick={onClose}
                   className={`flex items-center gap-3 px-3 min-h-[48px] rounded-xl text-sm font-medium transition-colors ${
                     active
-                      ? 'text-[#06babe] dark:text-teal-400 bg-[#06babe]/8'
+                      ? 'text-[#057a7e] dark:text-teal-400 bg-[#06babe]/8'
                       : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
@@ -123,7 +123,7 @@ export default function MobileTabBar({ user, isAdmin, navItems, currentPath, onA
                   />
                 )}
                 <Icon size={21} className={active ? 'text-[#06babe] dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'} />
-                <span className={`text-[10px] font-medium truncate max-w-full ${active ? 'text-[#06babe] dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                <span className={`text-[10px] font-medium truncate max-w-full ${active ? 'text-[#057a7e] dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`}>
                   {label}
                 </span>
               </NavLink>
@@ -138,7 +138,7 @@ export default function MobileTabBar({ user, isAdmin, navItems, currentPath, onA
               />
             )}
             <MoreHorizontal size={21} className={!anyTabActive ? 'text-[#06babe] dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'} />
-            <span className={`text-[10px] font-medium ${!anyTabActive ? 'text-[#06babe] dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`}>
+            <span className={`text-[10px] font-medium ${!anyTabActive ? 'text-[#057a7e] dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'}`}>
               More
             </span>
           </button>

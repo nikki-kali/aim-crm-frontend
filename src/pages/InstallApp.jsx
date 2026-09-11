@@ -142,7 +142,7 @@ export default function InstallApp() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
-          Already have an account? <a href="/login" className="text-[#06babe] font-medium hover:underline">Sign in</a> once it's installed.
+          Already have an account? <a href="/login" className="text-[#057a7e] font-medium hover:underline">Sign in</a> once it's installed.
         </motion.p>
       </div>
     </div>

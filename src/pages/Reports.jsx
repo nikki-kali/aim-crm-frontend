@@ -129,7 +129,12 @@ function OverviewTab({ leads, clients }) {
         ) : (
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={bars} margin={{ top: 4, right: 8, left: -20, bottom: 4 }} barSize={36}>
+              {/* top margin widened from 4 to 28 — the value label sitting
+                  directly above the tallest bar (e.g. "2907" for Active,
+                  dwarfing Won/Lost counts in the single digits) was
+                  clipping against the container edge (found in the
+                  2026-09-12 UI/UX review) */}
+              <BarChart data={bars} margin={{ top: 28, right: 8, left: -20, bottom: 4 }} barSize={36}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
@@ -1230,7 +1235,7 @@ function MyReportTab() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Leads Created" value={month.leads_created} />
           <StatCard label="Wins"          value={month.wins} color="text-green-600" />
-          <StatCard label="Revenue"       value={`$${Number(month.revenue).toLocaleString()}`} color="text-[#06babe]" />
+          <StatCard label="Revenue"       value={`$${Number(month.revenue).toLocaleString()}`} color="text-[#057a7e]" />
           <StatCard
             label="Conversion Rate"
             value={`${month.conversion_rate}%`}
@@ -1246,7 +1251,7 @@ function MyReportTab() {
           <StatCard label="Active Leads"  value={allTime.active_leads} />
           <StatCard label="Total Leads"   value={allTime.total_leads} />
           <StatCard label="Total Wins"    value={allTime.total_wins} color="text-green-600" />
-          <StatCard label="Total Revenue" value={`$${Number(allTime.total_revenue).toLocaleString()}`} color="text-[#06babe]" />
+          <StatCard label="Total Revenue" value={`$${Number(allTime.total_revenue).toLocaleString()}`} color="text-[#057a7e]" />
         </div>
       </div>
 
@@ -1558,7 +1563,7 @@ export default function Reports() {
               className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
                 dateRange.preset === p.id
                   ? 'bg-[#06babe] text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-[#06babe] hover:text-[#06babe]'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-[#06babe] hover:text-[#057a7e]'
               }`}
             >
               {p.label}

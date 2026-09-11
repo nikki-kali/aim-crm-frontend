@@ -377,7 +377,7 @@ function CaseModal({ caseData, onClose, onSave, onResend }) {
           <h2 className="font-semibold text-slate-900 dark:text-slate-100">{caseData?.id ? 'Edit Case' : 'New Case'}</h2>
           <div className="flex items-center gap-3">
             {caseData?.id && caseData?.doctor_email && (
-              <button onClick={() => onResend(caseData)} title="Resend notification" className="text-xs flex items-center gap-1 text-[#06babe] hover:underline">
+              <button onClick={() => onResend(caseData)} title="Resend notification" className="text-xs flex items-center gap-1 text-[#057a7e] hover:underline">
                 <Mail size={12} /> <span className="hidden sm:inline">Resend notification</span>
               </button>
             )}
@@ -474,7 +474,7 @@ function CaseModal({ caseData, onClose, onSave, onResend }) {
             <button
               type="button"
               onClick={() => setShowProduction(v => !v)}
-              className="text-xs font-semibold text-[#06babe] hover:text-[#207290] flex items-center gap-1.5"
+              className="text-xs font-semibold text-[#057a7e] hover:text-[#207290] flex items-center gap-1.5"
             >
               <span className={`transition-transform ${showProduction ? 'rotate-90' : ''}`}>▸</span>
               Production Detail {!showProduction && <span className="text-slate-400 font-normal">(product, tooth #, shade, Evident #...)</span>}

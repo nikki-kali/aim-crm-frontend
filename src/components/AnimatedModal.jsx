@@ -1,6 +1,8 @@
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 // Bottom sheet on mobile (slides up, flush to viewport bottom, rounded top
 // corners only), centered dialog on desktop. Portaled to <body> so it's
@@ -30,10 +32,38 @@ export default function AnimatedModal({
   zIndex = 50,
   closeOnBackdrop = true,
 }) {
+  const panelRef = useRef(null)
+
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose?.() }
+    const onKey = (e) => {
+      if (e.key === 'Escape') { onClose?.(); return }
+      // Basic focus trap: keep Tab/Shift+Tab cycling within the panel
+      // rather than escaping to the (visually dimmed but still in the DOM)
+      // page behind it — the shared primitive behind every "New X" modal
+      // and sheet in the app had no dialog semantics or focus containment
+      // at all before this (found in the 2026-09-12 UI/UX review).
+      if (e.key === 'Tab' && panelRef.current) {
+        const focusable = panelRef.current.querySelectorAll(FOCUSABLE)
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault(); last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first.focus()
+        }
+      }
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+
+    const previouslyFocused = document.activeElement
+    const toFocus = panelRef.current?.querySelector(FOCUSABLE) || panelRef.current
+    toFocus?.focus()
+
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      previouslyFocused?.focus?.()
+    }
   }, [onClose])
 
   return createPortal(
@@ -48,7 +78,11 @@ export default function AnimatedModal({
       />
       {/* Panel */}
       <motion.div
-        className={`relative w-full ${MAX_WIDTH[maxWidth] || MAX_WIDTH.lg} rounded-t-2xl sm:rounded-2xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden`}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        className={`relative w-full ${MAX_WIDTH[maxWidth] || MAX_WIDTH.lg} rounded-t-2xl sm:rounded-2xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden focus:outline-none`}
         initial={{ opacity: 0, y: 40, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.97 }}
