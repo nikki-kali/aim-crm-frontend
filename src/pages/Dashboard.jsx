@@ -7,8 +7,9 @@ import { useAuth } from '../hooks/useAuth'
 import {
   Users, UserCheck, DollarSign, TrendingDown, AlertTriangle, RefreshCw,
   Globe, Linkedin, Facebook, Instagram, Twitter, Mail, CheckCircle, Archive,
-  ClipboardList, Trophy, FileText, Target, ArrowUpRight,
+  ClipboardList, Trophy, FileText, ArrowUpRight,
   ArrowDownRight, Minus, GraduationCap, Flame, Lightbulb,
+  ListChecks, Square, MapPin, Settings2,
 } from 'lucide-react'
 import { SkeletonCard, SkeletonKpiCards } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
@@ -16,6 +17,9 @@ import { normalizeSource } from '../lib/leadSource'
 import AnimatedModal from '../components/AnimatedModal'
 import { useTour } from '../context/TourContext'
 import GoalsBoard from '../components/GoalsBoard'
+import { useToast } from '../components/Toast'
+import useDashboardLayout from '../hooks/useDashboardLayout'
+import EditLayoutModal from '../components/EditLayoutModal'
 
 const SOURCE_ICON = {
   'LinkedIn':                 { Icon: Linkedin,  cls: 'text-blue-600 bg-blue-50 dark:bg-blue-950 dark:text-blue-400' },
@@ -141,23 +145,88 @@ function KpiCard({ label, value, icon: Icon, color, bg, bgDark, delay = 0, trend
   )
 }
 
+// ── Tasks for Today ─────────────────────────────────────────────────────────────
+// Compact preview of the same /api/tasks/my data the My Tasks page shows in
+// full — overdue tasks (most urgent) first, then due-today, nothing further
+// out so the dashboard doesn't turn into a second task list. Hidden
+// entirely when there's nothing due, matching this file's existing
+// pattern for optional cards (Your 1% This Week, Recent Leads).
+function TasksForToday() {
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const load = () => {
+    api.get('/api/tasks/my').then(setTasks).catch(() => {}).finally(() => setLoading(false))
+  }
+  useEffect(load, [])
+
+  const toggle = async (task) => {
+    setTasks(prev => prev.filter(t => t.id !== task.id))
+    await api.put(`/api/tasks/${task.id}`, { ...task, completed: true }).catch(load)
+  }
+
+  if (loading) return null
+
+  // Local calendar date, not toISOString().slice(0,10) — due_date is a
+  // plain local-date string (e.g. "2026-09-11"), and converting "now" to
+  // UTC first shifts the computed date by a day for most of the day in any
+  // non-UTC timezone, silently dropping today's tasks from this widget
+  // (reported 2026-09-12). Matches the todayStr() helper MyTasks.jsx
+  // already gets right.
+  const now = new Date()
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const overdue = tasks.filter(t => t.due_date && t.due_date < todayStr)
+  const dueToday = tasks.filter(t => t.due_date === todayStr)
+  const items = [...overdue, ...dueToday]
+  if (items.length === 0) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.35 }}
+      className="card p-4"
+    >
+      <div className="section-header">
+        <h2 className="section-title flex items-center gap-2"><ListChecks size={14} className="text-[#057a7e]" /> Tasks for Today</h2>
+        <Link to="/tasks" className="text-xs text-[#057a7e] hover:underline font-medium">View all →</Link>
+      </div>
+      <div className="space-y-1.5">
+        {items.map(t => {
+          const overdue = t.due_date < todayStr
+          return (
+            <div key={t.id} className={`flex items-start gap-2.5 p-2.5 rounded-xl ${overdue ? 'bg-red-50/50 dark:bg-red-950/20' : 'bg-slate-50 dark:bg-slate-800/40'}`}>
+              <button onClick={() => toggle(t)} className="mt-0.5 flex-shrink-0 text-slate-400 hover:text-[#057a7e]">
+                <Square size={15} />
+              </button>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{t.title}</p>
+                {t.client_name && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{t.client_name}</p>}
+                {t.client_address && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1 truncate">
+                    <MapPin size={11} className="flex-shrink-0" />{t.client_address}
+                  </p>
+                )}
+              </div>
+              {overdue && <span className="text-[10px] font-semibold text-red-500 flex-shrink-0 mt-0.5">Overdue</span>}
+            </div>
+          )
+        })}
+      </div>
+    </motion.div>
+  )
+}
+
 // ── Rep Dashboard ──────────────────────────────────────────────────────────────
 
 function RepDashboard({ user }) {
+  const toast = useToast()
   const [summary,      setSummary]     = useState(null)
-  const [weeklyFocus,  setWeeklyFocus] = useState('')
-  const [focusSaved,   setFocusSaved]  = useState(false)
   const [loading,      setLoading]     = useState(true)
 
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const [sum, wf] = await Promise.all([
-        api.get('/api/reports/my-summary'),
-        api.get('/api/weekly-focus'),
-      ])
+      const sum = await api.get('/api/reports/my-summary')
       setSummary(sum)
-      setWeeklyFocus(wf?.focus_text || '')
     } catch (err) {
       console.error('Rep dashboard error:', err)
     }
@@ -165,13 +234,6 @@ function RepDashboard({ user }) {
   }
 
   useEffect(() => { fetchAll() }, [])
-
-  const saveWeeklyFocus = async (val) => {
-    if (!val.trim()) return
-    await api.post('/api/weekly-focus', { focus_text: val }).catch(console.error)
-    setFocusSaved(true)
-    setTimeout(() => setFocusSaved(false), 2500)
-  }
 
   const h = new Date().getHours()
   const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
@@ -194,6 +256,94 @@ function RepDashboard({ user }) {
     { label: 'Sales Value — YTD', value: `$${Number(s.total || 0).toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', trend: (s.total || 0) > 0 ? 'up' : 'flat' },
   ] : []
 
+  const REP_WIDGETS = [
+    {
+      id: 'tasksForToday', label: 'Tasks for Today', span: 'full',
+      render: () => <TasksForToday />,
+    },
+    {
+      id: 'kpiCards', label: 'KPI Cards', span: 'full',
+      render: () => (
+        loading ? <SkeletonKpiCards count={4} /> : (
+          <div data-tour="dashboard-kpi-cards" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {kpiCards.map((card, i) => (
+              <KpiCard key={card.label} {...card} delay={i * 0.08} />
+            ))}
+          </div>
+        )
+      ),
+    },
+    {
+      id: 'suggestions', label: 'Your 1% This Week', span: 'full',
+      render: () => (
+        !loading && summary?.suggestions?.length > 0 && (
+          <motion.div
+            data-tour="dashboard-suggestions"
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.35 }}
+            className="card p-4"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb size={14} className="text-[#06babe]" />
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Your 1% This Week</h2>
+              {summary.tier && (
+                <span className={`ml-auto flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${TIER_META[summary.tier]?.bg} ${TIER_META[summary.tier]?.color}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${TIER_META[summary.tier]?.dot}`} />
+                  {TIER_META[summary.tier]?.label}
+                </span>
+              )}
+            </div>
+            <ul className="space-y-2">
+              {summary.suggestions.map((tip, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+                  <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIER_META[summary.tier]?.dot || 'bg-[#06babe]'}`} />
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        )
+      ),
+    },
+    {
+      id: 'recentLeads', label: 'My Recent Leads', span: 'full',
+      render: () => (
+        !loading && summary?.recent_leads?.length > 0 && (
+          <motion.div
+            data-tour="dashboard-recent-leads"
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.35 }}
+            className="card p-5"
+          >
+            <div className="section-header">
+              <h2 className="section-title">My Recent Leads</h2>
+              <Link to="/leads" className="text-xs text-[#057a7e] hover:underline font-medium">View all →</Link>
+            </div>
+            <div className="space-y-2.5">
+              {summary.recent_leads.map((lead, i) => (
+                <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.25 }}
+                  className="flex items-center gap-3 text-sm p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-[#06babe]/10 flex items-center justify-center flex-shrink-0 text-xs font-bold text-[#06babe]">
+                    {(lead.doctor_name || '?').split(' ').pop()[0]}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{lead.doctor_name}</p>
+                    <p className="text-xs text-slate-400">{lead.clinic_name || lead.case_interest || '—'}</p>
+                  </div>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold flex-shrink-0 ${STATUS_CLASSES[lead.status] || ''}`}>
+                    {lead.status}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )
+      ),
+    },
+  ]
+
+  const { order, loaded, visibleOrdered, save, reset } = useDashboardLayout('rep', REP_WIDGETS)
+  const [editingLayout, setEditingLayout] = useState(false)
+
   return (
     <div className="px-4 py-5 sm:p-6 max-w-5xl mx-auto space-y-6">
       {/* Greeting */}
@@ -207,103 +357,44 @@ function RepDashboard({ user }) {
           </h1>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5 italic">{motivational}</p>
         </div>
-        <button onClick={fetchAll} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
-          <RefreshCw size={14} /> Refresh
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setEditingLayout(true)} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
+            <Settings2 size={14} /> Edit Layout
+          </button>
+          <button onClick={fetchAll} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
       </motion.div>
 
-      {/* Weekly Focus */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.35 }}
-        className="card p-4"
-      >
-        <div className="flex items-center gap-2 mb-2.5">
-          <Target size={14} className="text-[#06babe]" />
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">My Focus This Week</h2>
-          {focusSaved && <span className="text-xs text-emerald-600 font-semibold ml-auto">Saved ✓</span>}
-        </div>
-        <input
-          className="input text-sm"
-          placeholder="What's your main goal this week?"
-          value={weeklyFocus}
-          onChange={e => setWeeklyFocus(e.target.value)}
-          onBlur={() => saveWeeklyFocus(weeklyFocus)}
-          onKeyDown={e => e.key === 'Enter' && saveWeeklyFocus(weeklyFocus)}
+      {loaded && visibleOrdered.map(w => <div key={w.id}>{w.render()}</div>)}
+
+      {editingLayout && (
+        <EditLayoutModal
+          registry={REP_WIDGETS}
+          order={order}
+          onSave={async (newOrder) => {
+            try {
+              await save(newOrder)
+              setEditingLayout(false)
+              toast('Layout saved', 'success')
+            } catch (err) {
+              console.error('Save layout error:', err)
+              toast('Failed to save layout', 'error')
+            }
+          }}
+          onReset={async () => {
+            try {
+              await reset()
+              setEditingLayout(false)
+              toast('Layout reset', 'success')
+            } catch (err) {
+              console.error('Reset layout error:', err)
+              toast('Failed to reset layout', 'error')
+            }
+          }}
+          onClose={() => setEditingLayout(false)}
         />
-      </motion.div>
-
-      {/* KPI Cards */}
-      {loading ? (
-        <SkeletonKpiCards count={4} />
-      ) : (
-        <div data-tour="dashboard-kpi-cards" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {kpiCards.map((card, i) => (
-            <KpiCard key={card.label} {...card} delay={i * 0.08} />
-          ))}
-        </div>
-      )}
-
-      {/* Your 1% This Week */}
-      {!loading && summary?.suggestions?.length > 0 && (
-        <motion.div
-          data-tour="dashboard-suggestions"
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.35 }}
-          className="card p-4"
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Lightbulb size={14} className="text-[#06babe]" />
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Your 1% This Week</h2>
-            {summary.tier && (
-              <span className={`ml-auto flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${TIER_META[summary.tier]?.bg} ${TIER_META[summary.tier]?.color}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${TIER_META[summary.tier]?.dot}`} />
-                {TIER_META[summary.tier]?.label}
-              </span>
-            )}
-          </div>
-          <ul className="space-y-2">
-            {summary.suggestions.map((tip, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300">
-                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIER_META[summary.tier]?.dot || 'bg-[#06babe]'}`} />
-                <span>{tip}</span>
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-      )}
-
-      {/* Goals */}
-      <GoalsBoard isAdmin={false} />
-
-      {/* Recent Leads */}
-      {!loading && summary?.recent_leads?.length > 0 && (
-        <motion.div
-          data-tour="dashboard-recent-leads"
-          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45, duration: 0.35 }}
-          className="card p-5"
-        >
-          <div className="section-header">
-            <h2 className="section-title">My Recent Leads</h2>
-            <Link to="/leads" className="text-xs text-[#06babe] hover:underline font-medium">View all →</Link>
-          </div>
-          <div className="space-y-2.5">
-            {summary.recent_leads.map((lead, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, duration: 0.25 }}
-                className="flex items-center gap-3 text-sm p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                <div className="w-8 h-8 rounded-full bg-[#06babe]/10 flex items-center justify-center flex-shrink-0 text-xs font-bold text-[#06babe]">
-                  {(lead.doctor_name || '?').split(' ').pop()[0]}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{lead.doctor_name}</p>
-                  <p className="text-xs text-slate-400">{lead.clinic_name || lead.case_interest || '—'}</p>
-                </div>
-                <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold flex-shrink-0 ${STATUS_CLASSES[lead.status] || ''}`}>
-                  {lead.status}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
       )}
     </div>
   )
