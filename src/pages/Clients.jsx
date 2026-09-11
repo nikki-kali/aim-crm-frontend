@@ -4,7 +4,10 @@ import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import AnimatedModal from '../components/AnimatedModal'
+import TaskModal from '../components/TaskModal'
 import { Plus, Search, Phone, Mail, X, ChevronRight, ClipboardList, Activity, CheckSquare, Square } from 'lucide-react'
+
+const PRIORITY_DOT = { high: 'bg-red-500', normal: 'bg-[#057a7e]', low: 'bg-gray-300' }
 
 const BRAND_OPTIONS = ['Aim Dental', 'Kings Highway']
 const REFERRAL_SOURCES = ['Referral', 'Google', 'Instagram', 'Walk-in', 'Other']
@@ -113,11 +116,15 @@ function ClientModal({ client, onClose, onSave }) {
 }
 
 function ClientDrawer({ clientId, onClose, onEdit }) {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [client, setClient] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('activity')
   const [newActivity, setNewActivity] = useState({ type: 'Call', description: '' })
-  const [newTask, setNewTask] = useState({ title: '', due_date: '' })
+  const [modalTask, setModalTask] = useState(undefined) // undefined = closed, null = create, object = edit
+  const [reps, setReps] = useState([])
+  const [clients, setClients] = useState([])
   const [saving, setSaving] = useState(false)
   const toast = useToast()
 
@@ -128,6 +135,13 @@ function ClientDrawer({ clientId, onClose, onEdit }) {
   }
 
   useEffect(() => { fetchClient() }, [clientId])
+  useEffect(() => {
+    if (isAdmin) api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
+  }, [isAdmin])
+  useEffect(() => {
+    // Feeds TaskModal's client picker — same client list used on My Tasks.
+    api.get('/api/clients').then(data => setClients(data || [])).catch(() => {})
+  }, [])
 
   const logActivity = async () => {
     if (!newActivity.description.trim()) return
@@ -139,21 +153,6 @@ function ClientDrawer({ clientId, onClose, onEdit }) {
       })
       setNewActivity({ type: 'Call', description: '' })
       toast('Activity logged', 'success')
-      fetchClient()
-    } catch (err) { toast(err.message, 'error') }
-    setSaving(false)
-  }
-
-  const addTask = async () => {
-    if (!newTask.title.trim()) return
-    setSaving(true)
-    try {
-      await api.post('/api/tasks', {
-        entity_type: 'client', entity_id: clientId,
-        title: newTask.title, due_date: newTask.due_date || null,
-      })
-      setNewTask({ title: '', due_date: '' })
-      toast('Task added', 'success')
       fetchClient()
     } catch (err) { toast(err.message, 'error') }
     setSaving(false)
@@ -229,7 +228,7 @@ function ClientDrawer({ clientId, onClose, onEdit }) {
               ].map(({ id, label, icon: Icon }) => (
                 <button key={id} onClick={() => setActiveTab(id)}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors ${
-                    activeTab === id ? 'text-[#06babe] border-b-2 border-[#06babe]' : 'text-gray-500 hover:text-gray-700'
+                    activeTab === id ? 'text-[#057a7e] border-b-2 border-[#06babe]' : 'text-gray-500 hover:text-gray-700'
                   }`}>
                   <Icon size={13} />{label}
                   {id === 'tasks' && client.tasks?.filter(t => !t.completed).length > 0 && (
@@ -276,23 +275,24 @@ function ClientDrawer({ clientId, onClose, onEdit }) {
               {/* Tasks tab */}
               {activeTab === 'tasks' && (
                 <div className="space-y-4">
-                  <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                    <input className="input text-xs py-1.5" value={newTask.title} onChange={e => setNewTask(p => ({ ...p, title: e.target.value }))} placeholder="Task title..." onKeyDown={e => e.key === 'Enter' && addTask()} />
-                    <div className="flex gap-2">
-                      <input className="input text-xs py-1.5 flex-1" type="date" value={newTask.due_date} onChange={e => setNewTask(p => ({ ...p, due_date: e.target.value }))} />
-                      <button onClick={addTask} disabled={saving || !newTask.title.trim()} className="btn-primary text-xs px-4 disabled:opacity-50">Add</button>
-                    </div>
-                  </div>
+                  <button onClick={() => setModalTask(null)} className="btn-primary text-xs w-full py-1.5 flex items-center justify-center gap-1.5">
+                    <Plus size={13} /> Add Task
+                  </button>
                   {client.tasks?.length === 0 && <p className="text-center text-gray-400 text-xs py-4">No tasks yet</p>}
                   <div className="space-y-1.5">
                     {client.tasks?.map(t => (
-                      <div key={t.id} className={`flex items-start gap-2.5 p-2.5 rounded-xl transition-colors ${t.completed ? 'bg-gray-50' : 'bg-white border border-gray-100'}`}>
-                        <button onClick={() => toggleTask(t)} className="mt-0.5 flex-shrink-0 text-gray-400 hover:text-[#06babe]">
+                      <div key={t.id} onClick={() => setModalTask(t)} className={`flex items-start gap-2.5 p-2.5 rounded-xl transition-colors cursor-pointer ${t.completed ? 'bg-gray-50' : 'bg-white border border-gray-100 hover:border-gray-200'}`}>
+                        <button onClick={e => { e.stopPropagation(); toggleTask(t) }} className="mt-0.5 flex-shrink-0 text-gray-400 hover:text-[#057a7e]">
                           {t.completed ? <CheckSquare size={15} className="text-green-500" /> : <Square size={15} />}
                         </button>
+                        <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[t.priority] || PRIORITY_DOT.normal}`} title={`${t.priority || 'normal'} priority`} />
                         <div className="flex-1 min-w-0">
                           <p className={`text-xs font-medium ${t.completed ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{t.title}</p>
-                          {t.due_date && <p className="text-[10px] text-gray-400 mt-0.5">Due {fmtDate(t.due_date)}</p>}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {t.due_date && <p className="text-[10px] text-gray-400">Due {fmtDate(t.due_date)}</p>}
+                            {isAdmin && t.assigned_to_name && <p className="text-[10px] text-gray-400">· {t.assigned_to_name}</p>}
+                          </div>
+                          {t.notes && <p className="text-[10px] text-gray-400 mt-1">{t.notes}</p>}
                         </div>
                       </div>
                     ))}
@@ -311,7 +311,7 @@ function ClientDrawer({ clientId, onClose, onEdit }) {
                         <span className="ml-2 text-gray-500">{c.case_type}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {c.value > 0 && <span className="text-[#06babe] font-semibold">${Number(c.value).toLocaleString()}</span>}
+                        {c.value > 0 && <span className="text-[#057a7e] font-semibold">${Number(c.value).toLocaleString()}</span>}
                         <span className={`px-2 py-0.5 rounded-full font-medium ${c.status === 'Completed' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'}`}>{c.status}</span>
                       </div>
                     </div>
@@ -322,6 +322,18 @@ function ClientDrawer({ clientId, onClose, onEdit }) {
           </>
         )}
       </motion.div>
+      {modalTask !== undefined && (
+        <TaskModal
+          task={modalTask}
+          clients={clients}
+          reps={reps}
+          canAssign={isAdmin}
+          currentUserId={user.id}
+          defaultClientId={clientId}
+          onClose={() => setModalTask(undefined)}
+          onSaved={fetchClient}
+        />
+      )}
     </>
   )
 }
@@ -451,7 +463,7 @@ export default function Clients() {
                   {client.email && <a href={`mailto:${client.email}`} className="text-gray-400 hover:text-[#06babe]"><Mail size={15} /></a>}
                 </div>
                 <div className="flex gap-2 items-center">
-                  <button onClick={() => setDrawerClientId(client.id)} className="text-xs text-[#06babe] hover:underline flex items-center gap-0.5">
+                  <button onClick={() => setDrawerClientId(client.id)} className="text-xs text-[#057a7e] hover:underline flex items-center gap-0.5">
                     View <ChevronRight size={11} />
                   </button>
                   <button onClick={() => setModal(client)} className="text-xs text-gray-500 hover:text-gray-900">Edit</button>

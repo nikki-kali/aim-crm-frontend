@@ -9,12 +9,13 @@ import {
   Globe, Linkedin, Facebook, Instagram, Twitter, Mail, CheckCircle, Archive,
   ClipboardList, Trophy, FileText, ArrowUpRight,
   ArrowDownRight, Minus, GraduationCap, Flame, Lightbulb,
-  ListChecks, Square, MapPin, Settings2,
+  ListChecks, Square, MapPin, Plus, Settings2,
 } from 'lucide-react'
 import { SkeletonCard, SkeletonKpiCards } from '../components/Skeleton'
 import EmptyState from '../components/EmptyState'
 import { normalizeSource } from '../lib/leadSource'
 import AnimatedModal from '../components/AnimatedModal'
+import TaskModal from '../components/TaskModal'
 import { useTour } from '../context/TourContext'
 import GoalsBoard from '../components/GoalsBoard'
 import { useToast } from '../components/Toast'
@@ -414,6 +415,18 @@ function AdminDashboard() {
   const [loading,      setLoading]     = useState(true)
   const [intakeActing, setIntakeActing]= useState({})
   const [teamPeriod,   setTeamPeriod]  = useState('month')
+  const [showTaskModal,setShowTaskModal] = useState(false)
+  const [clients,      setClients]     = useState([])
+  const [reps,         setReps]        = useState([])
+  const { user } = useAuth()
+
+  useEffect(() => {
+    // Feeds the "Create Task" modal's client/rep pickers — admins see every
+    // client (isScopedRole doesn't apply to them) and every staff/sales_rep
+    // user, same lists used elsewhere in the app.
+    api.get('/api/clients').then(data => setClients(data || [])).catch(() => {})
+    api.get('/api/users/reps').then(data => setReps(data || [])).catch(() => {})
+  }, [])
 
   const fetchData = async () => {
     setLoading(true)
@@ -483,9 +496,14 @@ function AdminDashboard() {
           <h1 className="page-title">Command Center</h1>
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">{monthLabel} overview · both brands</p>
         </div>
-        <button onClick={fetchData} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowTaskModal(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
+            <Plus size={14} /> Create Task
+          </button>
+          <button onClick={fetchData} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
+        </div>
       </motion.div>
 
       {/* KPI Cards */}
@@ -783,7 +801,7 @@ function AdminDashboard() {
           >
             <div className="section-header mb-4">
               <h2 className="section-title">Recent Leads</h2>
-              <Link to="/leads" className="text-xs text-[#06babe] hover:underline font-medium">View all →</Link>
+              <Link to="/leads" className="text-xs text-[#057a7e] hover:underline font-medium">View all →</Link>
             </div>
             {recentLeads.length === 0 ? (
               <EmptyState icon={Users} title="No leads yet" description="Add your first lead to get started." size="sm" />
@@ -809,6 +827,18 @@ function AdminDashboard() {
             )}
           </motion.div>
         </div>
+      )}
+
+      {showTaskModal && (
+        <TaskModal
+          task={null}
+          clients={clients}
+          reps={reps}
+          canAssign
+          currentUserId={user?.id}
+          onClose={() => setShowTaskModal(false)}
+          onSaved={() => {}}
+        />
       )}
     </div>
   )

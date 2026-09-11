@@ -23,6 +23,7 @@ import Users from './pages/Users'
 import RepDetail from './pages/RepDetail'
 import Help from './pages/Help'
 import CasePickupSchedule from './pages/CasePickupSchedule'
+import MyTasks from './pages/MyTasks'
 
 const Spinner = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -69,6 +70,7 @@ function AnimatedRoutes() {
         <Route path="/reps/:id"    element={<AdminRoute><RepDetail /></AdminRoute>} />
 
         <Route path="/pickup-schedule" element={<ProtectedRoute><CasePickupSchedule /></ProtectedRoute>} />
+        <Route path="/tasks"       element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
