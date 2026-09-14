@@ -359,7 +359,7 @@ function RepDashboard({ user }) {
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5 italic">{motivational}</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setEditingLayout(true)} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
+          <button onClick={() => setEditingLayout(true)} disabled={!loaded} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
             <Settings2 size={14} /> Edit Layout
           </button>
           <button onClick={fetchAll} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
@@ -845,7 +845,7 @@ function AdminDashboard() {
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">{monthLabel} overview · both brands</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setEditingAdminLayout(true)} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
+          <button onClick={() => setEditingAdminLayout(true)} disabled={!adminLoaded} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
             <Settings2 size={14} /> Edit Layout
           </button>
           <button onClick={() => setShowTaskModal(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">

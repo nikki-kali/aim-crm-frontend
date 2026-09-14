@@ -33,14 +33,26 @@ export default function useDashboardLayout(type, registry) {
   }, [type])
 
   const save = async (newOrder) => {
+    const previous = order
     setOrder(newOrder)
-    await api.put('/api/dashboard-layout', { dashboard_type: type, widgets: newOrder })
+    try {
+      await api.put('/api/dashboard-layout', { dashboard_type: type, widgets: newOrder })
+    } catch (err) {
+      setOrder(previous)
+      throw err
+    }
   }
 
   const reset = async () => {
+    const previous = order
     const def = registry.map(w => ({ id: w.id, visible: true }))
     setOrder(def)
-    await api.delete(`/api/dashboard-layout?type=${type}`)
+    try {
+      await api.delete(`/api/dashboard-layout?type=${type}`)
+    } catch (err) {
+      setOrder(previous)
+      throw err
+    }
   }
 
   const visibleOrdered = order
