@@ -699,6 +699,7 @@ function AdminDashboard() {
     {
       id: 'revenueByBrand', label: 'Revenue by Brand', span: 'third',
       render: () => (
+        !loading && (
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}
           className="card p-5"
@@ -739,11 +740,13 @@ function AdminDashboard() {
             </div>
           )}
         </motion.div>
+        )
       ),
     },
     {
       id: 'coldLeads', label: 'Cold Leads', span: 'third',
       render: () => (
+        !loading && (
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48, duration: 0.4 }}
           className="card p-5"
@@ -784,11 +787,13 @@ function AdminDashboard() {
             </div>
           )}
         </motion.div>
+        )
       ),
     },
     {
       id: 'recentLeads', label: 'Recent Leads', span: 'third',
       render: () => (
+        !loading && (
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.56, duration: 0.4 }}
           className="card p-5"
@@ -820,6 +825,7 @@ function AdminDashboard() {
             </div>
           )}
         </motion.div>
+        )
       ),
     },
   ]
