@@ -484,6 +484,348 @@ function AdminDashboard() {
   ] : []
 
   const totalRev = brandRevenue.reduce((s, b) => s + b.revenue, 0)
+  const toast = useToast()
+
+  const ADMIN_WIDGETS = [
+    {
+      id: 'kpiCards', label: 'KPI Cards', span: 'full',
+      render: () => (
+        loading ? <SkeletonKpiCards count={4} /> : (
+          <div data-tour="admin-kpi-cards" className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {kpiCards.map((card, i) => (
+              <KpiCard key={card.label} {...card} delay={i * 0.08} />
+            ))}
+          </div>
+        )
+      ),
+    },
+    {
+      id: 'repPerformance', label: 'Rep Performance', span: 'full',
+      render: () => (
+        !loading && teamStats.length > 0 && (
+          <motion.div
+            data-tour="rep-performance-table"
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28, duration: 0.4 }}
+            className="card p-5"
+          >
+            <div className="section-header">
+              <div className="flex items-center gap-2">
+                <Trophy size={15} className="text-[#06babe]" />
+                <h2 className="section-title">Rep Performance</h2>
+              </div>
+              <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+                {['week', 'month', 'quarter', 'year'].map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setTeamPeriod(p)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-150 ${
+                      teamPeriod === p
+                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="hidden md:block overflow-x-auto -mx-1">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    {['Rep', 'Leads', 'Wins', 'Proposals', 'Conv. Rate', 'Clients', 'Cases', 'Sales Value'].map(h => (
+                      <th key={h}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {teamStats.map(({ rep, clients_count, ...periods }) => {
+                    const s = periods[teamPeriod] || {}
+                    return (
+                      <tr key={rep.id} onClick={() => navigate(`/reps/${rep.id}`)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td>
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                              {(rep.name || rep.email || '?')[0].toUpperCase()}
+                            </div>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{rep.name || rep.email}</span>
+                          </div>
+                        </td>
+                        <td className="text-slate-600 dark:text-slate-400">{s.leads_assigned ?? 0}</td>
+                        <td><span className="font-bold text-emerald-600">{s.leads_won ?? 0}</span></td>
+                        <td className="text-slate-600 dark:text-slate-400">{s.proposals_sent ?? 0}</td>
+                        <td>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`font-bold ${(s.conversion_rate ?? 0) >= 30 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                              {s.conversion_rate ?? 0}%
+                            </span>
+                            {(s.conversion_rate ?? 0) >= 30
+                              ? <ArrowUpRight size={12} className="text-emerald-500" />
+                              : <ArrowDownRight size={12} className="text-red-400" />}
+                          </div>
+                        </td>
+                        <td className="text-slate-600 dark:text-slate-400">{clients_count ?? 0}</td>
+                        <td className="text-slate-600 dark:text-slate-400">{s.cases_count ?? 0}</td>
+                        <td className="font-bold text-emerald-600">${Number(s.sales_value ?? 0).toLocaleString()}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden space-y-2">
+              {teamStats.map(({ rep, clients_count, ...periods }) => {
+                const s = periods[teamPeriod] || {}
+                return (
+                  <div key={rep.id} onClick={() => navigate(`/reps/${rep.id}`)} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 cursor-pointer active:opacity-70 transition-opacity">
+                    <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      {(rep.name || rep.email || '?')[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm truncate">{rep.name || rep.email}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {s.leads_assigned ?? 0} leads · {clients_count ?? 0} clients · {s.cases_count ?? 0} cases
+                      </p>
+                      <p className="text-xs font-semibold text-emerald-600 mt-0.5">${Number(s.sales_value ?? 0).toLocaleString()} this {teamPeriod}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-bold text-emerald-600 text-sm">{s.leads_won ?? 0} wins</p>
+                      <div className="flex items-center gap-1 justify-end">
+                        <span className={`text-xs font-bold ${(s.conversion_rate ?? 0) >= 30 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                          {s.conversion_rate ?? 0}%
+                        </span>
+                        {(s.conversion_rate ?? 0) >= 30
+                          ? <ArrowUpRight size={11} className="text-emerald-500" />
+                          : <ArrowDownRight size={11} className="text-red-400" />}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </motion.div>
+        )
+      ),
+    },
+    {
+      id: 'teamGoals', label: 'Team Goals', span: 'full',
+      render: () => <GoalsBoard isAdmin={true} />,
+    },
+    {
+      id: 'intakeFeed', label: 'Intake Feed', span: 'full',
+      render: () => (
+        !loading && intakeLeads.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}
+            className="card p-5"
+          >
+            <div className="section-header">
+              <div className="flex items-center gap-2">
+                <Globe size={15} className="text-[#06babe]" />
+                <h2 className="section-title">Intake Feed</h2>
+                <span className="bg-[#06babe]/10 text-[#06babe] text-xs font-bold px-2 py-0.5 rounded-full">
+                  {intakeLeads.length} new
+                </span>
+              </div>
+              <span className="text-xs text-slate-400">Last 7 days · web &amp; social</span>
+            </div>
+            <div className="space-y-1">
+              {intakeLeads.map((lead, i) => {
+                const src = SOURCE_ICON[normalizeSource(lead.lead_source || lead.referral_source)] || { Icon: Globe, cls: 'text-slate-400 bg-slate-100 dark:bg-slate-800' }
+                const acting = intakeActing[lead.id]
+                return (
+                  <motion.div
+                    key={lead.id}
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                  >
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${src.cls}`}>
+                      <src.Icon size={15} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{lead.doctor_name}</p>
+                      <p className="text-xs text-slate-400 truncate">
+                        {lead.case_interest || 'No case specified'} · {timeAgo(lead.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button onClick={() => handleIntakeAction(lead, 'approve')} disabled={!!acting}
+                        className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg font-semibold transition-colors disabled:opacity-40">
+                        <CheckCircle size={12} />
+                        {acting === 'approve' ? '…' : 'Approve'}
+                      </button>
+                      <button onClick={() => handleIntakeAction(lead, 'archive')} disabled={!!acting}
+                        className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg font-semibold transition-colors disabled:opacity-40">
+                        <Archive size={12} />
+                        {acting === 'archive' ? '…' : 'Archive'}
+                      </button>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </motion.div>
+        )
+      ),
+    },
+    {
+      id: 'casePipeline', label: 'Active Case Pipeline', span: 'full',
+      render: () => (
+        !loading && casePipeline.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38, duration: 0.4 }}
+            className="card p-5"
+          >
+            <div className="section-header">
+              <div className="flex items-center gap-2">
+                <ClipboardList size={15} className="text-[#06babe]" />
+                <h2 className="section-title">Active Case Pipeline</h2>
+              </div>
+              <span className="text-xs text-slate-400">{casePipeline.reduce((s, c) => s + Number(c.count), 0)} open cases</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {casePipeline.map(({ status, count }) => (
+                <div key={status} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{count}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-tight font-medium">{status}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )
+      ),
+    },
+    {
+      id: 'revenueByBrand', label: 'Revenue by Brand', span: 'third',
+      render: () => (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}
+          className="card p-5"
+        >
+          <h2 className="section-title mb-4">Revenue by Brand</h2>
+          {brandRevenue.length === 0 ? (
+            <EmptyState icon={DollarSign} title="No revenue data yet" size="sm" />
+          ) : (
+            <div className="space-y-4">
+              {brandRevenue.map(({ brand, revenue }) => {
+                const pct = totalRev > 0 ? Math.round((revenue / totalRev) * 100) : 0
+                return (
+                  <div key={brand}>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{brand}</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                        {fmt(revenue)} <span className="text-xs text-slate-400">({pct}%)</span>
+                      </span>
+                    </div>
+                    <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ delay: 0.6, duration: 0.9, ease: 'easeOut' }}
+                        style={{ backgroundColor: BRAND_COLORS[brand] || '#06babe' }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                  <span>Total</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-200">{fmt(totalRev)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      ),
+    },
+    {
+      id: 'coldLeads', label: 'Cold Leads', span: 'third',
+      render: () => (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48, duration: 0.4 }}
+          className="card p-5"
+        >
+          <div className="section-header mb-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={15} className="text-amber-500" />
+              <h2 className="section-title">Cold Leads</h2>
+            </div>
+            {coldLeads.length > 0 && (
+              <span className="text-xs bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold border border-amber-100 dark:border-amber-900">
+                {coldLeads.length} need follow-up
+              </span>
+            )}
+          </div>
+          {coldLeads.length === 0 ? (
+            <EmptyState icon={CheckCircle} title="No cold leads" description="Great job staying on top of your pipeline!" size="sm" />
+          ) : (
+            <div className="space-y-2.5">
+              {coldLeads.slice(0, 4).map((lead, i) => {
+                const days = lead.last_contacted_at
+                  ? Math.floor((Date.now() - new Date(lead.last_contacted_at)) / 86400000) : '?'
+                return (
+                  <motion.div key={lead.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06, duration: 0.25 }}
+                    className="flex items-center gap-3 text-sm p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center flex-shrink-0 text-xs font-bold text-amber-700 dark:text-amber-400">
+                      {lead.doctor_name.split(' ').pop()[0]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{lead.doctor_name}</p>
+                      <p className="text-xs text-slate-400">{lead.assigned_to_name || lead.clinic_name}</p>
+                    </div>
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-bold flex-shrink-0 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-lg">{days}d</span>
+                  </motion.div>
+                )
+              })}
+            </div>
+          )}
+        </motion.div>
+      ),
+    },
+    {
+      id: 'recentLeads', label: 'Recent Leads', span: 'third',
+      render: () => (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.56, duration: 0.4 }}
+          className="card p-5"
+        >
+          <div className="section-header mb-4">
+            <h2 className="section-title">Recent Leads</h2>
+            <Link to="/leads" className="text-xs text-[#057a7e] hover:underline font-medium">View all →</Link>
+          </div>
+          {recentLeads.length === 0 ? (
+            <EmptyState icon={Users} title="No leads yet" description="Add your first lead to get started." size="sm" />
+          ) : (
+            <div className="space-y-2.5">
+              {recentLeads.map((lead, i) => (
+                <motion.div key={lead.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.06, duration: 0.25 }}
+                  className="flex items-center gap-3 text-sm p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-[#06babe]/10 flex items-center justify-center flex-shrink-0 text-xs font-bold text-[#06babe]">
+                    {lead.doctor_name.split(' ').pop()[0]}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{lead.doctor_name}</p>
+                    <p className="text-xs text-slate-400">{lead.case_interest || lead.assigned_to_name}</p>
+                  </div>
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold flex-shrink-0 ${STATUS_CLASSES[lead.status] || 'status-lead'}`}>
+                    {lead.status}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      ),
+    },
+  ]
+
+  const { order: adminOrder, loaded: adminLoaded, visibleOrdered: adminVisible, save: saveAdmin, reset: resetAdmin } = useDashboardLayout('admin', ADMIN_WIDGETS)
+  const [editingAdminLayout, setEditingAdminLayout] = useState(false)
 
   return (
     <div className="px-4 py-5 sm:p-6 max-w-6xl mx-auto space-y-6">
@@ -497,6 +839,9 @@ function AdminDashboard() {
           <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">{monthLabel} overview · both brands</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => setEditingAdminLayout(true)} className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto">
+            <Settings2 size={14} /> Edit Layout
+          </button>
           <button onClick={() => setShowTaskModal(true)} className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
             <Plus size={14} /> Create Task
           </button>
@@ -506,327 +851,42 @@ function AdminDashboard() {
         </div>
       </motion.div>
 
-      {/* KPI Cards */}
-      {loading ? (
-        <SkeletonKpiCards count={4} />
-      ) : (
-        <div data-tour="admin-kpi-cards" className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {kpiCards.map((card, i) => (
-            <KpiCard key={card.label} {...card} delay={i * 0.08} />
+      {adminLoaded && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {adminVisible.map(w => (
+            <div key={w.id} className={w.span === 'full' ? 'lg:col-span-3' : ''}>
+              {w.render()}
+            </div>
           ))}
         </div>
       )}
 
-      {/* Rep Performance */}
-      {!loading && teamStats.length > 0 && (
-        <motion.div
-          data-tour="rep-performance-table"
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28, duration: 0.4 }}
-          className="card p-5"
-        >
-          <div className="section-header">
-            <div className="flex items-center gap-2">
-              <Trophy size={15} className="text-[#06babe]" />
-              <h2 className="section-title">Rep Performance</h2>
-            </div>
-            <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
-              {['week', 'month', 'quarter', 'year'].map(p => (
-                <button
-                  key={p}
-                  onClick={() => setTeamPeriod(p)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-150 ${
-                    teamPeriod === p
-                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto -mx-1">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  {['Rep', 'Leads', 'Wins', 'Proposals', 'Conv. Rate', 'Clients', 'Cases', 'Sales Value'].map(h => (
-                    <th key={h}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {teamStats.map(({ rep, clients_count, ...periods }) => {
-                  const s = periods[teamPeriod] || {}
-                  return (
-                    <tr key={rep.id} onClick={() => navigate(`/reps/${rep.id}`)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <td>
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                            {(rep.name || rep.email || '?')[0].toUpperCase()}
-                          </div>
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">{rep.name || rep.email}</span>
-                        </div>
-                      </td>
-                      <td className="text-slate-600 dark:text-slate-400">{s.leads_assigned ?? 0}</td>
-                      <td><span className="font-bold text-emerald-600">{s.leads_won ?? 0}</span></td>
-                      <td className="text-slate-600 dark:text-slate-400">{s.proposals_sent ?? 0}</td>
-                      <td>
-                        <div className="flex items-center gap-1.5">
-                          <span className={`font-bold ${(s.conversion_rate ?? 0) >= 30 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}`}>
-                            {s.conversion_rate ?? 0}%
-                          </span>
-                          {(s.conversion_rate ?? 0) >= 30
-                            ? <ArrowUpRight size={12} className="text-emerald-500" />
-                            : <ArrowDownRight size={12} className="text-red-400" />}
-                        </div>
-                      </td>
-                      <td className="text-slate-600 dark:text-slate-400">{clients_count ?? 0}</td>
-                      <td className="text-slate-600 dark:text-slate-400">{s.cases_count ?? 0}</td>
-                      <td className="font-bold text-emerald-600">${Number(s.sales_value ?? 0).toLocaleString()}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-2">
-            {teamStats.map(({ rep, clients_count, ...periods }) => {
-              const s = periods[teamPeriod] || {}
-              return (
-                <div key={rep.id} onClick={() => navigate(`/reps/${rep.id}`)} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 cursor-pointer active:opacity-70 transition-opacity">
-                  <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                    {(rep.name || rep.email || '?')[0].toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm truncate">{rep.name || rep.email}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {s.leads_assigned ?? 0} leads · {clients_count ?? 0} clients · {s.cases_count ?? 0} cases
-                    </p>
-                    <p className="text-xs font-semibold text-emerald-600 mt-0.5">${Number(s.sales_value ?? 0).toLocaleString()} this {teamPeriod}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-emerald-600 text-sm">{s.leads_won ?? 0} wins</p>
-                    <div className="flex items-center gap-1 justify-end">
-                      <span className={`text-xs font-bold ${(s.conversion_rate ?? 0) >= 30 ? 'text-emerald-600' : 'text-slate-700 dark:text-slate-300'}`}>
-                        {s.conversion_rate ?? 0}%
-                      </span>
-                      {(s.conversion_rate ?? 0) >= 30
-                        ? <ArrowUpRight size={11} className="text-emerald-500" />
-                        : <ArrowDownRight size={11} className="text-red-400" />}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Goals */}
-      <GoalsBoard isAdmin={true} />
-
-      {/* Intake Feed */}
-      {!loading && intakeLeads.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}
-          className="card p-5"
-        >
-          <div className="section-header">
-            <div className="flex items-center gap-2">
-              <Globe size={15} className="text-[#06babe]" />
-              <h2 className="section-title">Intake Feed</h2>
-              <span className="bg-[#06babe]/10 text-[#06babe] text-xs font-bold px-2 py-0.5 rounded-full">
-                {intakeLeads.length} new
-              </span>
-            </div>
-            <span className="text-xs text-slate-400">Last 7 days · web &amp; social</span>
-          </div>
-          <div className="space-y-1">
-            {intakeLeads.map((lead, i) => {
-              const src = SOURCE_ICON[normalizeSource(lead.lead_source || lead.referral_source)] || { Icon: Globe, cls: 'text-slate-400 bg-slate-100 dark:bg-slate-800' }
-              const acting = intakeActing[lead.id]
-              return (
-                <motion.div
-                  key={lead.id}
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-                >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${src.cls}`}>
-                    <src.Icon size={15} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{lead.doctor_name}</p>
-                    <p className="text-xs text-slate-400 truncate">
-                      {lead.case_interest || 'No case specified'} · {timeAgo(lead.created_at)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button onClick={() => handleIntakeAction(lead, 'approve')} disabled={!!acting}
-                      className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg font-semibold transition-colors disabled:opacity-40">
-                      <CheckCircle size={12} />
-                      {acting === 'approve' ? '…' : 'Approve'}
-                    </button>
-                    <button onClick={() => handleIntakeAction(lead, 'archive')} disabled={!!acting}
-                      className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg font-semibold transition-colors disabled:opacity-40">
-                      <Archive size={12} />
-                      {acting === 'archive' ? '…' : 'Archive'}
-                    </button>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Case Pipeline Summary */}
-      {!loading && casePipeline.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38, duration: 0.4 }}
-          className="card p-5"
-        >
-          <div className="section-header">
-            <div className="flex items-center gap-2">
-              <ClipboardList size={15} className="text-[#06babe]" />
-              <h2 className="section-title">Active Case Pipeline</h2>
-            </div>
-            <span className="text-xs text-slate-400">{casePipeline.reduce((s, c) => s + Number(c.count), 0)} open cases</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {casePipeline.map(({ status, count }) => (
-              <div key={status} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{count}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-tight font-medium">{status}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Bottom 3-col grid */}
-      {!loading && (
-        <div className="grid lg:grid-cols-3 gap-5">
-          {/* Revenue by Brand */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}
-            className="card p-5"
-          >
-            <h2 className="section-title mb-4">Revenue by Brand</h2>
-            {brandRevenue.length === 0 ? (
-              <EmptyState icon={DollarSign} title="No revenue data yet" size="sm" />
-            ) : (
-              <div className="space-y-4">
-                {brandRevenue.map(({ brand, revenue }) => {
-                  const pct = totalRev > 0 ? Math.round((revenue / totalRev) * 100) : 0
-                  return (
-                    <div key={brand}>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{brand}</span>
-                        <span className="text-sm text-slate-500 dark:text-slate-400">
-                          {fmt(revenue)} <span className="text-xs text-slate-400">({pct}%)</span>
-                        </span>
-                      </div>
-                      <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${pct}%` }}
-                          transition={{ delay: 0.6, duration: 0.9, ease: 'easeOut' }}
-                          style={{ backgroundColor: BRAND_COLORS[brand] || '#06babe' }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span>Total</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">{fmt(totalRev)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </motion.div>
-
-          {/* Cold Leads */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48, duration: 0.4 }}
-            className="card p-5"
-          >
-            <div className="section-header mb-4">
-              <div className="flex items-center gap-2">
-                <AlertTriangle size={15} className="text-amber-500" />
-                <h2 className="section-title">Cold Leads</h2>
-              </div>
-              {coldLeads.length > 0 && (
-                <span className="text-xs bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold border border-amber-100 dark:border-amber-900">
-                  {coldLeads.length} need follow-up
-                </span>
-              )}
-            </div>
-            {coldLeads.length === 0 ? (
-              <EmptyState icon={CheckCircle} title="No cold leads" description="Great job staying on top of your pipeline!" size="sm" />
-            ) : (
-              <div className="space-y-2.5">
-                {coldLeads.slice(0, 4).map((lead, i) => {
-                  const days = lead.last_contacted_at
-                    ? Math.floor((Date.now() - new Date(lead.last_contacted_at)) / 86400000) : '?'
-                  return (
-                    <motion.div key={lead.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.06, duration: 0.25 }}
-                      className="flex items-center gap-3 text-sm p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                      <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center flex-shrink-0 text-xs font-bold text-amber-700 dark:text-amber-400">
-                        {lead.doctor_name.split(' ').pop()[0]}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{lead.doctor_name}</p>
-                        <p className="text-xs text-slate-400">{lead.assigned_to_name || lead.clinic_name}</p>
-                      </div>
-                      <span className="text-xs text-amber-600 dark:text-amber-400 font-bold flex-shrink-0 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-lg">{days}d</span>
-                    </motion.div>
-                  )
-                })}
-              </div>
-            )}
-          </motion.div>
-
-          {/* Recent Leads */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.56, duration: 0.4 }}
-            className="card p-5"
-          >
-            <div className="section-header mb-4">
-              <h2 className="section-title">Recent Leads</h2>
-              <Link to="/leads" className="text-xs text-[#057a7e] hover:underline font-medium">View all →</Link>
-            </div>
-            {recentLeads.length === 0 ? (
-              <EmptyState icon={Users} title="No leads yet" description="Add your first lead to get started." size="sm" />
-            ) : (
-              <div className="space-y-2.5">
-                {recentLeads.map((lead, i) => (
-                  <motion.div key={lead.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.06, duration: 0.25 }}
-                    className="flex items-center gap-3 text-sm p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-[#06babe]/10 flex items-center justify-center flex-shrink-0 text-xs font-bold text-[#06babe]">
-                      {lead.doctor_name.split(' ').pop()[0]}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{lead.doctor_name}</p>
-                      <p className="text-xs text-slate-400">{lead.case_interest || lead.assigned_to_name}</p>
-                    </div>
-                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold flex-shrink-0 ${STATUS_CLASSES[lead.status] || 'status-lead'}`}>
-                      {lead.status}
-                    </span>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        </div>
+      {editingAdminLayout && (
+        <EditLayoutModal
+          registry={ADMIN_WIDGETS}
+          order={adminOrder}
+          onSave={async (newOrder) => {
+            try {
+              await saveAdmin(newOrder)
+              setEditingAdminLayout(false)
+              toast('Layout saved', 'success')
+            } catch (err) {
+              console.error('Save layout error:', err)
+              toast('Failed to save layout', 'error')
+            }
+          }}
+          onReset={async () => {
+            try {
+              await resetAdmin()
+              setEditingAdminLayout(false)
+              toast('Layout reset', 'success')
+            } catch (err) {
+              console.error('Reset layout error:', err)
+              toast('Failed to reset layout', 'error')
+            }
+          }}
+          onClose={() => setEditingAdminLayout(false)}
+        />
       )}
 
       {showTaskModal && (
