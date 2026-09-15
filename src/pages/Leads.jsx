@@ -107,12 +107,13 @@ export function LeadModal({ lead, onClose, onSave, isAdmin }) {
         estimated_value: Number(form.estimated_value) || 0,
         assigned_to:     form.assigned_to     || null,
       }
+      let saved
       if (lead?.id) {
-        await api.put(`/api/leads/${lead.id}`, data)
+        saved = await api.put(`/api/leads/${lead.id}`, data)
       } else {
-        await api.post('/api/leads', data)
+        saved = await api.post('/api/leads', data)
       }
-      onSave()
+      onSave(saved)
     } catch (err) {
       setError(err.message || 'Save failed — please try again')
     }
@@ -893,7 +894,11 @@ export default function Leads() {
           <LeadModal
             lead={modal === 'new' ? null : modal}
             onClose={() => setModal(null)}
-            onSave={() => { setModal(null); fetchLeads() }}
+            onSave={(saved) => {
+              setModal(null)
+              fetchLeads()
+              if (saved?.converted_to_client_id) toast(`${saved.doctor_name} moved to Clients`, 'success')
+            }}
             isAdmin={isAdmin}
           />
         )}
