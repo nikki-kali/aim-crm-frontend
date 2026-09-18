@@ -12,6 +12,8 @@ const METRIC_OPTIONS = [
   { value: 'leads_contacted', label: 'Leads Contacted' },
   { value: 'proposals_sent', label: 'Proposals Sent' },
   { value: 'conversion_rate', label: '% Conversion Rate' },
+  { value: 'new_doctors', label: 'New Doctors' },
+  { value: 'monthly_revenue', label: 'Revenue' },
 ]
 const METRIC_LABELS = Object.fromEntries(METRIC_OPTIONS.map((m) => [m.value, m.label]))
 
@@ -26,12 +28,14 @@ function ProgressBar({ goal }) {
   const pct = Math.min(goal.progress_pct || 0, 100)
   const isDone = pct >= 100
   const suffix = goal.metric === 'conversion_rate' ? '%' : ''
+  const isMoney = goal.metric === 'monthly_revenue'
+  const fmt = (n) => isMoney ? `$${Number(n).toLocaleString()}` : `${n}${suffix}`
   return (
     <div className="py-2.5">
       <div className="flex items-center justify-between mb-1.5 gap-2">
         <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{goal.title}</p>
         <span className={`text-xs font-bold flex-shrink-0 ${isDone ? 'text-emerald-600' : 'text-slate-500 dark:text-slate-400'}`}>
-          {goal.current_value}{suffix} / {goal.target}{suffix}
+          {fmt(goal.current_value)} / {fmt(goal.target)}
         </span>
       </div>
       <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">

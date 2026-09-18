@@ -340,6 +340,10 @@ function RepDashboard({ user }) {
         )
       ),
     },
+    {
+      id: 'myGoals', label: 'My Goals', span: 'full',
+      render: () => <GoalsBoard isAdmin={false} />,
+    },
   ]
 
   const { order, loaded, visibleOrdered, save, reset } = useDashboardLayout('rep', REP_WIDGETS)
