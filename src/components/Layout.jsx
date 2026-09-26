@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext'
 import {
   LayoutDashboard, Users, UserCheck, LogOut, ClipboardList,
   BarChart3, TrendingUp, Zap, UserCog, Shield, Building2,
-  Camera, Sun, Moon, ChevronRight, CalendarDays, HelpCircle, ListChecks,
+  Camera, Sun, Moon, ChevronRight, CalendarDays, HelpCircle, ListChecks, Clock,
 } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
@@ -23,6 +23,7 @@ const STAFF_NAV = [
   { group: 'tools',to: '/tasks',     icon: ListChecks,      label: 'My Tasks' },
   { group: 'tools',to: '/reports',   icon: TrendingUp,      label: 'My Reports' },
   { group: 'tools',to: '/pickup-schedule', icon: CalendarDays, label: 'Case Pickup Schedules' },
+  { group: 'tools',to: '/scheduler', icon: Clock,           label: 'Scheduler' },
   { group: 'tools',to: '/help',      icon: HelpCircle,      label: 'Help' },
 ]
 
@@ -36,6 +37,7 @@ const ADMIN_NAV = [
   { group: 'tools', to: '/tasks',       icon: ListChecks,      label: 'My Tasks' },
   { group: 'tools', to: '/reports',     icon: TrendingUp,      label: 'Reports' },
   { group: 'tools', to: '/pickup-schedule', icon: CalendarDays, label: 'Case Pickup Schedules' },
+  { group: 'tools', to: '/scheduler',   icon: Clock,           label: 'Scheduler' },
   { group: 'tools', to: '/help',        icon: HelpCircle,      label: 'Help' },
   { group: 'admin', to: '/automations', icon: Zap,             label: 'Automations' },
   { group: 'admin', to: '/users',       icon: UserCog,         label: 'Users' },
@@ -224,6 +226,41 @@ function SidebarContent({ user, isAdmin, navItems, currentPath, onClose, onAvata
   )
 }
 
+const SCHEDULER_TABS = [
+  { to: '/scheduler',               label: 'Overview',     exact: true },
+  { to: '/scheduler/calendar',      label: 'Calendar' },
+  { to: '/scheduler/appointments',  label: 'Appointments' },
+  { to: '/scheduler/availability',  label: 'Availability' },
+  { to: '/scheduler/integrations',  label: 'Integrations' },
+  { to: '/scheduler/analytics',     label: 'Analytics' },
+  { to: '/scheduler/workflows',     label: 'Workflows' },
+]
+
+function SchedulerSubNav({ currentPath }) {
+  return (
+    <div className="bg-white/20 dark:bg-slate-900/20 backdrop-blur-3xl backdrop-saturate-200 border-b border-white/40 dark:border-white/10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto flex gap-1 overflow-x-auto">
+        {SCHEDULER_TABS.map(({ to, label, exact }) => {
+          const isActive = exact ? currentPath === to : currentPath === to || currentPath.startsWith(to + '/')
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              className={`shrink-0 py-3 px-3 text-sm font-semibold border-b-2 transition-colors ${
+                isActive
+                  ? 'border-[#06babe] text-[#06babe]'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
+            >
+              {label}
+            </NavLink>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function Layout({ children }) {
   const { user, signOut, refreshUser } = useAuth()
   const navigate = useNavigate()
@@ -312,6 +349,7 @@ export default function Layout({ children }) {
         </header>
 
         <main className="flex-1 overflow-y-auto pb-tabbar">
+          {location.pathname.startsWith('/scheduler') && <SchedulerSubNav currentPath={location.pathname} />}
           {children}
         </main>
 
