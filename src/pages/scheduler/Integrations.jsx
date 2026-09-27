@@ -67,10 +67,25 @@ export default function SchedulerIntegrations() {
     }
   };
 
-  const handleConnectOAuth = (provider) => {
-    const token = localStorage.getItem("crm_token");
-    const paths = { google_calendar: "google" };
-    window.location.href = `${SCHEDULER_API}/integrations/${paths[provider] || provider}/connect?token=${token}`;
+  const handleConnectOAuth = async (provider) => {
+    // Fetches a short-lived, single-use connect token via a normal
+    // authenticated request (schedulerApi attaches the real Authorization
+    // header) before redirecting — this full-page navigation can't carry a
+    // header itself, so it used to carry the actual CRM session token
+    // directly in the URL, which leaks into browser history and server
+    // logs. The returned token only authorizes this one connect flow, once,
+    // for a couple of minutes.
+    const statusKey = provider === "google" ? "google_calendar" : provider;
+    setActionLoading(statusKey);
+    setError("");
+    try {
+      const { data } = await schedulerApi.post("/integrations/connect-token");
+      const paths = { google_calendar: "google" };
+      window.location.href = `${SCHEDULER_API}/integrations/${paths[provider] || provider}/connect?token=${data.token}`;
+    } catch {
+      setError("Couldn't start the connection. Please try again.");
+      setActionLoading(null);
+    }
   };
 
   const getIntegrationByProvider = (provider) => integrations.find((item) => item.provider === provider);
