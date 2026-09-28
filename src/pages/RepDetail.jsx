@@ -88,9 +88,14 @@ export default function RepDetail() {
   return (
     <div className="px-4 py-5 sm:p-6 max-w-5xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 mb-4">
-          <ArrowLeft size={15} /> Back to Command Center
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">
+            <ArrowLeft size={15} /> Back to Command Center
+          </button>
+          <button onClick={() => navigate(`/progress?rep=${id}`)} className="text-sm font-medium text-[#06babe] hover:text-[#207290]">
+            View Q4 Progress
+          </button>
+        </div>
 
         {loading ? (
           <div className="card p-5 animate-pulse h-24" />
