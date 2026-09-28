@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext'
 import {
   LayoutDashboard, Users, UserCheck, LogOut, ClipboardList,
   BarChart3, TrendingUp, Zap, UserCog, Shield, Building2,
-  Camera, Sun, Moon, ChevronRight, CalendarDays, HelpCircle, ListChecks, Clock,
+  Camera, Sun, Moon, ChevronRight, CalendarDays, HelpCircle, ListChecks, Clock, Target,
 } from 'lucide-react'
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
@@ -22,6 +22,7 @@ const STAFF_NAV = [
   { group: 'crm',  to: '/pipeline',  icon: BarChart3,       label: 'Pipeline' },
   { group: 'tools',to: '/tasks',     icon: ListChecks,      label: 'My Tasks' },
   { group: 'tools',to: '/reports',   icon: TrendingUp,      label: 'My Reports' },
+  { group: 'tools',to: '/progress',  icon: Target,          label: 'My Progress' },
   { group: 'tools',to: '/pickup-schedule', icon: CalendarDays, label: 'Case Pickup Schedules' },
   { group: 'tools',to: '/scheduler', icon: Clock,           label: 'Scheduler' },
   { group: 'tools',to: '/help',      icon: HelpCircle,      label: 'Help' },
@@ -36,6 +37,7 @@ const ADMIN_NAV = [
   { group: 'crm',   to: '/pipeline',    icon: BarChart3,       label: 'Pipeline' },
   { group: 'tools', to: '/tasks',       icon: ListChecks,      label: 'My Tasks' },
   { group: 'tools', to: '/reports',     icon: TrendingUp,      label: 'Reports' },
+  { group: 'tools', to: '/progress',    icon: Target,          label: 'My Progress' },
   { group: 'tools', to: '/pickup-schedule', icon: CalendarDays, label: 'Case Pickup Schedules' },
   { group: 'tools', to: '/scheduler',   icon: Clock,           label: 'Scheduler' },
   { group: 'tools', to: '/help',        icon: HelpCircle,      label: 'Help' },

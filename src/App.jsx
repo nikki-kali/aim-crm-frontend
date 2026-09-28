@@ -17,6 +17,7 @@ import Clinics from './pages/Clinics'
 import Cases from './pages/Cases'
 import Pipeline from './pages/Pipeline'
 import Reports from './pages/Reports'
+import ProgressStatus from './pages/ProgressStatus'
 import Automations from './pages/Automations'
 import WorkflowCanvas from './pages/WorkflowCanvas'
 import Users from './pages/Users'
@@ -71,6 +72,7 @@ function AnimatedRoutes() {
         <Route path="/cases"       element={<ProtectedRoute><Cases /></ProtectedRoute>} />
         <Route path="/pipeline"    element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
         <Route path="/reports"     element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/progress"    element={<ProtectedRoute><ProgressStatus /></ProtectedRoute>} />
         <Route path="/help"        element={<ProtectedRoute><Help /></ProtectedRoute>} />
         <Route path="/automations" element={<AdminRoute><Automations /></AdminRoute>} />
         <Route path="/automations/:id" element={<AdminRoute><WorkflowCanvas /></AdminRoute>} />
