@@ -19,7 +19,7 @@ export default function ProgressStatus() {
   useEffect(() => {
     setLoading(true)
     setError(null)
-    const path = repId ? `/api/reports/rep-progress?rep_id=${repId}` : '/api/reports/rep-progress'
+    const path = repId ? `/api/reports/rep-progress?rep_id=${encodeURIComponent(repId)}` : '/api/reports/rep-progress'
     api.get(path)
       .then(setData)
       .catch((err) => setError(
