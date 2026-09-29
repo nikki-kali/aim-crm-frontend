@@ -72,8 +72,8 @@ export default function ProgressStatus() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {data.months.map((m, i) => (
+      <div className="grid gap-4">
+        {data.months.filter((m) => m.month === 'October').map((m, i) => (
           <motion.div
             key={m.month}
             className="card p-5"

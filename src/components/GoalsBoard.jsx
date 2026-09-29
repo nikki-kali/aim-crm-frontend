@@ -24,6 +24,17 @@ function defaultPeriod() {
   return { period_start: start.toISOString().slice(0, 10), period_end: end.toISOString().slice(0, 10) }
 }
 
+// goal.period_end comes back from the API as a raw ISO timestamp (e.g.
+// "2026-10-31T00:00:00.000Z", a Postgres `date` column serialized
+// through Date -> JSON) - printed as-is it showed "31T00:00:00.000Z"
+// instead of a real date.
+function formatDate(isoString) {
+  if (!isoString) return ''
+  const d = new Date(isoString)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+}
+
 function ProgressBar({ goal }) {
   const pct = Math.min(goal.progress_pct || 0, 100)
   const isDone = pct >= 100
@@ -44,7 +55,7 @@ function ProgressBar({ goal }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="text-[11px] text-slate-400 mt-1">{METRIC_LABELS[goal.metric] || goal.metric} · through {goal.period_end}</p>
+      <p className="text-[11px] text-slate-400 mt-1">{METRIC_LABELS[goal.metric] || goal.metric} · through {formatDate(goal.period_end)}</p>
     </div>
   )
 }
@@ -194,13 +205,13 @@ export default function GoalsBoard({ isAdmin }) {
         Object.keys(goalsByRep).length === 0 ? (
           <EmptyState icon={Target} title="No goals yet" description="Assign a goal to a rep to start tracking progress." size="sm" />
         ) : (
-          <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             {Object.entries(goalsByRep).map(([repId, { rep_name, goals }]) => (
-              <div key={repId} className="border-t border-slate-100 dark:border-slate-800 pt-3 first:border-0 first:pt-0">
+              <div key={repId} className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 p-4">
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                   <User size={11} /> {rep_name}
                 </p>
-                <div className="divide-y divide-slate-50 dark:divide-slate-800/60">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
                   {goals.map((g) => <ProgressBar key={g.id} goal={g} />)}
                 </div>
               </div>
