@@ -93,26 +93,14 @@ export default function ProgressStatus() {
     {phase === 'intro' ? (
       <IntroCard key="intro" repName={data.repName} monthLabel={octoberMonth ? octoberMonth.month : data.quarter} />
     ) : (
-    <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <h1 className="page-title">{data.repName}&apos;s {data.quarter} Progress</h1>
-        {data.coachMessage && (
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{data.coachMessage}</p>
-        )}
+    <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="space-y-6">
+      {/* Real one-by-one fade-in (unlike the email, this is a live page so
+          it actually animates): greeting, then bars, then Keep going,
+          then Your 1% today - same order and "Keep going" treatment as
+          the redesigned Daily Sales Report email, user request 2026-09-29. */}
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0 }}>
+        <h1 className="page-title">Hi {data.repName.split(' ')[0]}, here&apos;s your {data.quarter} progress</h1>
       </motion.div>
-
-      {data.suggestedSteps.length > 0 && (
-        <div className="card p-5">
-          <p className="text-xs uppercase tracking-wide text-slate-400 font-semibold mb-2">Suggested next steps</p>
-          <ul className="space-y-1.5">
-            {data.suggestedSteps.map((step) => (
-              <li key={step} className="text-sm text-slate-700 dark:text-slate-200 flex gap-2">
-                <span className="text-[#06babe]">&bull;</span>{step}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <div className="grid gap-4">
         {octoberMonth && (
@@ -121,7 +109,7 @@ export default function ProgressStatus() {
             className="card p-5"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.35, delay: 0.2 }}
           >
             <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-3">{octoberMonth.month}</p>
             <GoalBar label="Sales" goal={octoberMonth.salesGoal} format={money} />
@@ -129,6 +117,36 @@ export default function ProgressStatus() {
           </motion.div>
         )}
       </div>
+
+      {data.coachMessage && (
+        <motion.div
+          className="card p-5"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.4 }}
+        >
+          <p className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Keep going</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{data.coachMessage}</p>
+        </motion.div>
+      )}
+
+      {data.suggestedSteps.length > 0 && (
+        <motion.div
+          className="card p-5"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.6 }}
+        >
+          <p className="text-xs uppercase tracking-wide text-slate-400 font-semibold mb-2">Your 1% today</p>
+          <ul className="space-y-1.5">
+            {data.suggestedSteps.map((step) => (
+              <li key={step} className="text-sm text-slate-700 dark:text-slate-200 flex gap-2">
+                <span className="text-[#06babe]">&bull;</span>{step}
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      )}
     </motion.div>
     )}
     </AnimatePresence>
