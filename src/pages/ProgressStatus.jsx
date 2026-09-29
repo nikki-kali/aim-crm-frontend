@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, MotionConfig } from 'framer-motion'
 import { Target } from 'lucide-react'
 import api from '../lib/api'
 import EmptyState from '../components/EmptyState'
@@ -45,6 +45,12 @@ export default function ProgressStatus() {
   }
 
   return (
+    // reducedMotion="user" makes every motion.* below skip straight to
+    // its animate state (no fade/slide) when the viewer's browser has
+    // "reduce motion" on - GoalBar/useCountUp already handled this for
+    // the bars themselves, but these entrance animations didn't (review
+    // finding, 2026-09-29).
+    <MotionConfig reducedMotion="user">
     <div className="px-4 py-5 sm:p-6 max-w-3xl mx-auto space-y-6">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <h1 className="page-title">{data.repName}&apos;s {data.quarter} Progress</h1>
@@ -82,5 +88,6 @@ export default function ProgressStatus() {
         ))}
       </div>
     </div>
+    </MotionConfig>
   )
 }
