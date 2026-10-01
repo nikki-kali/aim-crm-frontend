@@ -21,18 +21,26 @@ function fmtDateTime(date, time) {
   return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
+// Backend fallback mirrors api.js's own default, since this one raw fetch
+// call (the public confirm endpoint — token-based, not authenticated, so
+// it can't go through api.js) needs the same base URL api.js uses.
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+
 export default function OfficeVisits() {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [showNewForm, setShowNewForm] = useState(false)
   const [rescheduling, setRescheduling] = useState(null) // booking id being rescheduled
+  const [actionError, setActionError] = useState(null)
 
   async function load() {
     setLoading(true)
     try {
       const data = await api.get('/api/office-visits-admin')
       setBookings(data)
+    } catch (err) {
+      setActionError(err.message || 'Failed to load office visits.')
     } finally {
       setLoading(false)
     }
@@ -40,26 +48,42 @@ export default function OfficeVisits() {
 
   useEffect(() => { load() }, [])
 
-  async function approve(booking) {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/office-visits/confirm`, {
+  // Whole-branch review finding (I3): these never checked whether the
+  // confirm call actually succeeded — an expired token (410), a failed
+  // email send (500), or a rate limit (429) all silently reloaded the
+  // list with no indication to the rep that nothing happened.
+  async function confirmAction(token, failureContext) {
+    setActionError(null)
+    const res = await fetch(`${API_BASE}/api/office-visits/confirm`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: booking.approve_token }),
+      body: JSON.stringify({ token }),
     })
+    if (!res.ok) {
+      setActionError(`Could not ${failureContext} (status ${res.status}). The link may have expired — refresh and try again.`)
+      return
+    }
     load()
+  }
+
+  async function approve(booking) {
+    if (!booking.approve_token) { setActionError('No active approve link for this booking — refresh the page.'); return }
+    await confirmAction(booking.approve_token, 'approve this booking')
   }
 
   async function suggestTime(booking) {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/office-visits/confirm`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: booking.suggest_time_token }),
-    })
-    load()
+    if (!booking.suggest_time_token) { setActionError('No active link for this booking — refresh the page.'); return }
+    await confirmAction(booking.suggest_time_token, 'send the pending email')
   }
 
   async function submitReschedule(id, confirmed_date, confirmed_time) {
-    await api.put(`/api/office-visits-admin/${id}/reschedule`, { confirmed_date, confirmed_time })
-    setRescheduling(null)
-    load()
+    setActionError(null)
+    try {
+      await api.put(`/api/office-visits-admin/${id}/reschedule`, { confirmed_date, confirmed_time })
+      setRescheduling(null)
+      load()
+    } catch (err) {
+      setActionError(err.message || 'Failed to reschedule.')
+    }
   }
 
   const visible = statusFilter === 'all' ? bookings : bookings.filter((b) => b.status === statusFilter)
@@ -80,16 +104,32 @@ export default function OfficeVisits() {
         ))}
       </div>
 
+      {actionError && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex justify-between items-center">
+          <span>{actionError}</span>
+          <button onClick={() => setActionError(null)} className="text-red-700 font-semibold ml-3">Dismiss</button>
+        </div>
+      )}
+
       {loading ? <p className="text-slate">Loading…</p> : (
         <div className="space-y-3">
           {visible.length === 0 && <p className="text-slate">No office visits here yet.</p>}
-          {visible.map((b) => (
+          {visible.map((b) => {
+            const addressLine = [b.address_line1, b.address_line2, b.city, b.state, b.zip].filter(Boolean).join(', ')
+            return (
             <div key={b.id} className="p-4 rounded-xl border border-hairline bg-white">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold text-ink">{b.practice_name || b.contact_name}</p>
                   <p className="text-sm text-slate">{b.contact_name}{b.contact_role ? ` — ${b.contact_role}` : ''}</p>
-                  <p className="text-sm text-slate">{fmtDateTime(b.confirmed_date || b.requested_date, b.confirmed_time || b.requested_time)}</p>
+                  {/* Whole-branch review finding (I6): the rep needs this,
+                      especially for "suggest another time" — they're
+                      expected to call the practice before setting a
+                      confirmed time, and had no number in front of them. */}
+                  {b.phone && <p className="text-sm text-slate"><a href={`tel:${b.phone}`} className="text-deep hover:underline">{b.phone}</a></p>}
+                  {b.email && <p className="text-sm text-slate">{b.email}</p>}
+                  {addressLine && <p className="text-xs text-faint">{addressLine}</p>}
+                  <p className="text-sm text-slate mt-1">{fmtDateTime(b.confirmed_date || b.requested_date, b.confirmed_time || b.requested_time)}</p>
                   <p className="text-xs text-faint mt-1">{b.assigned_rep_name || 'Unassigned'} · {STATUS_LABEL[b.status]}</p>
                 </div>
                 <div className="flex gap-2">
@@ -109,7 +149,8 @@ export default function OfficeVisits() {
                 </div>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
