@@ -31,6 +31,7 @@ import SchedulerAvailability from './pages/scheduler/Availability'
 import SchedulerIntegrations from './pages/scheduler/Integrations'
 import SchedulerAnalytics from './pages/scheduler/Analytics'
 import SchedulerWorkflows from './pages/scheduler/Workflows'
+import SchedulerOfficeVisits from './pages/scheduler/OfficeVisits'
 import SchedulerEventEditor from './pages/scheduler/EventEditor'
 import MyTasks from './pages/MyTasks'
 
@@ -90,6 +91,7 @@ function AnimatedRoutes() {
         <Route path="/scheduler/integrations"           element={<ProtectedRoute><SchedulerIntegrations /></ProtectedRoute>} />
         <Route path="/scheduler/analytics"              element={<ProtectedRoute><SchedulerAnalytics /></ProtectedRoute>} />
         <Route path="/scheduler/workflows"              element={<ProtectedRoute><SchedulerWorkflows /></ProtectedRoute>} />
+        <Route path="/scheduler/office-visits"           element={<ProtectedRoute><SchedulerOfficeVisits /></ProtectedRoute>} />
         <Route path="/scheduler/event-types/new"        element={<ProtectedRoute><SchedulerEventEditor /></ProtectedRoute>} />
         <Route path="/scheduler/event-types/edit/:id"   element={<ProtectedRoute><SchedulerEventEditor /></ProtectedRoute>} />
 

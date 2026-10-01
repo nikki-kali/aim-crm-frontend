@@ -236,6 +236,7 @@ const SCHEDULER_TABS = [
   { to: '/scheduler/integrations',  label: 'Integrations' },
   { to: '/scheduler/analytics',     label: 'Analytics' },
   { to: '/scheduler/workflows',     label: 'Workflows' },
+  { to: '/scheduler/office-visits', label: 'Office Visits' },
 ]
 
 function SchedulerSubNav({ currentPath }) {

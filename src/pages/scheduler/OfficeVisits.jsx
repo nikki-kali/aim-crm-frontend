@@ -11,7 +11,13 @@ const STATUS_LABEL = {
 
 function fmtDateTime(date, time) {
   if (!date) return 'TBD'
-  const d = new Date(`${date}T${time || '00:00:00'}`)
+  // The API serializes a Postgres `date` column as a full ISO timestamp
+  // (e.g. "2026-09-30T00:00:00.000Z"), not a plain "YYYY-MM-DD" string —
+  // take just the date portion before appending a separate time, or the
+  // two "T"s produce an unparseable string ("Invalid Date", caught during
+  // this task's own manual browser verification).
+  const datePart = String(date).slice(0, 10)
+  const d = new Date(`${datePart}T${time || '00:00:00'}`)
   return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
