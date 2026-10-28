@@ -1,7 +1,7 @@
 // Canonical list of lead-source options shown in dropdowns across the app.
 export const LEAD_SOURCES = [
   'Website Form Submission', 'Referral', 'Google', 'LinkedIn', 'Facebook',
-  'Instagram', 'X', 'Email Marketing', 'Email', 'Office Visit', 'Walk-in', 'Other',
+  'Instagram', 'X', 'Email Marketing', 'Email', 'Office Visit', 'Walk-in', 'Trade Show', 'Other',
 ]
 
 // Leads can arrive with a source tagged by external systems we don't control
@@ -23,6 +23,8 @@ const ALIASES = {
   'email marketing': 'Email Marketing',
   'email': 'Email',
   'office visit': 'Office Visit',
+  'trade show': 'Trade Show',
+  'tradeshow': 'Trade Show',
   'walk-in': 'Walk-in',
   'walk in': 'Walk-in',
 }
